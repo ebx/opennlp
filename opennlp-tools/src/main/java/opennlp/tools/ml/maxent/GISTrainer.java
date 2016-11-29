@@ -558,6 +558,7 @@ class GISTrainer {
       @Override
       public Thread newThread(Runnable runnable) {
         Thread thread = new Thread(runnable);
+        thread.setName("opennlp.tools.ml.maxent.ModelExpactationComputeTask.nextIteration()");
         thread.setDaemon(true);
         return thread;
       }
