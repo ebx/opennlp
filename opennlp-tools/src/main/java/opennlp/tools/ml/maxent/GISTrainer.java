@@ -27,6 +27,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.ThreadFactory;
 
 import opennlp.tools.ml.model.DataIndexer;
 import opennlp.tools.ml.model.EvalParameters;
@@ -553,7 +554,14 @@ class GISTrainer {
 
     int numberOfThreads = modelExpects.length;
 
-    ExecutorService executor = Executors.newFixedThreadPool(numberOfThreads);
+    ExecutorService executor = Executors.newFixedThreadPool(numberOfThreads, new ThreadFactory() {
+      @Override
+      public Thread newThread(Runnable runnable) {
+        Thread thread = new Thread(runnable);
+        thread.setDaemon(true);
+        return thread;
+      }
+    });
 
     int taskSize = numUniqueEvents / numberOfThreads;
 
