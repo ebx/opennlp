@@ -26,11 +26,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorCompletionService;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-<<<<<<< HEAD
-import java.util.concurrent.Future;
 import java.util.concurrent.ThreadFactory;
-=======
->>>>>>> master
 
 import opennlp.tools.ml.AbstractEventTrainer;
 import opennlp.tools.ml.ArrayMath;
@@ -567,7 +563,6 @@ public class GISTrainer extends AbstractEventTrainer {
     // is not divisible by the number of threads, the first "leftOver"
     // threads have one extra task.
     int numberOfThreads = modelExpects.length;
-
     int taskSize = numUniqueEvents / numberOfThreads;
     int leftOver = numUniqueEvents % numberOfThreads;
 
