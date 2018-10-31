@@ -14,6 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package opennlp.tools.cmdline.doccat;
 
 import java.io.File;
@@ -27,6 +28,7 @@ import opennlp.tools.cmdline.SystemInputStreamFactory;
 import opennlp.tools.doccat.DoccatModel;
 import opennlp.tools.doccat.DocumentCategorizerME;
 import opennlp.tools.doccat.DocumentSample;
+import opennlp.tools.tokenize.WhitespaceTokenizer;
 import opennlp.tools.util.ObjectStream;
 import opennlp.tools.util.ParagraphStream;
 import opennlp.tools.util.PlainTextByLineStream;
@@ -35,7 +37,7 @@ public class DoccatTool extends BasicCmdLineTool {
 
   @Override
   public String getShortDescription() {
-    return "learnable document categorizer";
+    return "learned document categorizer";
   }
 
   @Override
@@ -52,9 +54,9 @@ public class DoccatTool extends BasicCmdLineTool {
 
       DoccatModel model = new DoccatModelLoader().load(new File(args[0]));
 
-      DocumentCategorizerME doccat = new DocumentCategorizerME(model);
+      DocumentCategorizerME documentCategorizerME = new DocumentCategorizerME(model);
 
-      /**
+      /*
        * moved initialization to the try block to catch new IOException
        */
       ObjectStream<String> documentStream;
@@ -63,14 +65,14 @@ public class DoccatTool extends BasicCmdLineTool {
       perfMon.start();
 
       try {
-        documentStream = new ParagraphStream(
-                new PlainTextByLineStream(new SystemInputStreamFactory(), SystemInputStreamFactory.encoding()));
+        documentStream = new ParagraphStream(new PlainTextByLineStream(
+            new SystemInputStreamFactory(), SystemInputStreamFactory.encoding()));
         String document;
         while ((document = documentStream.read()) != null) {
-          String[] tokens = model.getFactory().getTokenizer().tokenize(document);
+          String[] tokens = WhitespaceTokenizer.INSTANCE.tokenize(document);
 
-          double prob[] = doccat.categorize(tokens);
-          String category = doccat.getBestCategory(prob);
+          double[] prob = documentCategorizerME.categorize(tokens);
+          String category = documentCategorizerME.getBestCategory(prob);
 
           DocumentSample sample = new DocumentSample(category, tokens);
           System.out.println(sample.toString());

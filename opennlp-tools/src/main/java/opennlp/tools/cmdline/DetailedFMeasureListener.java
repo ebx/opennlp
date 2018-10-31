@@ -41,7 +41,7 @@ public abstract class DetailedFMeasureListener<T> implements
 
   private int samples = 0;
   private Stats generalStats = new Stats();
-  private Map<String, Stats> statsForOutcome = new HashMap<String, Stats>();
+  private Map<String, Stats> statsForOutcome = new HashMap<>();
 
   protected abstract Span[] asSpanArray(T sample);
 
@@ -59,8 +59,8 @@ public abstract class DetailedFMeasureListener<T> implements
     Span[] references = asSpanArray(reference);
     Span[] predictions = asSpanArray(prediction);
 
-    Set<Span> refSet = new HashSet<Span>(Arrays.asList(references));
-    Set<Span> predSet = new HashSet<Span>(Arrays.asList(predictions));
+    Set<Span> refSet = new HashSet<>(Arrays.asList(references));
+    Set<Span> predSet = new HashSet<>(Arrays.asList(predictions));
 
     for (Span ref : refSet) {
       if (predSet.contains(ref)) {
@@ -120,16 +120,16 @@ public abstract class DetailedFMeasureListener<T> implements
     StringBuilder ret = new StringBuilder();
     int tp = generalStats.getTruePositives();
     int found = generalStats.getFalsePositives() + tp;
-    ret.append("Evaluated " + samples + " samples with "
-        + generalStats.getTarget() + " entities; found: " + found
-        + " entities; correct: " + tp + ".\n");
+    ret.append("Evaluated ").append(samples).append(" samples with ")
+        .append(generalStats.getTarget()).append(" entities; found: ")
+        .append(found).append(" entities; correct: ").append(tp).append(".\n");
 
     ret.append(String.format(locale, FORMAT, "TOTAL",
         zeroOrPositive(generalStats.getPrecisionScore() * 100),
         zeroOrPositive(generalStats.getRecallScore() * 100),
         zeroOrPositive(generalStats.getFMeasure() * 100)));
     ret.append("\n");
-    SortedSet<String> set = new TreeSet<String>(new F1Comparator());
+    SortedSet<String> set = new TreeSet<>(new F1Comparator());
     set.addAll(statsForOutcome.keySet());
     for (String type : set) {
 

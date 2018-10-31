@@ -15,7 +15,6 @@
  * limitations under the License.
  */
 
-
 package opennlp.tools.util;
 
 import java.io.IOException;
@@ -28,7 +27,7 @@ public abstract class AbstractEventStream<T> implements ObjectStream<Event> {
 
   private ObjectStream<T> samples;
 
-  private Iterator<Event> events = Collections.<Event>emptyList().iterator();;
+  private Iterator<Event> events = Collections.<Event>emptyList().iterator();
 
   /**
    * Initializes the current instance with a sample {@link Iterator}.
@@ -43,10 +42,10 @@ public abstract class AbstractEventStream<T> implements ObjectStream<Event> {
    * Creates events for the provided sample.
    *
    * @param sample the sample for which training {@link Event}s
-   * are be created.
+   *     are be created.
    *
    * @return an {@link Iterator} of training events or
-   * an empty {@link Iterator}.
+   *     an empty {@link Iterator}.
    */
   protected abstract Iterator<Event> createEvents(T sample);
 
@@ -57,7 +56,7 @@ public abstract class AbstractEventStream<T> implements ObjectStream<Event> {
       return events.next();
     }
     else {
-      T sample = null;
+      T sample;
       while (!events.hasNext() && (sample = samples.read()) != null) {
         events = createEvents(sample);
       }

@@ -48,7 +48,8 @@ public abstract class AbstractParserEventStream extends opennlp.tools.util.Abstr
   protected boolean fixPossesives;
   protected Dictionary dict;
 
-  public AbstractParserEventStream(ObjectStream<Parse> d, HeadRules rules, ParserEventTypeEnum etype, Dictionary dict) {
+  public AbstractParserEventStream(ObjectStream<Parse> d,
+      HeadRules rules, ParserEventTypeEnum etype, Dictionary dict) {
     super(d);
     this.dict = dict;
     if (etype == ParserEventTypeEnum.CHUNK) {
@@ -66,7 +67,7 @@ public abstract class AbstractParserEventStream extends opennlp.tools.util.Abstr
 
   @Override
   protected Iterator<Event> createEvents(Parse sample) {
-    List<Event> newEvents = new ArrayList<Event>();
+    List<Event> newEvents = new ArrayList<>();
 
     Parse.pruneParse(sample);
     if (fixPossesives) {
@@ -96,7 +97,7 @@ public abstract class AbstractParserEventStream extends opennlp.tools.util.Abstr
   }
 
   public static Parse[] getInitialChunks(Parse p) {
-    List<Parse> chunks = new ArrayList<Parse>();
+    List<Parse> chunks = new ArrayList<>();
     getInitialChunks(p, chunks);
     return chunks.toArray(new Parse[chunks.size()]);
   }
@@ -134,9 +135,9 @@ public abstract class AbstractParserEventStream extends opennlp.tools.util.Abstr
   protected abstract void addParseEvents(List<Event> newEvents, Parse[] chunks);
 
   private void addChunkEvents(List<Event> chunkEvents, Parse[] chunks) {
-    List<String> toks = new ArrayList<String>();
-    List<String> tags = new ArrayList<String>();
-    List<String> preds = new ArrayList<String>();
+    List<String> toks = new ArrayList<>();
+    List<String> tags = new ArrayList<>();
+    List<String> preds = new ArrayList<>();
     for (int ci = 0, cl = chunks.length; ci < cl; ci++) {
       Parse c = chunks[ci];
       if (c.isPosTag()) {
@@ -148,7 +149,7 @@ public abstract class AbstractParserEventStream extends opennlp.tools.util.Abstr
         boolean start = true;
         String ctype = c.getType();
         Parse[] kids = c.getChildren();
-        for (int ti=0,tl=kids.length;ti<tl;ti++) {
+        for (int ti = 0, tl = kids.length; ti < tl; ti++) {
           Parse tok = kids[ti];
           toks.add(tok.getCoveredText());
           tags.add(tok.getType());
@@ -163,13 +164,15 @@ public abstract class AbstractParserEventStream extends opennlp.tools.util.Abstr
       }
     }
     for (int ti = 0, tl = toks.size(); ti < tl; ti++) {
-      chunkEvents.add(new Event(preds.get(ti), chunkerContextGenerator.getContext(ti, toks.toArray(new String[toks.size()]), tags.toArray(new String[tags.size()]), preds.toArray(new String[preds.size()]))));
+      chunkEvents.add(new Event(preds.get(ti),
+          chunkerContextGenerator.getContext(ti, toks.toArray(new String[toks.size()]),
+          tags.toArray(new String[tags.size()]), preds.toArray(new String[preds.size()]))));
     }
   }
 
   private void addTagEvents(List<Event> tagEvents, Parse[] chunks) {
-    List<String> toks = new ArrayList<String>();
-    List<String> preds = new ArrayList<String>();
+    List<String> toks = new ArrayList<>();
+    List<String> preds = new ArrayList<>();
     for (int ci = 0, cl = chunks.length; ci < cl; ci++) {
       Parse c = chunks[ci];
       if (c.isPosTag()) {
@@ -178,7 +181,7 @@ public abstract class AbstractParserEventStream extends opennlp.tools.util.Abstr
       }
       else {
         Parse[] kids = c.getChildren();
-        for (int ti=0,tl=kids.length;ti<tl;ti++) {
+        for (int ti = 0, tl = kids.length; ti < tl; ti++) {
           Parse tok = kids[ti];
           toks.add(tok.getCoveredText());
           preds.add(tok.getType());
@@ -199,7 +202,7 @@ public abstract class AbstractParserEventStream extends opennlp.tools.util.Abstr
    */
   protected boolean lastChild(Parse child, Parse parent) {
     Parse[] kids = AbstractBottomUpParser.collapsePunctuation(parent.getChildren(),punctSet);
-    return (kids[kids.length - 1] == child);
+    return kids[kids.length - 1] == child;
   }
 
 }

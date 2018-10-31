@@ -19,27 +19,45 @@ package opennlp.tools.ml.naivebayes;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
+
+import opennlp.tools.ml.AbstractTrainer;
+import opennlp.tools.ml.model.AbstractDataIndexer;
+import opennlp.tools.ml.model.DataIndexer;
 import opennlp.tools.ml.model.Event;
 import opennlp.tools.ml.model.MaxentModel;
 import opennlp.tools.ml.model.TwoPassDataIndexer;
 import opennlp.tools.util.ObjectStream;
 import opennlp.tools.util.ObjectStreamUtils;
-import org.junit.Test;
-
-import static org.junit.Assert.assertEquals;
+import opennlp.tools.util.TrainingParameters;
 
 /**
  * Test for naive bayes classification correctness without smoothing
  */
 public class NaiveBayesCorrectnessTest {
 
+  private DataIndexer testDataIndexer;
+
+  @Before
+  public void initIndexer() {
+    TrainingParameters trainingParameters = new TrainingParameters();
+    trainingParameters.put(AbstractTrainer.CUTOFF_PARAM, 1);
+    trainingParameters.put(AbstractDataIndexer.SORT_PARAM, false);;
+    testDataIndexer = new TwoPassDataIndexer();
+    testDataIndexer.init(trainingParameters, new HashMap<>());
+  }
+
   @Test
   public void testNaiveBayes1() throws IOException {
 
+    testDataIndexer.index(createTrainingStream());
     NaiveBayesModel model =
-        (NaiveBayesModel) new NaiveBayesTrainer().trainModel(new TwoPassDataIndexer(createTrainingStream(), 1, false));
+        (NaiveBayesModel) new NaiveBayesTrainer().trainModel(testDataIndexer);
 
     String label = "politics";
     String[] context = {"bow=united", "bow=nations"};
@@ -53,8 +71,9 @@ public class NaiveBayesCorrectnessTest {
   @Test
   public void testNaiveBayes2() throws IOException {
 
+    testDataIndexer.index(createTrainingStream());
     NaiveBayesModel model =
-        (NaiveBayesModel) new NaiveBayesTrainer().trainModel(new TwoPassDataIndexer(createTrainingStream(), 1, false));
+        (NaiveBayesModel) new NaiveBayesTrainer().trainModel(testDataIndexer);
 
     String label = "sports";
     String[] context = {"bow=manchester", "bow=united"};
@@ -68,8 +87,9 @@ public class NaiveBayesCorrectnessTest {
   @Test
   public void testNaiveBayes3() throws IOException {
 
+    testDataIndexer.index(createTrainingStream());
     NaiveBayesModel model =
-        (NaiveBayesModel) new NaiveBayesTrainer().trainModel(new TwoPassDataIndexer(createTrainingStream(), 1, false));
+        (NaiveBayesModel) new NaiveBayesTrainer().trainModel(testDataIndexer);
 
     String label = "politics";
     String[] context = {"bow=united"};
@@ -83,8 +103,9 @@ public class NaiveBayesCorrectnessTest {
   @Test
   public void testNaiveBayes4() throws IOException {
 
+    testDataIndexer.index(createTrainingStream());
     NaiveBayesModel model =
-        (NaiveBayesModel) new NaiveBayesTrainer().trainModel(new TwoPassDataIndexer(createTrainingStream(), 1, false));
+        (NaiveBayesModel) new NaiveBayesTrainer().trainModel(testDataIndexer);
 
     String label = "politics";
     String[] context = {};
@@ -97,24 +118,24 @@ public class NaiveBayesCorrectnessTest {
   private void testModel(MaxentModel model, Event event, double higher_probability) {
     double[] outcomes = model.eval(event.getContext());
     String outcome = model.getBestOutcome(outcomes);
-    assertEquals(2, outcomes.length);
-    assertEquals(event.getOutcome(), outcome);
+    Assert.assertEquals(2, outcomes.length);
+    Assert.assertEquals(event.getOutcome(), outcome);
     if (event.getOutcome().equals(model.getOutcome(0))) {
-      assertEquals(higher_probability, outcomes[0], 0.0001);
+      Assert.assertEquals(higher_probability, outcomes[0], 0.0001);
     }
     if (!event.getOutcome().equals(model.getOutcome(0))) {
-      assertEquals(1.0 - higher_probability, outcomes[0], 0.0001);
+      Assert.assertEquals(1.0 - higher_probability, outcomes[0], 0.0001);
     }
     if (event.getOutcome().equals(model.getOutcome(1))) {
-      assertEquals(higher_probability, outcomes[1], 0.0001);
+      Assert.assertEquals(higher_probability, outcomes[1], 0.0001);
     }
     if (!event.getOutcome().equals(model.getOutcome(1))) {
-      assertEquals(1.0 - higher_probability, outcomes[1], 0.0001);
+      Assert.assertEquals(1.0 - higher_probability, outcomes[1], 0.0001);
     }
   }
 
   public static ObjectStream<Event> createTrainingStream() throws IOException {
-    List<Event> trainingEvents = new ArrayList<Event>();
+    List<Event> trainingEvents = new ArrayList<>();
 
     String label1 = "politics";
     String[] context1 = {"bow=the", "bow=united", "bow=nations"};

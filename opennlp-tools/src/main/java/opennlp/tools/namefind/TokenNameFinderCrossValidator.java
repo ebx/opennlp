@@ -18,6 +18,7 @@
 package opennlp.tools.namefind;
 
 import java.io.IOException;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -34,11 +35,11 @@ import opennlp.tools.util.eval.FMeasure;
 
 public class TokenNameFinderCrossValidator {
 
-  private class DocumentSample {
+  private static class DocumentSample implements Serializable {
 
-    private NameSample samples[];
+    private NameSample[] samples;
 
-    DocumentSample(NameSample samples[]) {
+    DocumentSample(NameSample[] samples) {
       this.samples = samples;
     }
 
@@ -50,7 +51,7 @@ public class TokenNameFinderCrossValidator {
   /**
    * Reads Name Samples to group them as a document based on the clear adaptive data flag.
    */
-  private class NameToDocumentSampleStream extends FilterObjectStream<NameSample, DocumentSample> {
+  private static class NameToDocumentSampleStream extends FilterObjectStream<NameSample, DocumentSample> {
 
     private NameSample beginSample;
 
@@ -60,7 +61,7 @@ public class TokenNameFinderCrossValidator {
 
     public DocumentSample read() throws IOException {
 
-      List<NameSample> document = new ArrayList<NameSample>();
+      List<NameSample> document = new ArrayList<>();
 
       if (beginSample == null) {
         // Assume that the clear flag is set
@@ -105,7 +106,7 @@ public class TokenNameFinderCrossValidator {
   /**
    * Splits DocumentSample into NameSamples.
    */
-  private class DocumentToNameSampleStream extends FilterObjectStream<DocumentSample, NameSample>{
+  private static class DocumentToNameSampleStream extends FilterObjectStream<DocumentSample, NameSample> {
 
     protected DocumentToNameSampleStream(ObjectStream<DocumentSample> samples) {
       super(samples);
@@ -143,7 +144,6 @@ public class TokenNameFinderCrossValidator {
   private TokenNameFinderEvaluationMonitor[] listeners;
 
   private FMeasure fmeasure = new FMeasure();
-  private SequenceCodec<String> codec;
   private TokenNameFinderFactory factory;
 
   /**
@@ -171,11 +171,8 @@ public class TokenNameFinderCrossValidator {
     this.type = type;
     this.featureGeneratorBytes = featureGeneratorBytes;
     this.resources = resources;
-
     this.params = trainParams;
-
     this.listeners = listeners;
-    this.codec = codec;
   }
 
   public TokenNameFinderCrossValidator(String languageCode, String type,
@@ -209,22 +206,22 @@ public class TokenNameFinderCrossValidator {
 
     // Note: The name samples need to be grouped on a document basis.
 
-    CrossValidationPartitioner<DocumentSample> partitioner = new CrossValidationPartitioner<DocumentSample>(
+    CrossValidationPartitioner<DocumentSample> partitioner = new CrossValidationPartitioner<>(
         new NameToDocumentSampleStream(samples), nFolds);
 
     while (partitioner.hasNext()) {
 
-      CrossValidationPartitioner.TrainingSampleStream<DocumentSample> trainingSampleStream = partitioner
-          .next();
+      CrossValidationPartitioner.TrainingSampleStream<DocumentSample> trainingSampleStream =
+          partitioner.next();
 
       TokenNameFinderModel model;
       if (factory != null) {
-        model = opennlp.tools.namefind.NameFinderME.train(languageCode, type, new DocumentToNameSampleStream(trainingSampleStream), params, factory);
+        model = NameFinderME.train(languageCode, type, new DocumentToNameSampleStream(trainingSampleStream),
+            params, factory);
       }
       else {
-        model  = opennlp.tools.namefind.NameFinderME.train(languageCode, type,
-            new DocumentToNameSampleStream(trainingSampleStream), params, featureGeneratorBytes, resources);
-
+        model = NameFinderME.train(languageCode, type, new DocumentToNameSampleStream(trainingSampleStream),
+            params, TokenNameFinderFactory.create(null, featureGeneratorBytes, resources, new BioCodec()));
       }
 
       // do testing

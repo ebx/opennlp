@@ -24,19 +24,12 @@ import java.util.List;
  * An interface for generating features for name entity identification and for
  * updating document level contexts.
  * <p>
- * Most implementors do not need the adaptive functionality of this
- * interface, they should extend the {@link FeatureGeneratorAdapter} class instead.
- * <p>
+ *
  * <b>Note:</b><br>
  * Feature generation is not thread safe and a instance of a feature generator
  * must only be called from one thread. The resources used by a feature
  * generator are typically shared between man instances of features generators
  * which are called from many threads and have to be thread safe.
- * If that is not possible the {@link FeatureGeneratorFactory} must make a copy
- * of the resource object for each feature generator instance.
- *
- * @see FeatureGeneratorAdapter
- * @see FeatureGeneratorFactory
  */
 public interface AdaptiveFeatureGenerator {
 
@@ -58,11 +51,11 @@ public interface AdaptiveFeatureGenerator {
    * @param tokens The tokens of the sentence or other text unit which has been processed.
    * @param outcomes The outcomes associated with the specified tokens.
    */
-   void updateAdaptiveData(String[] tokens, String[] outcomes);
+  default void updateAdaptiveData(String[] tokens, String[] outcomes) {};
 
   /**
    * Informs the feature generator that the context of the adaptive data (typically a document)
    * is no longer valid.
    */
-   void clearAdaptiveData();
+  default void clearAdaptiveData() {};
 }

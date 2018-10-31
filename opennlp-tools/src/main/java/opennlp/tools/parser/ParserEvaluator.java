@@ -63,14 +63,14 @@ public class ParserEvaluator extends Evaluator<Parse> {
    */
   private static Span[] getConstituencySpans(final Parse parse) {
 
-    Stack<Parse> stack = new Stack<Parse>();
+    Stack<Parse> stack = new Stack<>();
 
     if (parse.getChildCount() > 0) {
       for (Parse child : parse.getChildren()) {
         stack.push(child);
       }
     }
-    List<Span> consts = new ArrayList<Span>();
+    List<Span> consts = new ArrayList<>();
 
     while (!stack.isEmpty()) {
 
@@ -89,22 +89,20 @@ public class ParserEvaluator extends Evaluator<Parse> {
     return consts.toArray(new Span[consts.size()]);
   }
 
-  /* (non-Javadoc)
-   * @see opennlp.tools.util.eval.Evaluator#processSample(java.lang.Object)
-   */
   @Override
   protected final Parse processSample(final Parse reference) {
+    List<String> tokens = new ArrayList<>();
+    for (Parse token : reference.getTokenNodes()) {
+      tokens.add(token.getSpan().getCoveredText(reference.getText()).toString());
+    }
 
-    String sentenceText = reference.getText();
-
-    Parse[] predictions = ParserTool.parseLine(sentenceText, parser, 1);
+    Parse[] predictions = ParserTool.parseLine(String.join(" ", tokens), parser, 1);
 
     Parse prediction = null;
     if (predictions.length > 0) {
       prediction = predictions[0];
+      fmeasure.updateScores(getConstituencySpans(reference), getConstituencySpans(prediction));
     }
-
-    fmeasure.updateScores(getConstituencySpans(reference), getConstituencySpans(prediction));
 
     return prediction;
   }
@@ -115,30 +113,5 @@ public class ParserEvaluator extends Evaluator<Parse> {
    */
   public final FMeasure getFMeasure() {
     return fmeasure;
-  }
-
-  /**
-   * Main method to show the example of running the evaluator.
-   * Moved to a test case soon, hopefully.
-   * @param args
-   */
-  // TODO: Move this to a test case!
-  public static void main(final String[] args) {
-
-    String goldParseString = "(TOP (S (NP (NNS Sales) (NNS executives)) (VP (VBD were) (VP (VBG examing) (NP (DT the) (NNS figures)) (PP (IN with) (NP (JJ great) (NN care))) ))  (NP (NN yesterday)) (. .) ))";
-    Span[] goldConsts = getConstituencySpans(Parse.parseParse(goldParseString));
-
-    String testParseString = "(TOP (S (NP (NNS Sales) (NNS executives)) (VP (VBD were) (VP (VBG examing) (NP (DT the) (NNS figures)) (PP (IN with) (NP (JJ great) (NN care) (NN yesterday))) ))  (. .) ))";
-    Span[] testConsts = getConstituencySpans(Parse.parseParse(testParseString));
-
-    FMeasure measure = new FMeasure();
-    measure.updateScores(goldConsts, testConsts);
-
-    // Expected output:
-    // Precision: 0.42857142857142855
-    // Recall: 0.375
-    // F-Measure: 0.39999999999999997
-
-    System.out.println(measure.toString());
   }
 }

@@ -1,20 +1,18 @@
 /*
- * Licensed to the Apache Software Foundation (ASF) under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership.  The ASF licenses this file
- * to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
  *
- *   http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied.  See the License for the
- * specific language governing permissions and limitations
- * under the License.
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package opennlp.uima.util;
@@ -86,12 +84,12 @@ public class AnnotationComboIterator implements Iterable<AnnotationIteratorPair>
       AnnotationComboIterator.this.nextLowerChecked = true;
       AnnotationComboIterator.this.nextLowerAvailable = false;
       if (AnnotationComboIterator.this.lowerIt.isValid()) {
-        AnnotationFS lowerFS = (AnnotationFS) AnnotationComboIterator.this.lowerIt.get();
+        AnnotationFS lowerFS = AnnotationComboIterator.this.lowerIt.get();
         int lowerBegin = lowerFS.getBegin();
         while (lowerBegin < AnnotationComboIterator.this.upperBegin) {
           AnnotationComboIterator.this.lowerIt.moveToNext();
           if (AnnotationComboIterator.this.lowerIt.isValid()) {
-            lowerFS = (AnnotationFS) AnnotationComboIterator.this.lowerIt.get();
+            lowerFS = AnnotationComboIterator.this.lowerIt.get();
             lowerBegin = lowerFS.getBegin();
           } else {
             return false;
@@ -113,7 +111,7 @@ public class AnnotationComboIterator implements Iterable<AnnotationIteratorPair>
         throw new NoSuchElementException();
       }
       AnnotationComboIterator.this.nextLowerChecked = false;
-      final AnnotationFS rv = (AnnotationFS) AnnotationComboIterator.this.lowerIt.get();
+      final AnnotationFS rv = AnnotationComboIterator.this.lowerIt.get();
       AnnotationComboIterator.this.lowerIt.moveToNext();
       return rv;
     }
@@ -160,7 +158,7 @@ public class AnnotationComboIterator implements Iterable<AnnotationIteratorPair>
     this.upperIt.moveToFirst();
     this.lowerIt.moveToFirst();
     if (this.upperIt.isValid()) {
-      final AnnotationFS upperFS = (AnnotationFS) this.upperIt.get();
+      final AnnotationFS upperFS = this.upperIt.get();
       this.upperBegin = upperFS.getBegin();
       this.upperEnd = upperFS.getEnd();
     } else {
@@ -176,7 +174,7 @@ public class AnnotationComboIterator implements Iterable<AnnotationIteratorPair>
     if (!this.upperIt.hasNext()) {
       throw new NoSuchElementException();
     }
-    final AnnotationFS upperFS = (AnnotationFS) this.upperIt.next();
+    final AnnotationFS upperFS = this.upperIt.next();
     this.upperBegin = upperFS.getBegin();
     this.upperEnd = upperFS.getEnd();
     this.nextLowerChecked = false;

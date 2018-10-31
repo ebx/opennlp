@@ -18,6 +18,8 @@
 
 package opennlp.tools.chunker;
 
+import opennlp.tools.util.TokenTag;
+
 /** Features based on chunking model described in Fei Sha and Fernando Pereira. Shallow
  *  parsing with conditional random fields. In Proceedings of HLT-NAACL 2003. Association
  *  for Computational Linguistics, 2003.
@@ -30,12 +32,13 @@ public class DefaultChunkerContextGenerator implements ChunkerContextGenerator {
   public DefaultChunkerContextGenerator() {
   }
 
-  public String[] getContext(int index, String[] sequence, String[] priorDecisions, Object[] additionalContext) {
-    return getContext(index,sequence,(String[]) additionalContext[0],priorDecisions);
+  public String[] getContext(int index, String[] tokens, String[] postags,
+      String[] priorDecisions, Object[] additionalContext) {
+    return getContext(index, tokens, postags, priorDecisions);
   }
 
   public String[] getContext(int i, String[] toks, String[] tags, String[] preds) {
-	// Words in a 5-word window
+    // Words in a 5-word window
     String w_2, w_1, w0, w1, w2;
 
     // Tags in a 5-word window
@@ -141,5 +144,13 @@ public class DefaultChunkerContextGenerator implements ChunkerContextGenerator {
     };
 
     return features;
+  }
+
+  @Override
+  public String[] getContext(int index, TokenTag[] sequence, String[] priorDecisions,
+                             Object[] additionalContext) {
+    String[] token = TokenTag.extractTokens(sequence);
+    String[] tags = TokenTag.extractTags(sequence);
+    return getContext(index, token, tags, priorDecisions, additionalContext);
   }
 }

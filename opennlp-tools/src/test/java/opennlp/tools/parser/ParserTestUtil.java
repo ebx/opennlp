@@ -17,14 +17,15 @@
 
 package opennlp.tools.parser;
 
-import static java.nio.charset.StandardCharsets.UTF_8;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.UnsupportedEncodingException;
+import java.nio.charset.StandardCharsets;
 
-import junit.framework.Assert;
+import org.junit.Assert;
+
 import opennlp.tools.formats.ResourceAsStreamFactory;
 import opennlp.tools.parser.lang.en.HeadRules;
 import opennlp.tools.util.InputStreamFactory;
@@ -33,49 +34,50 @@ import opennlp.tools.util.PlainTextByLineStream;
 
 public class ParserTestUtil {
 
-   public static HeadRules createTestHeadRules() throws IOException {
-     InputStream headRulesIn =
-       ParserTestUtil.class.getResourceAsStream("/opennlp/tools/parser/en_head_rules");
+  public static HeadRules createTestHeadRules() throws IOException {
+    InputStream headRulesIn =
+        ParserTestUtil.class.getResourceAsStream("/opennlp/tools/parser/en_head_rules");
 
-     HeadRules headRules = new HeadRules(new BufferedReader(
-         new InputStreamReader(headRulesIn, "UTF-8")));
+    HeadRules headRules = new HeadRules(new BufferedReader(
+        new InputStreamReader(headRulesIn, "UTF-8")));
 
-     headRulesIn.close();
+    headRulesIn.close();
 
-     return headRules;
-   }
+    return headRules;
+  }
 
-   public static ObjectStream<Parse> openTestTrainingData()
-       throws IOException {
+  public static ObjectStream<Parse> openTestTrainingData()
+      throws IOException {
 
-     ObjectStream<Parse> resetableSampleStream = new ObjectStream<Parse> () {
+    ObjectStream<Parse> resetableSampleStream = new ObjectStream<Parse>() {
 
-       private ObjectStream<Parse> samples;
+      private ObjectStream<Parse> samples;
 
-       public void close() throws IOException {
-         samples.close();
-       }
+      public void close() throws IOException {
+        samples.close();
+      }
 
-       public Parse read() throws IOException {
-         return samples.read();
-       }
+      public Parse read() throws IOException {
+        return samples.read();
+      }
 
-       public void reset() throws IOException {
-         try {
-           if (samples != null)
-             samples.close();
+      public void reset() throws IOException {
+        try {
+          if (samples != null) {
+            samples.close();
+          }
           InputStreamFactory in = new ResourceAsStreamFactory(getClass(),
               "/opennlp/tools/parser/parser.train");
-          samples = new ParseSampleStream(new PlainTextByLineStream(in, UTF_8));
+          samples = new ParseSampleStream(new PlainTextByLineStream(in, StandardCharsets.UTF_8));
         } catch (UnsupportedEncodingException e) {
           // Should never happen
           Assert.fail(e.getMessage());
         }
-       }
-     };
+      }
+    };
 
-     resetableSampleStream.reset();
+    resetableSampleStream.reset();
 
-     return resetableSampleStream;
-   }
+    return resetableSampleStream;
+  }
 }

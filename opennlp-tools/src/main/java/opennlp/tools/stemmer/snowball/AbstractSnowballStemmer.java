@@ -1,3 +1,4 @@
+// CHECKSTYLE:OFF
 /*
 
 Copyright (c) 2001, Dr Martin Porter
@@ -33,4 +34,4 @@ package opennlp.tools.stemmer.snowball;
 
 abstract class AbstractSnowballStemmer extends SnowballProgram {
     public abstract boolean stem();
-};
+}

@@ -15,18 +15,20 @@
  * limitations under the License.
  */
 
-
 package opennlp.tools.namefind;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutput;
+import java.io.ObjectOutputStream;
+
+import org.junit.Assert;
+import org.junit.Test;
 
 import opennlp.tools.util.Span;
-
-import org.junit.Test;
 
 /**
  * This is the test class for {@link NameSample}.
@@ -49,7 +51,7 @@ public class NameSampleTest {
         new Span(14, 15, "Location")};
 
     NameSample nameSample;
-    if(useTypes) {
+    if (useTypes) {
       nameSample = new NameSample(sentence, names, false);
     }
     else {
@@ -65,6 +67,82 @@ public class NameSampleTest {
     return nameSample;
   }
 
+  @Test
+  public void testNameSampleSerDe() throws IOException {
+    NameSample nameSample = createGoldSample();
+    ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+    ObjectOutput out = new ObjectOutputStream(byteArrayOutputStream);
+    out.writeObject(nameSample);
+    out.flush();
+    byte[] bytes = byteArrayOutputStream.toByteArray();
+
+    ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(bytes);
+    ObjectInput objectInput = new ObjectInputStream(byteArrayInputStream);
+
+    NameSample deSerializedNameSample = null;
+    try {
+      deSerializedNameSample = (NameSample) objectInput.readObject();
+    } catch (ClassNotFoundException e) {
+      // do nothing
+    }
+
+    Assert.assertNotNull(deSerializedNameSample);
+    Assert.assertArrayEquals(nameSample.getSentence(), deSerializedNameSample.getSentence());
+    Assert.assertArrayEquals(nameSample.getNames(), deSerializedNameSample.getNames());
+    Assert.assertArrayEquals(nameSample.getAdditionalContext(),
+        deSerializedNameSample.getAdditionalContext());
+  }
+
+  /**
+   * Test serialization of sequential spans.
+   */
+  @Test
+  public void testSequentialSpans() {
+
+    String[] sentence = {"A", "Place", "a", "time", "A", "Person", "."};
+
+    Span[] names = {new Span(0, 2, "Place"), new Span(2, 4, "Time"),
+        new Span(4, 6, "Person")};
+
+    NameSample nameSample = new NameSample(sentence, names, false);
+
+    Assert.assertEquals(
+        "<START:Place> A Place <END> <START:Time> a time <END> <START:Person> A Person <END> .",
+        nameSample.toString());
+  }
+
+  /**
+   * Test serialization of unsorted sequential spans.
+   */
+  @Test
+  public void testUnsortedSequentialSpans() {
+
+    String[] sentence = {"A", "Place", "a", "time", "A", "Person", "."};
+
+    Span[] names = {new Span(0, 2, "Place"), new Span(4, 6, "Person"),
+        new Span(2, 4, "Time")};
+
+    NameSample nameSample = new NameSample(sentence, names, false);
+
+    Assert.assertEquals(
+        "<START:Place> A Place <END> <START:Time> a time <END> <START:Person> A Person <END> .",
+        nameSample.toString());
+  }
+
+  /**
+   * Test if it fails to name spans are overlapping
+   */
+  @Test(expected = RuntimeException.class)
+  public void testOverlappingNameSpans() throws Exception {
+
+    String[] sentence = {"A", "Place", "a", "time", "A", "Person", "."};
+
+    Span[] names = {new Span(0, 2, "Place"), new Span(3, 5, "Person"),
+        new Span(2, 4, "Time")};
+
+    new NameSample(sentence, names, false);
+  }
+
   /**
    * Checks if could create a NameSample without NameTypes, generate the
    * string representation and validate it.
@@ -73,8 +151,9 @@ public class NameSampleTest {
   public void testNoTypesToString() {
     String nameSampleStr = createSimpleNameSample(false).toString();
 
-    assertEquals("<START> U . S . <END> President <START> Barack Obama <END> is considering " +
-    		"sending additional American forces to <START> Afghanistan <END> .", nameSampleStr);
+    Assert.assertEquals("<START> U . S . <END> President <START> Barack Obama <END>" +
+        " is considering " +
+        "sending additional American forces to <START> Afghanistan <END> .", nameSampleStr);
   }
 
   /**
@@ -84,14 +163,17 @@ public class NameSampleTest {
   @Test
   public void testWithTypesToString() throws Exception {
     String nameSampleStr = createSimpleNameSample(true).toString();
-    assertEquals("<START:Location> U . S . <END> President <START:Person> Barack Obama <END> is considering sending additional American forces to <START:Location> Afghanistan <END> .", nameSampleStr);
+    Assert.assertEquals("<START:Location> U . S . <END> President <START:Person>" +
+            " Barack Obama <END> " +
+        "is considering sending additional American forces to <START:Location> Afghanistan <END> .",
+        nameSampleStr);
 
     NameSample parsedSample = NameSample.parse("<START:Location> U . S . <END> " +
-    		"President <START:Person> Barack Obama <END> is considering sending " +
-    		"additional American forces to <START:Location> Afghanistan <END> .",
-    		false);
+        "President <START:Person> Barack Obama <END> is considering sending " +
+        "additional American forces to <START:Location> Afghanistan <END> .",
+        false);
 
-    assertEquals(createSimpleNameSample(true), parsedSample);
+    Assert.assertEquals(createSimpleNameSample(true), parsedSample);
   }
 
   /**
@@ -101,7 +183,7 @@ public class NameSampleTest {
   @Test
   public void testNameAtEnd() {
 
-    String sentence[] = new String[] {
+    String[] sentence = new String[] {
         "My",
         "name",
         "is",
@@ -110,7 +192,7 @@ public class NameSampleTest {
 
     NameSample sample = new NameSample(sentence, new Span[]{new Span(3, 4)}, false);
 
-    assertEquals("My name is <START> Anna <END>", sample.toString());
+    Assert.assertEquals("My name is <START> Anna <END>", sample.toString());
   }
 
   /**
@@ -124,7 +206,7 @@ public class NameSampleTest {
 
     NameSample test = NameSample.parse(line, false);
 
-    assertEquals(8, test.getSentence().length);
+    Assert.assertEquals(8, test.getSentence().length);
   }
 
   /**
@@ -139,67 +221,71 @@ public class NameSampleTest {
                 + "additional American forces to <START:type_3-/;.,&%$> Afghanistan <END> .",
             false);
 
-    assertEquals(3, parsedSample.getNames().length);
-    assertEquals("type-1", parsedSample.getNames()[0].getType());
-    assertEquals("type_2", parsedSample.getNames()[1].getType());
-    assertEquals("type_3-/;.,&%$", parsedSample.getNames()[2].getType());
+    Assert.assertEquals(3, parsedSample.getNames().length);
+    Assert.assertEquals("type-1", parsedSample.getNames()[0].getType());
+    Assert.assertEquals("type_2", parsedSample.getNames()[1].getType());
+    Assert.assertEquals("type_3-/;.,&%$", parsedSample.getNames()[2].getType());
   }
 
   /**
    * Test if it fails to parse empty type
    */
-  @Test(expected=IOException.class)
+  @Test(expected = IOException.class)
   public void testMissingType() throws Exception {
-    NameSample.parse("<START:> token <END>",
-        false);
+    NameSample.parse("<START:> token <END>", false);
   }
 
   /**
    * Test if it fails to parse type with space
    * @throws Exception
    */
-  @Test(expected=IOException.class)
+  @Test(expected = IOException.class)
   public void testTypeWithSpace() throws Exception {
-    NameSample.parse("<START:abc a> token <END>",
-        false);
+    NameSample.parse("<START:abc a> token <END>", false);
   }
 
   /**
    * Test if it fails to parse type with new line
    * @throws Exception
    */
-  @Test(expected=IOException.class)
+  @Test(expected = IOException.class)
   public void testTypeWithNewLine() throws Exception {
-    NameSample.parse("<START:abc\na> token <END>",
-        false);
+    NameSample.parse("<START:abc\na> token <END>", false);
   }
 
   /**
    * Test if it fails to parse type with :
    * @throws Exception
    */
-  @Test(expected=IOException.class)
+  @Test(expected = IOException.class)
   public void testTypeWithInvalidChar1() throws Exception {
-    NameSample.parse("<START:abc:a> token <END>",
-        false);
+    NameSample.parse("<START:abc:a> token <END>", false);
   }
 
   /**
    * Test if it fails to parse type with >
    * @throws Exception
    */
-  @Test(expected=IOException.class)
+  @Test(expected = IOException.class)
   public void testTypeWithInvalidChar2() throws Exception {
-    NameSample.parse("<START:abc>a> token <END>",
-        false);
+    NameSample.parse("<START:abc>a> token <END>", false);
+  }
+
+  /**
+   * Test if it fails to parse nested names
+   * @throws Exception
+   */
+  @Test(expected = IOException.class)
+  public void testNestedNameSpans() throws Exception {
+    NameSample.parse("<START:Person> <START:Location> Kennedy <END> City <END>", false);
   }
 
   @Test
   public void testEquals() {
-    assertFalse(createGoldSample() == createGoldSample());
-    assertTrue(createGoldSample().equals(createGoldSample()));
-    assertFalse(createGoldSample().equals(createPredSample()));
-    assertFalse(createPredSample().equals(new Object()));
+    Assert.assertFalse(createGoldSample() == createGoldSample());
+    Assert.assertTrue(createGoldSample().equals(createGoldSample()));
+    Assert.assertFalse(createGoldSample().equals(createPredSample()));
+    Assert.assertFalse(createPredSample().equals(new Object()));
   }
 
   public static NameSample createGoldSample() {

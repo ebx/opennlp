@@ -25,7 +25,6 @@ import java.util.Set;
 import java.util.regex.Pattern;
 
 import opennlp.tools.dictionary.Dictionary;
-import opennlp.tools.util.InvalidFormatException;
 import opennlp.tools.util.model.ArtifactSerializer;
 
 public class DummyTokenizerFactory extends TokenizerFactory {
@@ -67,9 +66,7 @@ public class DummyTokenizerFactory extends TokenizerFactory {
   @Override
   @SuppressWarnings("rawtypes")
   public Map<String, ArtifactSerializer> createArtifactSerializersMap() {
-    Map<String, ArtifactSerializer> serializers = super
-        .createArtifactSerializersMap();
-
+    Map<String, ArtifactSerializer> serializers = super.createArtifactSerializersMap();
     serializers.put(DUMMY_DICT, new DummyDictionarySerializer());
     return serializers;
   }
@@ -82,11 +79,10 @@ public class DummyTokenizerFactory extends TokenizerFactory {
     return artifactMap;
   }
 
-  static class DummyDictionarySerializer implements
+  public static class DummyDictionarySerializer implements
       ArtifactSerializer<DummyDictionary> {
 
-    public DummyDictionary create(InputStream in) throws IOException,
-        InvalidFormatException {
+    public DummyDictionary create(InputStream in) throws IOException {
       return new DummyDictionary(in);
     }
 
@@ -96,7 +92,7 @@ public class DummyTokenizerFactory extends TokenizerFactory {
     }
   }
 
-  static class DummyDictionary extends Dictionary {
+  public static class DummyDictionary extends Dictionary {
     private Dictionary indict;
 
     public DummyDictionary(Dictionary dict) {
@@ -113,6 +109,11 @@ public class DummyTokenizerFactory extends TokenizerFactory {
 
     public Set<String> asStringSet() {
       return indict.asStringSet();
+    }
+
+    @Override
+    public Class<?> getArtifactSerializerClass() {
+      return DummyDictionarySerializer.class;
     }
   }
 

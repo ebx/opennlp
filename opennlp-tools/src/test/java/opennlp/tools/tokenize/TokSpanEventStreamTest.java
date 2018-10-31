@@ -15,19 +15,16 @@
  * limitations under the License.
  */
 
-
 package opennlp.tools.tokenize;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
-
 import java.io.IOException;
+
+import org.junit.Assert;
+import org.junit.Test;
 
 import opennlp.tools.ml.model.Event;
 import opennlp.tools.util.ObjectStream;
 import opennlp.tools.util.ObjectStreamUtils;
-
-import org.junit.Test;
 
 /**
  * Tests for the {@link TokSpanEventStream} class.
@@ -41,19 +38,20 @@ public class TokSpanEventStreamTest {
   public void testEventOutcomes() throws IOException {
 
     ObjectStream<String> sentenceStream =
-      ObjectStreamUtils.createObjectStream("\"<SPLIT>out<SPLIT>.<SPLIT>\"");
+        ObjectStreamUtils.createObjectStream("\"<SPLIT>out<SPLIT>.<SPLIT>\"");
 
     ObjectStream<TokenSample> tokenSampleStream = new TokenSampleStream(sentenceStream);
 
-    ObjectStream<Event> eventStream = new TokSpanEventStream(tokenSampleStream, false);
+    try (ObjectStream<Event> eventStream = new TokSpanEventStream(tokenSampleStream, false)) {
 
-    assertEquals(TokenizerME.SPLIT, eventStream.read().getOutcome());
-    assertEquals(TokenizerME.NO_SPLIT, eventStream.read().getOutcome());
-    assertEquals(TokenizerME.NO_SPLIT, eventStream.read().getOutcome());
-    assertEquals(TokenizerME.SPLIT, eventStream.read().getOutcome());
-    assertEquals(TokenizerME.SPLIT, eventStream.read().getOutcome());
+      Assert.assertEquals(TokenizerME.SPLIT, eventStream.read().getOutcome());
+      Assert.assertEquals(TokenizerME.NO_SPLIT, eventStream.read().getOutcome());
+      Assert.assertEquals(TokenizerME.NO_SPLIT, eventStream.read().getOutcome());
+      Assert.assertEquals(TokenizerME.SPLIT, eventStream.read().getOutcome());
+      Assert.assertEquals(TokenizerME.SPLIT, eventStream.read().getOutcome());
 
-    assertNull(eventStream.read());
-    assertNull(eventStream.read());
+      Assert.assertNull(eventStream.read());
+      Assert.assertNull(eventStream.read());
+    }
   }
 }

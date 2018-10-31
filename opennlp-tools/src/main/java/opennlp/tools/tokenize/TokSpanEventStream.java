@@ -21,8 +21,6 @@ package opennlp.tools.tokenize;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import java.util.regex.Pattern;
 
 import opennlp.tools.ml.model.Event;
@@ -37,8 +35,6 @@ import opennlp.tools.util.Span;
  * can be used by the maxent library for training.
  */
 public class TokSpanEventStream extends AbstractEventStream<TokenSample> {
-
-  private static Logger logger = Logger.getLogger(TokSpanEventStream.class.getName());
 
   private TokenContextGenerator cg;
 
@@ -97,9 +93,9 @@ public class TokSpanEventStream extends AbstractEventStream<TokenSample> {
   @Override
   protected Iterator<Event> createEvents(TokenSample tokenSample) {
 
-    List<Event> events = new ArrayList<Event>(50);
+    List<Event> events = new ArrayList<>(50);
 
-    Span tokens[] = tokenSample.getTokenSpans();
+    Span[] tokens = tokenSample.getTokenSpans();
     String text = tokenSample.getText();
 
     if (tokens.length > 0) {
@@ -119,8 +115,7 @@ public class TokSpanEventStream extends AbstractEventStream<TokenSample> {
         //adjust cSpan to text offsets
         cSpan = new Span(cSpan.getStart() + start, cSpan.getEnd() + start);
         //should we skip this token
-        if (ctok.length() > 1
-          && (!skipAlphaNumerics || !alphaNumeric.matcher(ctok).matches())) {
+        if (ctok.length() > 1 && (!skipAlphaNumerics || !alphaNumeric.matcher(ctok).matches())) {
 
           //find offsets of annotated tokens inside of candidate tokens
           boolean foundTrainingTokens = false;
@@ -139,10 +134,8 @@ public class TokSpanEventStream extends AbstractEventStream<TokenSample> {
               //keep looking
             }
             else {
-              if (logger.isLoggable(Level.WARNING)) {
-                logger.warning("Bad training token: " + tokens[ti] + " cand: " + cSpan +
-                    " token="+text.substring(tokens[ti].getStart(), tokens[ti].getEnd()));
-              }
+              System.out.println("Bad training token: " + tokens[ti] + " cand: " + cSpan +
+                  " token=" + text.substring(tokens[ti].getStart(), tokens[ti].getEnd()));
             }
           }
 

@@ -22,31 +22,37 @@ import java.util.List;
 /**
  * Generates Brown cluster features for token bigrams.
  */
-public class BrownBigramFeatureGenerator extends FeatureGeneratorAdapter {
+public class BrownBigramFeatureGenerator implements AdaptiveFeatureGenerator {
 
-  private BrownCluster brownLexicon;
+  private BrownCluster brownCluster;
 
-  public BrownBigramFeatureGenerator(BrownCluster dict){
-    this.brownLexicon = dict;
+  /**
+   * Creates a new Brown Cluster bigram feature generator.
+   * @param brownCluster A {@link BrownCluster}.
+   */
+  public BrownBigramFeatureGenerator(BrownCluster brownCluster) {
+    this.brownCluster = brownCluster;
   }
 
+  @Override
   public void createFeatures(List<String> features, String[] tokens, int index,
       String[] previousOutcomes) {
 
-    List<String> wordClasses = BrownTokenClasses.getWordClasses(tokens[index], brownLexicon);
+    List<String> wordClasses = BrownTokenClasses.getWordClasses(tokens[index], brownCluster);
     if (index > 0) {
-      List<String> prevWordClasses = BrownTokenClasses.getWordClasses(tokens[index - 1], brownLexicon);
+      List<String> prevWordClasses = BrownTokenClasses.getWordClasses(tokens[index - 1], brownCluster);
       for (int i = 0; i < wordClasses.size() && i < prevWordClasses.size(); i++)
-      features.add("p" + "browncluster" + "," + "browncluster" + "=" + prevWordClasses.get(i) + "," + wordClasses.get(i));
+      features.add("p" + "browncluster" + "," + "browncluster" + "="
+          + prevWordClasses.get(i) + "," + wordClasses.get(i));
     }
 
     if (index + 1 < tokens.length) {
-      List<String> nextWordClasses = BrownTokenClasses.getWordClasses(tokens[index + 1], brownLexicon);
+      List<String> nextWordClasses = BrownTokenClasses.getWordClasses(tokens[index + 1], brownCluster);
       for (int i = 0; i < wordClasses.size() && i < nextWordClasses.size(); i++) {
-        features.add("browncluster" + "," + "n" + "browncluster" + "=" + wordClasses.get(i) + "," + nextWordClasses.get(i));
+        features.add("browncluster" + "," + "n" + "browncluster" + "="
+            + wordClasses.get(i) + "," + nextWordClasses.get(i));
       }
     }
   }
 
 }
-

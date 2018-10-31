@@ -22,6 +22,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
+import java.nio.file.Path;
 import java.util.Map;
 import java.util.Properties;
 
@@ -31,6 +32,7 @@ import opennlp.tools.ml.model.MaxentModel;
 import opennlp.tools.ml.model.SequenceClassificationModel;
 import opennlp.tools.util.BaseToolFactory;
 import opennlp.tools.util.InvalidFormatException;
+import opennlp.tools.util.TokenTag;
 import opennlp.tools.util.model.BaseModel;
 
 /**
@@ -79,6 +81,10 @@ public class ChunkerModel extends BaseModel {
     super(COMPONENT_NAME, modelFile);
   }
 
+  public ChunkerModel(Path modelPath) throws IOException, InvalidFormatException {
+    this(modelPath.toFile());
+  }
+
   public ChunkerModel(URL modelURL) throws IOException, InvalidFormatException {
     super(COMPONENT_NAME, modelURL);
   }
@@ -90,6 +96,17 @@ public class ChunkerModel extends BaseModel {
     if (!(artifactMap.get(CHUNKER_MODEL_ENTRY_NAME) instanceof AbstractModel)) {
       throw new InvalidFormatException("Chunker model is incomplete!");
     }
+
+    // Since 1.8.0 we changed the ChunkerFactory signature. This will check the if the model
+    // declares a not default factory, and if yes, check if it was created before 1.8
+    if ( (getManifestProperty(FACTORY_NAME) != null
+            && !getManifestProperty(FACTORY_NAME).equals("opennlp.tools.chunker.ChunkerFactory") )
+        && this.getVersion().getMajor() <= 1
+        && this.getVersion().getMinor() < 8) {
+      throw new InvalidFormatException("The Chunker factory '" + getManifestProperty(FACTORY_NAME) +
+      "' is no longer compatible. Please update it to match the latest ChunkerFactory.");
+    }
+
   }
 
   /**
@@ -105,7 +122,7 @@ public class ChunkerModel extends BaseModel {
     }
   }
 
-  public SequenceClassificationModel<String> getChunkerSequenceModel() {
+  public SequenceClassificationModel<TokenTag> getChunkerSequenceModel() {
 
     Properties manifest = (Properties) artifactMap.get(MANIFEST_ENTRY);
 

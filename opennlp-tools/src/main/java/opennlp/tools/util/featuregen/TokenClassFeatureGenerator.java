@@ -25,7 +25,7 @@ import opennlp.tools.util.StringUtil;
 /**
  * Generates features for different for the class of the token.
  */
-public class TokenClassFeatureGenerator extends FeatureGeneratorAdapter {
+public class TokenClassFeatureGenerator implements AdaptiveFeatureGenerator {
 
   private static final String TOKEN_CLASS_PREFIX = "wc";
   private static final String TOKEN_AND_CLASS_PREFIX = "w&c";
@@ -36,8 +36,8 @@ public class TokenClassFeatureGenerator extends FeatureGeneratorAdapter {
     this(false);
   }
 
-  public TokenClassFeatureGenerator(boolean genearteWordAndClassFeature) {
-    this.generateWordAndClassFeature = genearteWordAndClassFeature;
+  public TokenClassFeatureGenerator(boolean generateWordAndClassFeature) {
+    this.generateWordAndClassFeature = generateWordAndClassFeature;
   }
 
   public void createFeatures(List<String> features, String[] tokens, int index, String[] preds) {
@@ -45,7 +45,8 @@ public class TokenClassFeatureGenerator extends FeatureGeneratorAdapter {
     features.add(TOKEN_CLASS_PREFIX + "=" + wordClass);
 
     if (generateWordAndClassFeature) {
-      features.add(TOKEN_AND_CLASS_PREFIX + "=" + StringUtil.toLowerCase(tokens[index]) + "," + wordClass);
+      features.add(TOKEN_AND_CLASS_PREFIX + "=" + StringUtil.toLowerCase(tokens[index]) +
+          "," + wordClass);
     }
   }
 }

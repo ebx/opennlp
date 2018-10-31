@@ -57,7 +57,7 @@ public class ChunkSampleStream extends FilterObjectStream<Parse, ChunkSample> {
   }
 
   public static Parse[] getInitialChunks(Parse p) {
-    List<Parse> chunks = new ArrayList<Parse>();
+    List<Parse> chunks = new ArrayList<>();
     getInitialChunks(p, chunks);
     return chunks.toArray(new Parse[chunks.size()]);
   }
@@ -68,9 +68,9 @@ public class ChunkSampleStream extends FilterObjectStream<Parse, ChunkSample> {
 
     if (parse != null) {
       Parse[] chunks = getInitialChunks(parse);
-      List<String> toks = new ArrayList<String>();
-      List<String> tags = new ArrayList<String>();
-      List<String> preds = new ArrayList<String>();
+      List<String> toks = new ArrayList<>();
+      List<String> tags = new ArrayList<>();
+      List<String> preds = new ArrayList<>();
       for (int ci = 0, cl = chunks.length; ci < cl; ci++) {
         Parse c = chunks[ci];
         if (c.isPosTag()) {
@@ -82,7 +82,7 @@ public class ChunkSampleStream extends FilterObjectStream<Parse, ChunkSample> {
           boolean start = true;
           String ctype = c.getType();
           Parse[] kids = c.getChildren();
-          for (int ti=0,tl=kids.length;ti<tl;ti++) {
+          for (int ti = 0, tl = kids.length; ti < tl; ti++) {
             Parse tok = kids[ti];
             toks.add(tok.getCoveredText());
             tags.add(tok.getType());

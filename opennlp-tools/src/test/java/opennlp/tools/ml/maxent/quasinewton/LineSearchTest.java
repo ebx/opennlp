@@ -1,32 +1,29 @@
 /*
- * Licensed to the Apache Software Foundation (ASF) under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership.  The ASF licenses this file
- * to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
  *
- *   http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied.  See the License for the
- * specific language governing permissions and limitations
- * under the License.
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
+
 package opennlp.tools.ml.maxent.quasinewton;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import opennlp.tools.ml.maxent.quasinewton.LineSearch.LineSearchResult;
-
+import org.junit.Assert;
 import org.junit.Test;
 
+import opennlp.tools.ml.maxent.quasinewton.LineSearch.LineSearchResult;
+
 public class LineSearchTest {
-  public static final double TOLERANCE = 0.01;
+  private static final double TOLERANCE = 0.01;
 
   @Test
   public void testLineSearchDeterminesSaneStepLength1() {
@@ -42,7 +39,7 @@ public class LineSearchTest {
     double stepSize = lsr.getStepSize();
     // then
     boolean succCond = TOLERANCE < stepSize && stepSize <= 1;
-    assertTrue(succCond);
+    Assert.assertTrue(succCond);
   }
 
   @Test
@@ -59,7 +56,7 @@ public class LineSearchTest {
     double stepSize = lsr.getStepSize();
     // then
     boolean succCond = TOLERANCE < stepSize && stepSize <= 1;
-    assertTrue(succCond);
+    Assert.assertTrue(succCond);
   }
 
   @Test
@@ -76,8 +73,8 @@ public class LineSearchTest {
     double stepSize = lsr.getStepSize();
     // then
     boolean succCond = TOLERANCE < stepSize && stepSize <= 1;
-    assertFalse(succCond);
-    assertEquals(0.0, stepSize, TOLERANCE);
+    Assert.assertFalse(succCond);
+    Assert.assertEquals(0.0, stepSize, TOLERANCE);
   }
 
   @Test
@@ -94,8 +91,8 @@ public class LineSearchTest {
     double stepSize = lsr.getStepSize();
     // then
     boolean succCond = TOLERANCE < stepSize && stepSize <= 1;
-    assertFalse(succCond);
-    assertEquals(0.0, stepSize, TOLERANCE);
+    Assert.assertFalse(succCond);
+    Assert.assertEquals(0.0, stepSize, TOLERANCE);
   }
 
   @Test
@@ -112,8 +109,8 @@ public class LineSearchTest {
     double stepSize = lsr.getStepSize();
     // then
     boolean succCond = TOLERANCE < stepSize && stepSize <= 1;
-    assertFalse(succCond);
-    assertEquals(0.0, stepSize, TOLERANCE);
+    Assert.assertFalse(succCond);
+    Assert.assertEquals(0.0, stepSize, TOLERANCE);
   }
 
   @Test
@@ -130,8 +127,8 @@ public class LineSearchTest {
     double stepSize = lsr.getStepSize();
     // then
     boolean succCond = TOLERANCE < stepSize && stepSize <= 1;
-    assertFalse(succCond);
-    assertEquals(0.0, stepSize, TOLERANCE);
+    Assert.assertFalse(succCond);
+    Assert.assertEquals(0.0, stepSize, TOLERANCE);
   }
 
   @Test
@@ -148,8 +145,8 @@ public class LineSearchTest {
     double stepSize = lsr.getStepSize();
     // then
     boolean succCond = TOLERANCE < stepSize && stepSize <= 1;
-    assertFalse(succCond);
-    assertEquals(0.0, stepSize, TOLERANCE);
+    Assert.assertFalse(succCond);
+    Assert.assertEquals(0.0, stepSize, TOLERANCE);
   }
 
   @Test
@@ -166,8 +163,8 @@ public class LineSearchTest {
     double stepSize = lsr.getStepSize();
     // then
     boolean succCond = TOLERANCE < stepSize && stepSize <= 1;
-    assertFalse(succCond);
-    assertEquals(0.0, stepSize, TOLERANCE);
+    Assert.assertFalse(succCond);
+    Assert.assertEquals(0.0, stepSize, TOLERANCE);
   }
 
   /**
@@ -182,7 +179,7 @@ public class LineSearchTest {
 
     public double[] gradientAt(double[] x) {
       // 2(x-2)
-      return new double[] {2 * (x[0]- 2)};
+      return new double[] {2 * (x[0] - 2)};
     }
 
     public int getDimension() {

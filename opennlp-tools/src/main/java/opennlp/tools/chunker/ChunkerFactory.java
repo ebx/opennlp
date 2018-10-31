@@ -20,6 +20,7 @@ package opennlp.tools.chunker;
 import opennlp.tools.util.BaseToolFactory;
 import opennlp.tools.util.InvalidFormatException;
 import opennlp.tools.util.SequenceValidator;
+import opennlp.tools.util.TokenTag;
 import opennlp.tools.util.ext.ExtensionLoader;
 
 public class ChunkerFactory extends BaseToolFactory {
@@ -38,9 +39,7 @@ public class ChunkerFactory extends BaseToolFactory {
       return new ChunkerFactory();
     }
     try {
-      ChunkerFactory theFactory = ExtensionLoader.instantiateExtension(
-          ChunkerFactory.class, subclassName);
-      return theFactory;
+      return ExtensionLoader.instantiateExtension(ChunkerFactory.class, subclassName);
     } catch (Exception e) {
       String msg = "Could not instantiate the " + subclassName
           + ". The initialization throw an exception.";
@@ -55,7 +54,7 @@ public class ChunkerFactory extends BaseToolFactory {
     // no additional artifacts
   }
 
-  public SequenceValidator<String> getSequenceValidator() {
+  public SequenceValidator<TokenTag> getSequenceValidator() {
     return new DefaultChunkerSequenceValidator();
   }
 

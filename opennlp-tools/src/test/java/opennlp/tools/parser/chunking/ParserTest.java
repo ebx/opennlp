@@ -20,14 +20,15 @@ package opennlp.tools.parser.chunking;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 
+import org.junit.Test;
+
 import opennlp.tools.parser.HeadRules;
 import opennlp.tools.parser.Parse;
 import opennlp.tools.parser.ParserFactory;
 import opennlp.tools.parser.ParserModel;
 import opennlp.tools.parser.ParserTestUtil;
 import opennlp.tools.util.ObjectStream;
-
-import org.junit.Test;
+import opennlp.tools.util.TrainingParameters;
 
 /**
  * Tests for the {@link Parser} class.
@@ -44,22 +45,23 @@ public class ParserTest {
     ObjectStream<Parse> parseSamples = ParserTestUtil.openTestTrainingData();
     HeadRules headRules = ParserTestUtil.createTestHeadRules();
 
-    ParserModel model = Parser.train("en", parseSamples, headRules, 100, 0);
+    ParserModel model = Parser.train("eng", parseSamples, headRules,
+        TrainingParameters.defaultParams());
 
     opennlp.tools.parser.Parser parser = ParserFactory.create(model);
 
     // TODO:
     // Tests parsing to make sure the code does not has
     // a bug which fails always with a runtime exception
-//    parser.parse(Parse.parseParse("She was just another freighter from the " +
-//    		"States and she seemed as commonplace as her name ."));
+    // parser.parse(Parse.parseParse("She was just another freighter from the " +
+    // "States and she seemed as commonplace as her name ."));
 
     // Test serializing and de-serializing model
     ByteArrayOutputStream outArray = new ByteArrayOutputStream();
     model.serialize(outArray);
     outArray.close();
 
-    new ParserModel(new ByteArrayInputStream(outArray.toByteArray()));
+    ParserModel outputModel =  new ParserModel(new ByteArrayInputStream(outArray.toByteArray()));
 
     // TODO: compare both models
   }

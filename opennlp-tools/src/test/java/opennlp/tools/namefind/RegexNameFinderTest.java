@@ -14,17 +14,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package opennlp.tools.namefind;
 
-import static org.junit.Assert.assertTrue;
+package opennlp.tools.namefind;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.regex.Pattern;
 
-import opennlp.tools.util.Span;
-
+import org.junit.Assert;
 import org.junit.Test;
+
+import opennlp.tools.util.Span;
 
 /**
  * Tests for the {@link RegexNameFinder} class.
@@ -35,7 +35,7 @@ public class RegexNameFinderTest {
   public void testFindSingleTokenPattern() {
 
     Pattern testPattern = Pattern.compile("test");
-    String sentence[] = new String[]{"a", "test", "b", "c"};
+    String[] sentence = new String[]{"a", "test", "b", "c"};
 
 
     Pattern[] patterns = new Pattern[]{testPattern};
@@ -49,17 +49,17 @@ public class RegexNameFinderTest {
 
     Span[] result = finder.find(sentence);
 
-    assertTrue(result.length == 1);
+    Assert.assertTrue(result.length == 1);
 
-    assertTrue(result[0].getStart() == 1);
-    assertTrue(result[0].getEnd() == 2);
+    Assert.assertTrue(result[0].getStart() == 1);
+    Assert.assertTrue(result[0].getEnd() == 2);
   }
 
   @Test
   public void testFindTokenizdPattern() {
     Pattern testPattern = Pattern.compile("[0-9]+ year");
 
-    String sentence[] = new String[]{"a", "80", "year", "b", "c"};
+    String[] sentence = new String[]{"a", "80", "year", "b", "c"};
 
     Pattern[] patterns = new Pattern[]{testPattern};
     Map<String, Pattern[]> regexMap = new HashMap<>();
@@ -72,29 +72,28 @@ public class RegexNameFinderTest {
 
     Span[] result = finder.find(sentence);
 
-    assertTrue(result.length == 1);
+    Assert.assertTrue(result.length == 1);
 
-    assertTrue(result[0].getStart() == 1);
-    assertTrue(result[0].getEnd() == 3);
-    assertTrue(result[0].getType().equals("match"));
+    Assert.assertTrue(result[0].getStart() == 1);
+    Assert.assertTrue(result[0].getEnd() == 3);
+    Assert.assertTrue(result[0].getType().equals("match"));
   }
 
   @Test
   public void testFindMatchingPatternWithoutMatchingTokenBounds() {
     Pattern testPattern = Pattern.compile("[0-8] year"); // does match "0 year"
 
-    String sentence[] = new String[]{"a", "80", "year", "c"};
-Pattern[] patterns = new Pattern[]{testPattern};
+    String[] sentence = new String[]{"a", "80", "year", "c"};
+    Pattern[] patterns = new Pattern[]{testPattern};
     Map<String, Pattern[]> regexMap = new HashMap<>();
     String type = "testtype";
 
     regexMap.put(type, patterns);
 
-    RegexNameFinder finder =
-            new RegexNameFinder(regexMap);
+    RegexNameFinder finder = new RegexNameFinder(regexMap);
 
     Span[] result = finder.find(sentence);
 
-    assertTrue(result.length == 0);
+    Assert.assertTrue(result.length == 0);
   }
 }

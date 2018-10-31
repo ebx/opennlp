@@ -15,7 +15,6 @@
  * limitations under the License.
  */
 
-
 package opennlp.tools.tokenize;
 
 import java.util.ArrayList;
@@ -36,7 +35,7 @@ public class DefaultTokenContextGenerator implements TokenContextGenerator {
    * Creates a default context generator for tokenizer.
    */
   public DefaultTokenContextGenerator() {
-    this(Collections.<String>emptySet());
+    this(Collections.emptySet());
   }
 
   /**
@@ -71,7 +70,7 @@ public class DefaultTokenContextGenerator implements TokenContextGenerator {
    *         at the specified index.
    */
   protected List<String> createContext(String sentence, int index) {
-    List<String> preds = new ArrayList<String>();
+    List<String> preds = new ArrayList<>();
     String prefix = sentence.substring(0, index);
     String suffix = sentence.substring(index);
     preds.add("p=" + prefix);
@@ -91,7 +90,7 @@ public class DefaultTokenContextGenerator implements TokenContextGenerator {
       preds.add("p1=bok");
     }
     addCharPreds("f1", sentence.charAt(index), preds);
-    if (index+1 < sentence.length()) {
+    if (index + 1 < sentence.length()) {
       addCharPreds("f2", sentence.charAt(index + 1), preds);
       preds.add("f12=" + sentence.charAt(index) + sentence.charAt(index + 1));
     }
@@ -102,7 +101,7 @@ public class DefaultTokenContextGenerator implements TokenContextGenerator {
       preds.add("cc");//character code
     }
 
-    if(index == sentence.length() - 1 && inducedAbbreviations.contains(sentence)) {
+    if (index == sentence.length() - 1 && inducedAbbreviations.contains(sentence)) {
       preds.add("pabb");
     }
 
@@ -128,16 +127,16 @@ public class DefaultTokenContextGenerator implements TokenContextGenerator {
       preds.add(key + "_ws");
     }
     else {
-      if (c=='.' || c=='?' || c=='!') {
+      if (c == '.' || c == '?' || c == '!') {
         preds.add(key + "_eos");
       }
-      else if (c=='`' || c=='"' || c=='\'') {
+      else if (c == '`' || c == '"' || c == '\'') {
         preds.add(key + "_quote");
       }
-      else if (c=='[' || c=='{' || c=='(') {
+      else if (c == '[' || c == '{' || c == '(') {
         preds.add(key + "_lp");
       }
-      else if (c==']' || c=='}' || c==')') {
+      else if (c == ']' || c == '}' || c == ')') {
         preds.add(key + "_rp");
       }
     }

@@ -46,9 +46,9 @@ public abstract class BaseToolFactory {
   public BaseToolFactory() {
   }
 
- /**
-  * Initializes the ToolFactory with an artifact provider.
-  */
+  /**
+   * Initializes the ToolFactory with an artifact provider.
+   */
   protected void init(ArtifactProvider artifactProvider) {
     this.artifactProvider = artifactProvider;
   }
@@ -63,7 +63,7 @@ public abstract class BaseToolFactory {
    */
   @SuppressWarnings("rawtypes")
   public Map<String, ArtifactSerializer> createArtifactSerializersMap() {
-    return new HashMap<String, ArtifactSerializer>();
+    return new HashMap<>();
   }
 
   /**
@@ -75,7 +75,7 @@ public abstract class BaseToolFactory {
    * populated by sub-classes.
    */
   public Map<String, Object> createArtifactMap() {
-    return new HashMap<String, Object>();
+    return new HashMap<>();
   }
 
   /**
@@ -84,7 +84,7 @@ public abstract class BaseToolFactory {
    * @return the manifest entries to added to the model manifest
    */
   public Map<String, String> createManifestEntries() {
-    return new HashMap<String, String>();
+    return new HashMap<>();
   }
 
   /**
@@ -101,12 +101,11 @@ public abstract class BaseToolFactory {
 
   public static BaseToolFactory create(String subclassName,
       ArtifactProvider artifactProvider) throws InvalidFormatException {
-    BaseToolFactory theFactory = null;
+    BaseToolFactory theFactory;
 
     try {
       // load the ToolFactory using the default constructor
-      theFactory = ExtensionLoader.instantiateExtension(
-          BaseToolFactory.class, subclassName);
+      theFactory = ExtensionLoader.instantiateExtension(BaseToolFactory.class, subclassName);
 
       if (theFactory != null) {
         theFactory.init(artifactProvider);
@@ -114,8 +113,6 @@ public abstract class BaseToolFactory {
     } catch (Exception e) {
       String msg = "Could not instantiate the " + subclassName
           + ". The initialization throw an exception.";
-      System.err.println(msg);
-      e.printStackTrace();
       throw new InvalidFormatException(msg, e);
     }
     return theFactory;
@@ -132,8 +129,6 @@ public abstract class BaseToolFactory {
         String msg = "Could not instantiate the "
             + factoryClass.getCanonicalName()
             + ". The initialization throw an exception.";
-        System.err.println(msg);
-        e.printStackTrace();
         throw new InvalidFormatException(msg, e);
       }
     }

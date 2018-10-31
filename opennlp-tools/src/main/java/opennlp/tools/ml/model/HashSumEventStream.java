@@ -18,8 +18,8 @@
 package opennlp.tools.ml.model;
 
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.math.BigInteger;
+import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
@@ -37,7 +37,7 @@ public class HashSumEventStream extends AbstractObjectStream<Event> {
       digest = MessageDigest.getInstance("MD5");
     } catch (NoSuchAlgorithmException e) {
       // should never happen, does all java runtimes have md5 ?!
-     throw new IllegalStateException(e);
+      throw new IllegalStateException(e);
     }
   }
 
@@ -46,12 +46,7 @@ public class HashSumEventStream extends AbstractObjectStream<Event> {
     Event event = super.read();
 
     if (event != null) {
-      try {
-        digest.update(event.toString().getBytes("UTF-8"));
-      }
-      catch (UnsupportedEncodingException e) {
-        throw new IllegalStateException("UTF-8 encoding is not available!", e);
-      }
+      digest.update(event.toString().getBytes(StandardCharsets.UTF_8));
     }
 
     return event;
@@ -63,7 +58,7 @@ public class HashSumEventStream extends AbstractObjectStream<Event> {
    *
    * @return the hash sum
    * @throws IllegalStateException if the stream is not consumed completely,
-   * completely means that hasNext() returns false
+   *     completely means that hasNext() returns false
    */
   public BigInteger calculateHashSum() {
     return new BigInteger(1, digest.digest());

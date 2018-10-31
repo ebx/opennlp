@@ -28,49 +28,52 @@
   
     <includeBaseDirectory>true</includeBaseDirectory>
 	<baseDirectory>/apache-opennlp-${project.version}</baseDirectory>
-  
+	
 	<dependencySets>
 		<dependencySet>
-			<includes>
-				<include>org.apache.opennlp:opennlp-tools</include>
-				<include>org.apache.opennlp:opennlp-uima</include>
-			</includes>
+			<scope>runtime</scope>
 			<unpack>false</unpack>
 			<useProjectArtifact>false</useProjectArtifact>
 			<fileMode>644</fileMode>
 			<directoryMode>755</directoryMode>
 			<outputDirectory>lib</outputDirectory>
+			<useTransitiveDependencies>true</useTransitiveDependencies>
 		</dependencySet>
 	</dependencySets>
 	
 	<fileSets>
 	    <fileSet>
 	    	<directory>src/main/readme</directory>
-	    	<outputDirectory></outputDirectory>
 	    	<fileMode>644</fileMode>
-	    	<directoryMode>755</directoryMode>      
+	    	<directoryMode>755</directoryMode>
+	    	<outputDirectory>.</outputDirectory>
 	    </fileSet>
 		
 	    <fileSet>
 	      <directory>.</directory>
-	      <outputDirectory></outputDirectory>
 	      <filtered>true</filtered>
 	      <fileMode>644</fileMode>
 	      <directoryMode>755</directoryMode> 
 	      <includes>
-	        <include>README</include>
 	        <include>RELEASE_NOTES.html</include>
 	      </includes>       
 	    </fileSet>
-	    
+
 	    <fileSet>
 	      <directory>target</directory>
-	      <outputDirectory></outputDirectory>
 	      <fileMode>644</fileMode>
-	      <directoryMode>755</directoryMode> 
+	      <directoryMode>755</directoryMode>
+	      <outputDirectory>.</outputDirectory>
 	      <includes>
-	        <include>issuesFixed/**</include>      
-	      </includes>       
+	        <include>README.html</include>
+	      </includes>
+	    </fileSet>
+
+	    <fileSet>
+	      <directory>target/issuesFixed</directory>
+	      <fileMode>644</fileMode>
+	      <directoryMode>755</directoryMode>
+	      <outputDirectory>issuesFixed</outputDirectory>
 	    </fileSet>
 	    
 		<fileSet>
@@ -78,6 +81,27 @@
 			<fileMode>755</fileMode>
 			<directoryMode>755</directoryMode>
 			<outputDirectory>bin</outputDirectory>
+		</fileSet>
+
+		<fileSet>
+			<directory>../opennlp-morfologik-addon/src/main/bin</directory>
+			<fileMode>755</fileMode>
+			<directoryMode>755</directoryMode>
+			<outputDirectory>bin</outputDirectory>
+		</fileSet>
+		
+		<fileSet>
+			<directory>../opennlp-brat-annotator/src/main/bin</directory>
+			<fileMode>755</fileMode>
+			<directoryMode>755</directoryMode>
+			<outputDirectory>bin</outputDirectory>
+		</fileSet>
+
+		<fileSet>
+			<directory>../opennlp-tools/lang</directory>
+			<fileMode>644</fileMode>
+			<directoryMode>755</directoryMode>
+			<outputDirectory>lang</outputDirectory>
 		</fileSet>
 		
 		<fileSet>
@@ -93,7 +117,21 @@
 			<directoryMode>755</directoryMode>
 			<outputDirectory>docs/apidocs/opennlp-tools</outputDirectory>
 		</fileSet>
-		
+
+		<fileSet>
+			<directory>../opennlp-brat-annotator/target/apidocs</directory>
+			<fileMode>644</fileMode>
+			<directoryMode>755</directoryMode>
+			<outputDirectory>docs/apidocs/opennlp-brat-annotator</outputDirectory>
+		</fileSet>
+
+		<fileSet>
+			<directory>../opennlp-morfologik-addon/target/apidocs</directory>
+			<fileMode>644</fileMode>
+			<directoryMode>755</directoryMode>
+			<outputDirectory>docs/apidocs/opennlp-morfologik-addon</outputDirectory>
+		</fileSet>
+
 		<fileSet>
 			<directory>../opennlp-uima/target/apidocs</directory>
 			<fileMode>644</fileMode>

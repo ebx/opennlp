@@ -1,24 +1,24 @@
 /*
- * Licensed to the Apache Software Foundation (ASF) under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership.  The ASF licenses this file
- * to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
  *
- *   http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied.  See the License for the
- * specific language governing permissions and limitations
- * under the License.
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package opennlp.tools.ml.model;
 
+import java.util.Arrays;
+import java.util.Objects;
 
 /**
  * A maxent event representation which we can use to sort based on the
@@ -27,8 +27,7 @@ package opennlp.tools.ml.model;
 public class ComparableEvent implements Comparable<ComparableEvent> {
   public int outcome;
   public int[] predIndexes;
-  public int seen = 1; // the number of times this event
-                       // has been seen.
+  public int seen = 1; // the number of times this event has been seen.
 
   public float[] values;
 
@@ -44,43 +43,64 @@ public class ComparableEvent implements Comparable<ComparableEvent> {
 
   public int compareTo(ComparableEvent ce) {
 
-    if (outcome < ce.outcome)
-      return -1;
-    else if (outcome > ce.outcome)
-      return 1;
+    int compareOutcome = Integer.compare(outcome, ce.outcome);
+    if (compareOutcome != 0) {
+      return compareOutcome;
+    }
 
-    int smallerLength = (predIndexes.length > ce.predIndexes.length ? ce.predIndexes.length
-        : predIndexes.length);
+    int smallerLength = Math.min(predIndexes.length, ce.predIndexes.length);
 
     for (int i = 0; i < smallerLength; i++) {
-      if (predIndexes[i] < ce.predIndexes[i])
-        return -1;
-      else if (predIndexes[i] > ce.predIndexes[i])
-        return 1;
+      int comparePredIndexes = Integer.compare(predIndexes[i], ce.predIndexes[i]);
+      if (comparePredIndexes != 0) {
+        return comparePredIndexes;
+      }
       if (values != null && ce.values != null) {
-        if (values[i] < ce.values[i])
-          return -1;
-        else if (values[i] > ce.values[i])
-          return 1;
+        float compareValues = Float.compare(values[i], ce.values[i]);
+        if (!Float.valueOf(compareValues).equals(Float.valueOf(0.0f))) {
+          return (int) compareValues;
+        }
       } else if (values != null) {
-        if (values[i] < 1)
-          return -1;
-        else if (values[i] > 1)
-          return 1;
+        float compareValues = Float.compare(values[i], 1.0f);
+        if (!Float.valueOf(compareValues).equals(Float.valueOf(0.0f))) {
+          return (int) compareValues;
+        }
       } else if (ce.values != null) {
-        if (1 < ce.values[i])
-          return -1;
-        else if (1 > ce.values[i])
-          return 1;
+        float compareValues = Float.compare(1.0f, ce.values[i]);
+        if (!Float.valueOf(compareValues).equals(Float.valueOf(0.0f))) {
+          return (int) compareValues;
+        }
       }
     }
 
-    if (predIndexes.length < ce.predIndexes.length)
-      return -1;
-    else if (predIndexes.length > ce.predIndexes.length)
-      return 1;
+    int comparePredIndexesLength = Integer.compare(predIndexes.length, ce.predIndexes.length);
+    if (comparePredIndexesLength != 0) {
+      return comparePredIndexesLength;
+    }
 
     return 0;
+  }
+
+  @Override
+  public boolean equals(Object obj) {
+
+    if (this == obj)
+      return true;
+
+    if (obj instanceof ComparableEvent) {
+      ComparableEvent other = (ComparableEvent) obj;
+      return outcome == other.outcome &&
+          Arrays.equals(predIndexes, other.predIndexes) &&
+          seen == other.seen &&
+          Arrays.equals(values, other.values);
+    }
+
+    return false;
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(outcome, Arrays.hashCode(predIndexes), seen, Arrays.hashCode(values));
   }
 
   public String toString() {
@@ -94,21 +114,5 @@ public class ComparableEvent implements Comparable<ComparableEvent> {
     return s.toString();
   }
 
-  private void sort(int[] pids, float[] values) {
-    for (int mi = 0; mi < pids.length; mi++) {
-      int min = mi;
-      for (int pi = mi + 1; pi < pids.length; pi++) {
-        if (pids[min] > pids[pi]) {
-          min = pi;
-        }
-      }
-      int pid = pids[mi];
-      pids[mi] = pids[min];
-      pids[min] = pid;
-      float val = values[mi];
-      values[mi] = values[min];
-      values[min] = val;
-    }
-  }
 }
 

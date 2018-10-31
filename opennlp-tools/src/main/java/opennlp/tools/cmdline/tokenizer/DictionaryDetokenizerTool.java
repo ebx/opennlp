@@ -38,39 +38,35 @@ public final class DictionaryDetokenizerTool extends BasicCmdLineTool {
   }
 
   public void run(String[] args) {
-
-
     if (args.length != 1) {
       System.out.println(getHelp());
     } else {
-          try {
-      Detokenizer detokenizer = new DictionaryDetokenizer(
-          new DetokenizationDictionaryLoader().load(new File(args[0])));
+      try {
+        Detokenizer detokenizer = new DictionaryDetokenizer(
+            new DetokenizationDictionaryLoader().load(new File(args[0])));
 
-      ObjectStream<String> tokenizedLineStream =
-        new PlainTextByLineStream(new SystemInputStreamFactory(), SystemInputStreamFactory.encoding());
+        try (ObjectStream<String> tokenizedLineStream =
+            new PlainTextByLineStream(new SystemInputStreamFactory(), SystemInputStreamFactory.encoding())) {
 
-      PerformanceMonitor perfMon = new PerformanceMonitor(System.err, "sent");
-      perfMon.start();
+          PerformanceMonitor perfMon = new PerformanceMonitor(System.err, "sent");
+          perfMon.start();
 
+          String tokenizedLine;
+          while ((tokenizedLine = tokenizedLineStream.read()) != null) {
 
-        String tokenizedLine;
-        while ((tokenizedLine = tokenizedLineStream.read()) != null) {
+            // white space tokenize line
+            String[] tokens = WhitespaceTokenizer.INSTANCE.tokenize(tokenizedLine);
 
-          // white space tokenize line
-          String tokens[] = WhitespaceTokenizer.INSTANCE.tokenize(tokenizedLine);
+            System.out.println(detokenizer.detokenize(tokens, null));
 
-          System.out.println(detokenizer.detokenize(tokens, null));
-
-          perfMon.incrementCounter();
+            perfMon.incrementCounter();
+          }
+          perfMon.stopAndPrintFinalResult();
         }
-              perfMon.stopAndPrintFinalResult();
       }
       catch (IOException e) {
         CmdLineUtil.handleStdinIoError(e);
       }
-
-
     }
   }
 }

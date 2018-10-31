@@ -15,7 +15,6 @@
  * limitations under the License.
  */
 
-
 package opennlp.tools.util.model;
 
 import java.io.ByteArrayOutputStream;
@@ -26,9 +25,10 @@ import java.io.OutputStream;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
-import opennlp.tools.ml.maxent.GIS;
+import opennlp.tools.ml.maxent.GISTrainer;
 import opennlp.tools.ml.model.AbstractModel;
 import opennlp.tools.ml.model.GenericModelWriter;
 import opennlp.tools.ml.model.MaxentModel;
@@ -57,18 +57,17 @@ public final class ModelUtil {
   public static void writeModel(MaxentModel model, final OutputStream out)
           throws IOException, IllegalArgumentException {
 
-    if (model == null)
-      throw new IllegalArgumentException("model parameter must not be null!");
+    Objects.requireNonNull(model, "model parameter must not be null");
+    Objects.requireNonNull(out, "out parameter must not be null");
 
-    if (out == null)
-      throw new IllegalArgumentException("out parameter must not be null!");
+    GenericModelWriter modelWriter = new GenericModelWriter((AbstractModel) model,
+        new DataOutputStream(new OutputStream() {
+          @Override
+          public void write(int b) throws IOException {
+            out.write(b);
+          }
+        }));
 
-    GenericModelWriter modelWriter = new GenericModelWriter((AbstractModel) model, new DataOutputStream(new OutputStream() {
-      @Override
-      public void write(int b) throws IOException {
-        out.write(b);
-      }
-    }));
     modelWriter.persist();
   }
 
@@ -86,7 +85,7 @@ public final class ModelUtil {
 
     if (expectedOutcomes.length == model.getNumOutcomes()) {
 
-      Set<String> expectedOutcomesSet = new HashSet<String>();
+      Set<String> expectedOutcomesSet = new HashSet<>();
       expectedOutcomesSet.addAll(Arrays.asList(expectedOutcomes));
 
       for (int i = 0; i < model.getNumOutcomes(); i++) {
@@ -117,7 +116,7 @@ public final class ModelUtil {
     ByteArrayOutputStream byteArrayOut = new ByteArrayOutputStream();
 
     int length;
-    byte buffer[] = new byte[1024];
+    byte[] buffer = new byte[1024];
     while ((length = in.read(buffer)) > 0) {
       byteArrayOut.write(buffer, 0, length);
     }
@@ -142,9 +141,9 @@ public final class ModelUtil {
    */
   public static TrainingParameters createDefaultTrainingParameters() {
     TrainingParameters mlParams = new TrainingParameters();
-    mlParams.put(TrainingParameters.ALGORITHM_PARAM, GIS.MAXENT_VALUE);
-    mlParams.put(TrainingParameters.ITERATIONS_PARAM, Integer.toString(100));
-    mlParams.put(TrainingParameters.CUTOFF_PARAM, Integer.toString(5));
+    mlParams.put(TrainingParameters.ALGORITHM_PARAM, GISTrainer.MAXENT_VALUE);
+    mlParams.put(TrainingParameters.ITERATIONS_PARAM, 100);
+    mlParams.put(TrainingParameters.CUTOFF_PARAM, 5);
 
     return mlParams;
   }

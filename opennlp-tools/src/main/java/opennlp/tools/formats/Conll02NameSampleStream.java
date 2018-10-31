@@ -18,9 +18,9 @@
 package opennlp.tools.formats;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.PrintStream;
 import java.io.UnsupportedEncodingException;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -47,11 +47,11 @@ import opennlp.tools.util.StringUtil;
  * <p>
  * <b>Note:</b> Do not use this class, internal use only!
  */
-public class Conll02NameSampleStream implements ObjectStream<NameSample>{
+public class Conll02NameSampleStream implements ObjectStream<NameSample> {
 
   public enum LANGUAGE {
-    NL,
-    ES
+    NLD,
+    SPA
   }
 
   public static final int GENERATE_PERSON_ENTITIES = 0x01;
@@ -75,7 +75,7 @@ public class Conll02NameSampleStream implements ObjectStream<NameSample>{
   public Conll02NameSampleStream(LANGUAGE lang, InputStreamFactory in, int types) throws IOException {
     this.lang = lang;
     try {
-      this.lineStream = new PlainTextByLineStream(in, "UTF-8");
+      this.lineStream = new PlainTextByLineStream(in, StandardCharsets.UTF_8);
       System.setOut(new PrintStream(System.out, true, "UTF-8"));
     } catch (UnsupportedEncodingException e) {
       // UTF-8 is available on all JVMs, will never happen
@@ -84,25 +84,7 @@ public class Conll02NameSampleStream implements ObjectStream<NameSample>{
     this.types = types;
   }
 
-  /**
-   * @param lang the language of the CONLL 02 data
-   * @param in an Input Stream to read data.
-   * @param types the entity types to include in the Name Samples
-   */
-  @Deprecated
-  public Conll02NameSampleStream(LANGUAGE lang, InputStream in, int types) {
-    this.lang = lang;
-    try {
-      this.lineStream = new PlainTextByLineStream(in, "UTF-8");
-      System.setOut(new PrintStream(System.out, true, "UTF-8"));
-    } catch (UnsupportedEncodingException e) {
-      // UTF-8 is available on all JVMs, will never happen
-      throw new IllegalStateException(e);
-    }
-    this.types = types;
-  }
-
-  static final Span extract(int begin, int end, String beginTag) throws InvalidFormatException {
+  static Span extract(int begin, int end, String beginTag) throws InvalidFormatException {
 
     String type = beginTag.substring(2);
 
@@ -128,8 +110,8 @@ public class Conll02NameSampleStream implements ObjectStream<NameSample>{
 
   public NameSample read() throws IOException {
 
-    List<String> sentence = new ArrayList<String>();
-    List<String> tags = new ArrayList<String>();
+    List<String> sentence = new ArrayList<>();
+    List<String> tags = new ArrayList<>();
 
     boolean isClearAdaptiveData = false;
 
@@ -138,12 +120,12 @@ public class Conll02NameSampleStream implements ObjectStream<NameSample>{
     String line;
     while ((line = lineStream.read()) != null && !StringUtil.isEmpty(line)) {
 
-      if (LANGUAGE.NL.equals(lang) && line.startsWith(DOCSTART)) {
+      if (LANGUAGE.NLD.equals(lang) && line.startsWith(DOCSTART)) {
         isClearAdaptiveData = true;
         continue;
       }
 
-      String fields[] = line.split(" ");
+      String[] fields = line.split(" ");
 
       if (fields.length == 3) {
         sentence.add(fields[0]);
@@ -156,13 +138,13 @@ public class Conll02NameSampleStream implements ObjectStream<NameSample>{
     }
 
     // Always clear adaptive data for spanish
-    if (LANGUAGE.ES.equals(lang))
+    if (LANGUAGE.SPA.equals(lang))
       isClearAdaptiveData = true;
 
     if (sentence.size() > 0) {
 
       // convert name tags into spans
-      List<Span> names = new ArrayList<Span>();
+      List<Span> names = new ArrayList<>();
 
       int beginIndex = -1;
       int endIndex = -1;
@@ -191,7 +173,7 @@ public class Conll02NameSampleStream implements ObjectStream<NameSample>{
           }
 
           beginIndex = i;
-          endIndex = i +1;
+          endIndex = i + 1;
         }
         else if (tag.startsWith("I-")) {
           endIndex++;
@@ -212,7 +194,8 @@ public class Conll02NameSampleStream implements ObjectStream<NameSample>{
       if (beginIndex != -1)
         names.add(extract(beginIndex, endIndex, tags.get(beginIndex)));
 
-      return new NameSample(sentence.toArray(new String[sentence.size()]), names.toArray(new Span[names.size()]), isClearAdaptiveData);
+      return new NameSample(sentence.toArray(new String[sentence.size()]),
+          names.toArray(new Span[names.size()]), isClearAdaptiveData);
     }
     else if (line != null) {
       // Just filter out empty events, if two lines in a row are empty

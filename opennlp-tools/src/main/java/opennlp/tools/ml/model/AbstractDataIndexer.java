@@ -1,30 +1,37 @@
 /*
- * Licensed to the Apache Software Foundation (ASF) under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership.  The ASF licenses this file
- * to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
  *
- *   http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied.  See the License for the
- * specific language governing permissions and limitations
- * under the License.
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package opennlp.tools.ml.model;
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
+import opennlp.tools.ml.AbstractTrainer;
 import opennlp.tools.util.InsufficientTrainingDataException;
+import opennlp.tools.util.ObjectStream;
+import opennlp.tools.util.TrainingParameters;
 
 
 /**
@@ -32,6 +39,26 @@ import opennlp.tools.util.InsufficientTrainingDataException;
  *
  */
 public abstract class AbstractDataIndexer implements DataIndexer {
+
+  public static final String CUTOFF_PARAM = AbstractTrainer.CUTOFF_PARAM;
+  public static final int CUTOFF_DEFAULT = AbstractTrainer.CUTOFF_DEFAULT;
+
+  public static final String SORT_PARAM = "sort";
+  public static final boolean SORT_DEFAULT = true;
+
+  protected TrainingParameters trainingParameters;
+  protected Map<String,String> reportMap;
+
+  protected boolean printMessages;
+
+  public void init(TrainingParameters indexingParameters,Map<String, String> reportMap) {
+    this.reportMap = reportMap;
+    if (this.reportMap == null) reportMap = new HashMap<>();
+    trainingParameters = indexingParameters;
+
+    printMessages = trainingParameters.getBooleanParameter(AbstractTrainer.VERBOSE_PARAM,
+        AbstractTrainer.VERBOSE_DEFAULT);
+  }
 
   private int numEvents;
   /** The integer contexts associated with each unique event. */
@@ -67,8 +94,6 @@ public abstract class AbstractDataIndexer implements DataIndexer {
     return outcomeLabels;
   }
 
-
-
   public int[] getPredCounts() {
     return predCounts;
   }
@@ -83,13 +108,14 @@ public abstract class AbstractDataIndexer implements DataIndexer {
    * @throws InsufficientTrainingDataException if not enough events are provided
    * @since maxent 1.2.6
    */
-  protected int sortAndMerge(List<ComparableEvent> eventsToCompare, boolean sort) throws InsufficientTrainingDataException {
+  protected int sortAndMerge(List<ComparableEvent> eventsToCompare, boolean sort)
+      throws InsufficientTrainingDataException {
     int numUniqueEvents = 1;
     numEvents = eventsToCompare.size();
     if (sort && eventsToCompare.size() > 0) {
 
       Collections.sort(eventsToCompare);
-      
+
       ComparableEvent ce = eventsToCompare.get(0);
       for (int i = 1; i < numEvents; i++) {
         ComparableEvent ce2 = eventsToCompare.get(i);
@@ -108,12 +134,12 @@ public abstract class AbstractDataIndexer implements DataIndexer {
     else {
       numUniqueEvents = eventsToCompare.size();
     }
-    
-    if(numUniqueEvents == 0) {
+
+    if (numUniqueEvents == 0) {
       throw new InsufficientTrainingDataException("Insufficient training data to create model.");
     }
-    
-    if (sort) System.out.println("done. Reduced " + numEvents + " events to " + numUniqueEvents + ".");
+
+    if (sort) display("done. Reduced " + numEvents + " events to " + numUniqueEvents + ".\n");
 
     contexts = new int[numUniqueEvents][];
     outcomeList = new int[numUniqueEvents];
@@ -132,6 +158,35 @@ public abstract class AbstractDataIndexer implements DataIndexer {
     return numUniqueEvents;
   }
 
+  protected List<ComparableEvent> index(ObjectStream<Event> events,
+                                        Map<String, Integer> predicateIndex) throws IOException {
+    Map<String, Integer> omap = new HashMap<>();
+
+    List<ComparableEvent> eventsToCompare = new ArrayList<>();
+
+    Event ev;
+    while ((ev = events.read()) != null) {
+
+      omap.putIfAbsent(ev.getOutcome(), omap.size());
+
+      int[] cons = Arrays.stream(ev.getContext())
+          .map(pred -> predicateIndex.get(pred))
+          .filter(Objects::nonNull)
+          .mapToInt(i -> i).toArray();
+
+      // drop events with no active features
+      if (cons.length > 0) {
+        int ocID = omap.get(ev.getOutcome());
+        eventsToCompare.add(new ComparableEvent(ocID, cons, ev.getValues()));
+      } else {
+        display("Dropped event " + ev.getOutcome() + ":"
+            + Arrays.asList(ev.getContext()) + "\n");
+      }
+    }
+    outcomeLabels = toIndexedStringArray(omap);
+    predLabels = toIndexedStringArray(predicateIndex);
+    return eventsToCompare;
+  }
 
   public int getNumEvents() {
     return numEvents;
@@ -143,20 +198,29 @@ public abstract class AbstractDataIndexer implements DataIndexer {
    * @param predicateSet The set of predicates which will be used for model building.
    * @param counter The predicate counters.
    * @param cutoff The cutoff which determines whether a predicate is included.
+   * @deprecated will be removed after 1.8.1 release
    */
-   protected static void update(String[] ec, Set<String> predicateSet, Map<String,Integer> counter, int cutoff) {
-     for (String s : ec) {
-       Integer i = counter.get(s);
-       if (i == null) {
-         counter.put(s, 1);
-       }
-       else {
-         counter.put(s, i + 1);
-       }
-       if (!predicateSet.contains(s) && counter.get(s) >= cutoff) {
-         predicateSet.add(s);
-       }
-     }
+  @Deprecated
+  protected static void update(String[] ec, Set<String> predicateSet,
+      Map<String,Integer> counter, int cutoff) {
+    for (String s : ec) {
+      counter.merge(s, 1, (value, one) -> value + one);
+
+      if (!predicateSet.contains(s) && counter.get(s) >= cutoff) {
+        predicateSet.add(s);
+      }
+    }
+  }
+
+  /**
+   * Updates the set of predicated and counter with the specified event contexts.
+   * @param ec The contexts/features which occur in a event.
+   * @param counter The predicate counters.
+   */
+  protected static void update(String[] ec, Map<String,Integer> counter) {
+    for (String s : ec) {
+      counter.merge(s, 1, (value, one) -> value + one);
+    }
   }
 
   /**
@@ -167,17 +231,19 @@ public abstract class AbstractDataIndexer implements DataIndexer {
    *
    * @param labelToIndexMap a <code>TObjectIntHashMap</code> value
    * @return a <code>String[]</code> value
-   * @since maxent 1.2.6
    */
-  protected static String[] toIndexedStringArray(Map<String,Integer> labelToIndexMap) {
-    final String[] array = new String[labelToIndexMap.size()];
-    for (String label : labelToIndexMap.keySet()) {
-      array[labelToIndexMap.get(label)] = label;
-    }
-    return array;
+  protected static String[] toIndexedStringArray(Map<String, Integer> labelToIndexMap) {
+    return labelToIndexMap.entrySet().stream().sorted(Comparator.comparingInt(Map.Entry::getValue))
+        .map(Map.Entry::getKey).toArray(String[]::new);
   }
 
   public float[][] getValues() {
     return null;
+  }
+
+  protected void display(String s) {
+    if (printMessages) {
+      System.out.print(s);
+    }
   }
 }

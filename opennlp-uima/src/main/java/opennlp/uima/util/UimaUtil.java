@@ -74,7 +74,7 @@ public final class UimaUtil {
       "opennlp.uima.ProbabilityFeature";
 
   public static final String IS_REMOVE_EXISTINGS_ANNOTAIONS =
-	  "opennlp.uima.IsRemoveExistingAnnotations";
+      "opennlp.uima.IsRemoveExistingAnnotations";
 
   public static final String ADDITIONAL_TRAINING_DATA_FILE =
       "opennlp.uima.AdditionalTrainingDataFile";
@@ -102,7 +102,7 @@ public final class UimaUtil {
     Iterator<AnnotationFS> containingTokens = cas.createFilteredIterator(
         allRemoveAnnotations.iterator(), containingConstraint);
 
-    Collection<AnnotationFS> removeAnnotations = new LinkedList<AnnotationFS>();
+    Collection<AnnotationFS> removeAnnotations = new LinkedList<>();
 
     while (containingTokens.hasNext()) {
       removeAnnotations.add(containingTokens.next());

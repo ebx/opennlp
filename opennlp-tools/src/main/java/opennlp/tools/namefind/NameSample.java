@@ -18,10 +18,12 @@
 package opennlp.tools.namefind;
 
 import java.io.IOException;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -31,7 +33,7 @@ import opennlp.tools.util.Span;
 /**
  * Class for holding names for a single unit of text.
  */
-public class NameSample {
+public class NameSample implements Serializable {
 
   private final String id;
   private final List<String> sentence;
@@ -44,19 +46,18 @@ public class NameSample {
 
   public NameSample(String id, String[] sentence, Span[] names,
       String[][] additionalContext, boolean clearAdaptiveData) {
-
     this.id = id;
 
-    if (sentence == null) {
-      throw new IllegalArgumentException("sentence must not be null!");
-    }
+    Objects.requireNonNull(sentence, "sentence must not be null");
 
     if (names == null) {
       names = new Span[0];
     }
 
-    this.sentence = Collections.unmodifiableList(new ArrayList<String>(Arrays.asList(sentence)));
-    this.names = Collections.unmodifiableList(new ArrayList<Span>(Arrays.asList(names)));
+    this.sentence = Collections.unmodifiableList(new ArrayList<>(Arrays.asList(sentence)));
+    List<Span> namesList = Arrays.asList(names);
+    Collections.sort(namesList);
+    this.names = Collections.unmodifiableList(namesList);
 
     if (additionalContext != null) {
       this.additionalContext = new String[additionalContext.length][];
@@ -71,7 +72,15 @@ public class NameSample {
     }
     isClearAdaptiveData = clearAdaptiveData;
 
-    // TODO: Check that name spans are not overlapping, otherwise throw exception
+    // Check that name spans are not overlapping, otherwise throw exception
+    if (this.names.size() > 1) {
+      for (int i = 1; i < this.names.size(); i++) {
+        if (this.names.get(i).getStart() < this.names.get(i - 1).getEnd()) {
+          throw new RuntimeException(String.format("name spans %s and %s are overlapped in file: %s",
+              this.names.get(i - 1), this.names.get(i), id));
+        }
+      }
+    }
   }
 
   /**
@@ -113,12 +122,19 @@ public class NameSample {
   }
 
   @Override
+  public int hashCode() {
+    return Objects.hash(Arrays.hashCode(getSentence()), Arrays.hashCode(getNames()),
+        Arrays.hashCode(getAdditionalContext()), isClearAdaptiveDataSet());
+  }
+
+  @Override
   public boolean equals(Object obj) {
 
     if (this == obj) {
       return true;
     }
-    else if (obj instanceof NameSample) {
+
+    if (obj instanceof NameSample) {
       NameSample a = (NameSample) obj;
 
       return Arrays.equals(getSentence(), a.getSentence()) &&
@@ -126,10 +142,8 @@ public class NameSample {
           Arrays.equals(getAdditionalContext(), a.getAdditionalContext()) &&
           isClearAdaptiveDataSet() == a.isClearAdaptiveDataSet();
     }
-    else {
-      return false;
-    }
 
+    return false;
   }
 
   @Override
@@ -155,7 +169,6 @@ public class NameSample {
             result.append(NameSampleDataStream.START_TAG_PREFIX).append(name.getType()).append("> ");
           }
         }
-
         if (name.getEnd() == tokenIndex) {
           result.append(NameSampleDataStream.END_TAG).append(' ');
         }
@@ -176,16 +189,16 @@ public class NameSample {
     return result.toString();
   }
 
-  private static String errorTokenWithContext(String sentence[], int index) {
+  private static String errorTokenWithContext(String[] sentence, int index) {
 
     StringBuilder errorString = new StringBuilder();
 
     // two token before
     if (index > 1)
-      errorString.append(sentence[index -2]).append(" ");
+      errorString.append(sentence[index - 2]).append(" ");
 
     if (index > 0)
-      errorString.append(sentence[index -1]).append(" ");
+      errorString.append(sentence[index - 1]).append(" ");
 
     // token itself
     errorString.append("###");
@@ -210,13 +223,13 @@ public class NameSample {
   }
 
   public static NameSample parse(String taggedTokens, String defaultType,
-      boolean isClearAdaptiveData)
+      boolean isClearAdaptiveData) throws IOException {
     // TODO: Should throw another exception, and then convert it into an IOException in the stream
-    throws IOException {
+
     String[] parts = WhitespaceTokenizer.INSTANCE.tokenize(taggedTokens);
 
-    List<String> tokenList = new ArrayList<String>(parts.length);
-    List<Span> nameList = new ArrayList<Span>();
+    List<String> tokenList = new ArrayList<>(parts.length);
+    List<Span> nameList = new ArrayList<>();
 
     String nameType = defaultType;
     int startIndex = -1;
@@ -229,15 +242,15 @@ public class NameSample {
     for (int pi = 0; pi < parts.length; pi++) {
       Matcher startMatcher = START_TAG_PATTERN.matcher(parts[pi]);
       if (startMatcher.matches()) {
-        if(catchingName) {
+        if (catchingName) {
           throw new IOException("Found unexpected annotation" +
               " while handling a name sequence: " + errorTokenWithContext(parts, pi));
         }
         catchingName = true;
         startIndex = wordIndex;
         String nameTypeFromSample = startMatcher.group(2);
-        if(nameTypeFromSample != null) {
-          if(nameTypeFromSample.length() == 0) {
+        if (nameTypeFromSample != null) {
+          if (nameTypeFromSample.length() == 0) {
             throw new IOException("Missing a name type: " + errorTokenWithContext(parts, pi));
           }
           nameType = nameTypeFromSample;
@@ -245,7 +258,7 @@ public class NameSample {
 
       }
       else if (parts[pi].equals(NameSampleDataStream.END_TAG)) {
-        if(catchingName == false) {
+        if (!catchingName) {
           throw new IOException("Found unexpected annotation: " + errorTokenWithContext(parts, pi));
         }
         catchingName = false;

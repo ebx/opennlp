@@ -17,15 +17,14 @@
 
 package opennlp.tools.formats.ad;
 
-import static org.junit.Assert.assertEquals;
-
 import java.io.IOException;
+
+import org.junit.Assert;
+import org.junit.Test;
 
 import opennlp.tools.formats.ResourceAsStreamFactory;
 import opennlp.tools.util.InputStreamFactory;
 import opennlp.tools.util.PlainTextByLineStream;
-
-import org.junit.Test;
 
 public class ADParagraphStreamTest {
 
@@ -39,13 +38,13 @@ public class ADParagraphStreamTest {
 
     ADSentenceStream.Sentence paragraph = stream.read();
     paragraph.getRoot();
-    while(paragraph != null) {
+    while (paragraph != null) {
       count++;
       paragraph = stream.read();
-//      paragraph.getRoot();
+      // paragraph.getRoot();
     }
 
-    assertEquals(ADParagraphStreamTest.NUM_SENTENCES, count);
+    Assert.assertEquals(ADParagraphStreamTest.NUM_SENTENCES, count);
   }
 
   @Test
@@ -55,17 +54,18 @@ public class ADParagraphStreamTest {
     ADSentenceStream stream = openData();
 
     ADSentenceStream.Sentence paragraph = stream.read();
-    while(paragraph != null) {
+    while (paragraph != null) {
 
       count++;
       paragraph = stream.read();
     }
 
-    assertEquals(ADParagraphStreamTest.NUM_SENTENCES, count);
+    Assert.assertEquals(ADParagraphStreamTest.NUM_SENTENCES, count);
   }
 
   private static ADSentenceStream openData() throws IOException {
-    InputStreamFactory in = new ResourceAsStreamFactory(ADParagraphStreamTest.class, "/opennlp/tools/formats/ad.sample");
+    InputStreamFactory in = new ResourceAsStreamFactory(ADParagraphStreamTest.class,
+        "/opennlp/tools/formats/ad.sample");
 
     return new ADSentenceStream(new PlainTextByLineStream(in, "UTF-8"));
   }

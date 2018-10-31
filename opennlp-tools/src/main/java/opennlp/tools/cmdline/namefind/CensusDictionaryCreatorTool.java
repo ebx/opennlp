@@ -50,11 +50,11 @@ public class CensusDictionaryCreatorTool extends BasicCmdLineTool {
   interface Parameters {
 
     @ParameterDescription(valueName = "code")
-    @OptionalParameter(defaultValue = "en")
+    @OptionalParameter(defaultValue = "eng")
     String getLang();
 
     @ParameterDescription(valueName = "charsetName")
-    @OptionalParameter(defaultValue="UTF-8")
+    @OptionalParameter(defaultValue = "UTF-8")
     String getEncoding();
 
     @ParameterDescription(valueName = "censusDict")
@@ -78,7 +78,7 @@ public class CensusDictionaryCreatorTool extends BasicCmdLineTool {
    *
    * @param sampleStream stream of samples.
    * @return a {@code Dictionary} class containing the name dictionary
-   *    built from the input file.
+   *     built from the input file.
    * @throws IOException IOException
    */
   public static Dictionary createDictionary(ObjectStream<StringList> sampleStream) throws IOException {

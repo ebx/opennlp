@@ -37,7 +37,7 @@ public class TokenizerFactory extends BaseToolFactory {
 
   private String languageCode;
   private Dictionary abbreviationDictionary;
-  private Boolean useAlphaNumericOptimization = null;
+  private Boolean useAlphaNumericOptimization = false;
   private Pattern alphaNumericPattern;
 
   private static final String ABBREVIATIONS_ENTRY_NAME = "abbreviations.dictionary";
@@ -82,14 +82,11 @@ public class TokenizerFactory extends BaseToolFactory {
 
   @Override
   public void validateArtifactMap() throws InvalidFormatException {
-
-    if (this.artifactProvider
-        .getManifestProperty(USE_ALPHA_NUMERIC_OPTIMIZATION) == null)
+    if (this.artifactProvider.getManifestProperty(USE_ALPHA_NUMERIC_OPTIMIZATION) == null)
       throw new InvalidFormatException(USE_ALPHA_NUMERIC_OPTIMIZATION
           + " is a mandatory property!");
 
-    Object abbreviationsEntry = this.artifactProvider
-        .getArtifact(ABBREVIATIONS_ENTRY_NAME);
+    Object abbreviationsEntry = this.artifactProvider.getArtifact(ABBREVIATIONS_ENTRY_NAME);
 
     if (abbreviationsEntry != null && !(abbreviationsEntry instanceof Dictionary)) {
       throw new InvalidFormatException("Abbreviations dictionary '" + abbreviationsEntry +
@@ -102,8 +99,9 @@ public class TokenizerFactory extends BaseToolFactory {
     Map<String, Object> artifactMap = super.createArtifactMap();
 
     // Abbreviations are optional
-    if (abbreviationDictionary != null)
+    if (abbreviationDictionary != null) {
       artifactMap.put(ABBREVIATIONS_ENTRY_NAME, abbreviationDictionary);
+    }
 
     return artifactMap;
   }
@@ -116,9 +114,9 @@ public class TokenizerFactory extends BaseToolFactory {
         Boolean.toString(isUseAlphaNumericOptmization()));
 
     // alphanumeric pattern is optional
-    if (getAlphaNumericPattern() != null)
-      manifestEntries.put(ALPHA_NUMERIC_PATTERN, getAlphaNumericPattern()
-          .pattern());
+    if (getAlphaNumericPattern() != null) {
+      manifestEntries.put(ALPHA_NUMERIC_PATTERN, getAlphaNumericPattern().pattern());
+    }
 
     return manifestEntries;
   }
@@ -129,7 +127,8 @@ public class TokenizerFactory extends BaseToolFactory {
    * @param subclassName the name of the class implementing the {@link TokenizerFactory}
    * @param languageCode the language code the tokenizer should use
    * @param abbreviationDictionary an optional dictionary containing abbreviations, or null if not present
-   * @param useAlphaNumericOptimization indicate if the alpha numeric optimization should be enabled or disabled
+   * @param useAlphaNumericOptimization indicate if the alpha numeric optimization
+   *     should be enabled or disabled
    * @param alphaNumericPattern the pattern the alpha numeric optimization should use
    *
    * @return the instance of the Tokenizer Factory
@@ -167,9 +166,8 @@ public class TokenizerFactory extends BaseToolFactory {
    */
   public Pattern getAlphaNumericPattern() {
     if (this.alphaNumericPattern == null) {
-      if (artifactProvider != null) {
-        String prop = this.artifactProvider
-            .getManifestProperty(ALPHA_NUMERIC_PATTERN);
+      if (this.artifactProvider != null) {
+        String prop = this.artifactProvider.getManifestProperty(ALPHA_NUMERIC_PATTERN);
         if (prop != null) {
           this.alphaNumericPattern = Pattern.compile(prop);
         }
@@ -189,8 +187,8 @@ public class TokenizerFactory extends BaseToolFactory {
    * @return true if the alpha numeric optimization is enabled, otherwise false
    */
   public boolean isUseAlphaNumericOptmization() {
-    if (this.useAlphaNumericOptimization == null && artifactProvider != null) {
-      this.useAlphaNumericOptimization = Boolean.valueOf(artifactProvider
+    if (artifactProvider != null) {
+      this.useAlphaNumericOptimization = Boolean.valueOf(this.artifactProvider
           .getManifestProperty(USE_ALPHA_NUMERIC_OPTIMIZATION));
     }
     return this.useAlphaNumericOptimization;
@@ -203,8 +201,7 @@ public class TokenizerFactory extends BaseToolFactory {
    */
   public Dictionary getAbbreviationDictionary() {
     if (this.abbreviationDictionary == null && artifactProvider != null) {
-      this.abbreviationDictionary = artifactProvider
-          .getArtifact(ABBREVIATIONS_ENTRY_NAME);
+      this.abbreviationDictionary = this.artifactProvider.getArtifact(ABBREVIATIONS_ENTRY_NAME);
     }
     return this.abbreviationDictionary;
   }
@@ -215,7 +212,7 @@ public class TokenizerFactory extends BaseToolFactory {
    * @return the language code
    */
   public String getLanguageCode() {
-    if (this.languageCode == null && artifactProvider != null) {
+    if (this.languageCode == null && this.artifactProvider != null) {
       this.languageCode = this.artifactProvider.getLanguage();
     }
     return this.languageCode;
@@ -228,7 +225,7 @@ public class TokenizerFactory extends BaseToolFactory {
    */
   public TokenContextGenerator getContextGenerator() {
     Factory f = new Factory();
-    Set<String> abbs = null;
+    Set<String> abbs;
     Dictionary abbDict = getAbbreviationDictionary();
     if (abbDict != null) {
       abbs = abbDict.asStringSet();

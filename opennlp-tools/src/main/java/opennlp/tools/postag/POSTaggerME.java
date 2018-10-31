@@ -15,7 +15,6 @@
  * limitations under the License.
  */
 
-
 package opennlp.tools.postag;
 
 import java.io.IOException;
@@ -24,7 +23,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.StringTokenizer;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import opennlp.tools.dictionary.Dictionary;
@@ -45,7 +43,6 @@ import opennlp.tools.util.StringList;
 import opennlp.tools.util.StringUtil;
 import opennlp.tools.util.TrainingParameters;
 import opennlp.tools.util.featuregen.StringPattern;
-import opennlp.tools.util.model.ModelType;
 
 /**
  * A part-of-speech tagger that uses maximum entropy.  Tries to predict whether
@@ -117,7 +114,7 @@ public class POSTaggerME implements POSTagger {
       this.model = model.getPosSequenceModel();
     }
     else {
-      this.model = new opennlp.tools.ml.BeamSearch<String>(beamSize,
+      this.model = new opennlp.tools.ml.BeamSearch<>(beamSize,
           model.getPosModel(), 0);
     }
 
@@ -127,7 +124,7 @@ public class POSTaggerME implements POSTagger {
    * Retrieves an array of all possible part-of-speech tags from the
    * tagger.
    *
-   * @return
+   * @return String[]
    */
   public String[] getAllPosTags() {
     return model.getOutcomes();
@@ -155,7 +152,7 @@ public class POSTaggerME implements POSTagger {
     Sequence[] bestSequences = model.bestSequences(numTaggings, sentence, null,
         contextGen, sequenceValidator);
     String[][] tags = new String[bestSequences.length][];
-    for (int si=0;si<tags.length;si++) {
+    for (int si = 0; si < tags.length; si++) {
       List<String> t = bestSequences[si].getOutcomes();
       tags[si] = t.toArray(new String[t.size()]);
     }
@@ -211,8 +208,8 @@ public class POSTaggerME implements POSTagger {
           }
         }
         orderedTags[i] = posModel.getOutcome(max);
-        if (tprobs != null){
-          tprobs[i]=probs[max];
+        if (tprobs != null) {
+          tprobs[i] = probs[max];
         }
         probs[max] = 0;
       }
@@ -228,37 +225,32 @@ public class POSTaggerME implements POSTagger {
       ObjectStream<POSSample> samples, TrainingParameters trainParams,
       POSTaggerFactory posFactory) throws IOException {
 
-    String beamSizeString = trainParams.getSettings().get(BeamSearch.BEAM_SIZE_PARAMETER);
-
-    int beamSize = POSTaggerME.DEFAULT_BEAM_SIZE;
-    if (beamSizeString != null) {
-      beamSize = Integer.parseInt(beamSizeString);
-    }
+    int beamSize = trainParams.getIntParameter(BeamSearch.BEAM_SIZE_PARAMETER, POSTaggerME.DEFAULT_BEAM_SIZE);
 
     POSContextGenerator contextGenerator = posFactory.getPOSContextGenerator();
 
-    Map<String, String> manifestInfoEntries = new HashMap<String, String>();
+    Map<String, String> manifestInfoEntries = new HashMap<>();
 
-    TrainerType trainerType = TrainerFactory.getTrainerType(trainParams.getSettings());
+    TrainerType trainerType = TrainerFactory.getTrainerType(trainParams);
 
     MaxentModel posModel = null;
     SequenceClassificationModel<String> seqPosModel = null;
     if (TrainerType.EVENT_MODEL_TRAINER.equals(trainerType)) {
       ObjectStream<Event> es = new POSSampleEventStream(samples, contextGenerator);
 
-      EventTrainer trainer = TrainerFactory.getEventTrainer(trainParams.getSettings(),
+      EventTrainer trainer = TrainerFactory.getEventTrainer(trainParams,
           manifestInfoEntries);
       posModel = trainer.train(es);
     }
     else if (TrainerType.EVENT_MODEL_SEQUENCE_TRAINER.equals(trainerType)) {
       POSSampleSequenceStream ss = new POSSampleSequenceStream(samples, contextGenerator);
-      EventModelSequenceTrainer trainer = TrainerFactory.getEventModelSequenceTrainer(trainParams.getSettings(),
-          manifestInfoEntries);
+      EventModelSequenceTrainer trainer =
+          TrainerFactory.getEventModelSequenceTrainer(trainParams, manifestInfoEntries);
       posModel = trainer.train(ss);
     }
     else if (TrainerType.SEQUENCE_TRAINER.equals(trainerType)) {
       SequenceTrainer trainer = TrainerFactory.getSequenceModelTrainer(
-          trainParams.getSettings(), manifestInfoEntries);
+          trainParams, manifestInfoEntries);
 
       // TODO: This will probably cause issue, since the feature generator uses the outcomes array
 
@@ -283,7 +275,7 @@ public class POSTaggerME implements POSTagger {
     NGramModel ngramModel = new NGramModel();
 
     POSSample sample;
-    while((sample = samples.read()) != null) {
+    while ((sample = samples.read()) != null) {
       String[] words = sample.getSentence();
 
       if (words.length > 0)
@@ -302,7 +294,7 @@ public class POSTaggerME implements POSTagger {
 
     // the data structure will store the word, the tag, and the number of
     // occurrences
-    Map<String, Map<String, AtomicInteger>> newEntries = new HashMap<String, Map<String, AtomicInteger>>();
+    Map<String, Map<String, AtomicInteger>> newEntries = new HashMap<>();
     POSSample sample;
     while ((sample = samples.read()) != null) {
       String[] words = sample.getSentence();
@@ -319,7 +311,7 @@ public class POSTaggerME implements POSTagger {
           }
 
           if (!newEntries.containsKey(word)) {
-            newEntries.put(word, new HashMap<String, AtomicInteger>());
+            newEntries.put(word, new HashMap<>());
           }
 
           String[] dictTags = dict.getTags(word);
@@ -346,7 +338,7 @@ public class POSTaggerME implements POSTagger {
     // add it to the dictionary
     for (Entry<String, Map<String, AtomicInteger>> wordEntry : newEntries
         .entrySet()) {
-      List<String> tagsForWord = new ArrayList<String>();
+      List<String> tagsForWord = new ArrayList<>();
       for (Entry<String, AtomicInteger> entry : wordEntry.getValue().entrySet()) {
         if (entry.getValue().get() >= cutoff) {
           tagsForWord.add(entry.getKey());

@@ -37,62 +37,47 @@ import opennlp.tools.util.Span;
 @Path("/ner")
 public class NameFinderResource {
 
-  public static class NameAnn {
-    public int[][] offsets;
-    public String[] texts;
-    public String type;
-  }
-
   private SentenceDetector sentDetect = NameFinderAnnService.sentenceDetector;
   private Tokenizer tokenizer = NameFinderAnnService.tokenizer;
-  private TokenNameFinder nameFinders[] = NameFinderAnnService.nameFinders;
+  private TokenNameFinder[] nameFinders = NameFinderAnnService.nameFinders;
 
-  private static int findNextNonWhitespaceChar(CharSequence s, int beginOffset,
-      int endOffset) {
-
+  private static int findNextNonWhitespaceChar(CharSequence s, int beginOffset, int endOffset) {
     for (int i = beginOffset; i < endOffset; i++) {
       if (!Character.isSpaceChar(s.charAt(i))) {
         return i;
       }
     }
-
     return -1;
   }
 
   @POST
   @Consumes(MediaType.TEXT_PLAIN)
   @Produces(MediaType.APPLICATION_JSON)
-  public Map<String, NameAnn> findNames(@QueryParam("model") String modelName,
-      String text) {
-
-    Span sentenceSpans[] = sentDetect.sentPosDetect(text);
-
-    Map<String, NameAnn> map = new HashMap<String, NameAnn>();
+  public Map<String, NameAnn> findNames(@QueryParam("model") String modelName, String text) {
+    Span[] sentenceSpans = sentDetect.sentPosDetect(text);
+    Map<String, NameAnn> map = new HashMap<>();
 
     int indexCounter = 0;
 
-    for (int i = 0; i < sentenceSpans.length; i++) {
-      
-      String sentenceText = sentenceSpans[i].getCoveredText(text).toString();
-      
-      // offset of sentence gets lost here!
-      Span tokenSpans[] = tokenizer
-          .tokenizePos(sentenceText);
+    for (Span sentenceSpan : sentenceSpans) {
 
-      String tokens[] = Span.spansToStrings(tokenSpans, sentenceText);
+      String sentenceText = sentenceSpan.getCoveredText(text).toString();
+
+      // offset of sentence gets lost here!
+      Span[] tokenSpans = tokenizer.tokenizePos(sentenceText);
+
+      String[] tokens = Span.spansToStrings(tokenSpans, sentenceText);
 
       for (TokenNameFinder nameFinder : nameFinders) {
-        Span names[] = nameFinder.find(tokens);
+        Span[] names = nameFinder.find(tokens);
 
         for (Span name : names) {
-          
-          int beginOffset = tokenSpans[name.getStart()].getStart()
-              + sentenceSpans[i].getStart();
-          int endOffset = tokenSpans[name.getEnd() - 1].getEnd()
-              + sentenceSpans[i].getStart();
+
+          int beginOffset = tokenSpans[name.getStart()].getStart() + sentenceSpan.getStart();
+          int endOffset = tokenSpans[name.getEnd() - 1].getEnd() + sentenceSpan.getStart();
 
           // create a list of new line indexes
-          List<Integer> newLineIndexes = new ArrayList<Integer>();
+          List<Integer> newLineIndexes = new ArrayList<>();
 
           // TODO: Code needs to handle case that there are multiple new lines
           // in a row
@@ -109,15 +94,15 @@ public class NameFinderResource {
             }
           }
 
-          List<String> textSegments = new ArrayList<String>();
-          List<int[]> spanSegments = new ArrayList<int[]>();
+          List<String> textSegments = new ArrayList<>();
+          List<int[]> spanSegments = new ArrayList<>();
 
           int segmentBegin = beginOffset;
 
           for (int newLineOffset : newLineIndexes) {
             // create segment from begin to offset
             textSegments.add(text.substring(segmentBegin, newLineOffset));
-            spanSegments.add(new int[] { segmentBegin, newLineOffset });
+            spanSegments.add(new int[] {segmentBegin, newLineOffset});
 
             segmentBegin = findNextNonWhitespaceChar(text, newLineOffset + 1,
                 endOffset);
@@ -130,7 +115,7 @@ public class NameFinderResource {
           // create left over segment
           if (segmentBegin != -1) {
             textSegments.add(text.substring(segmentBegin, endOffset));
-            spanSegments.add(new int[] { segmentBegin, endOffset });
+            spanSegments.add(new int[] {segmentBegin, endOffset});
           }
 
           NameAnn ann = new NameAnn();
@@ -142,7 +127,12 @@ public class NameFinderResource {
         }
       }
     }
-
     return map;
+  }
+
+  public static class NameAnn {
+    public int[][] offsets;
+    public String[] texts;
+    public String type;
   }
 }

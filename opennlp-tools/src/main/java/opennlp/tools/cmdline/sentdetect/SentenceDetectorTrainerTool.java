@@ -65,12 +65,12 @@ public final class SentenceDetectorTrainerTool
     mlParams = CmdLineUtil.loadTrainingParameters(params.getParams(), false);
 
     if (mlParams != null) {
-      if (!TrainerType.EVENT_MODEL_TRAINER.equals(TrainerFactory.getTrainerType(mlParams.getSettings()))) {
+      if (!TrainerType.EVENT_MODEL_TRAINER.equals(TrainerFactory.getTrainerType(mlParams))) {
         throw new TerminateToolException(1, "Sequence training is not supported!");
       }
     }
 
-    if(mlParams == null) {
+    if (mlParams == null) {
       mlParams = ModelUtil.createDefaultTrainingParameters();
     }
 
@@ -93,8 +93,7 @@ public final class SentenceDetectorTrainerTool
       model = SentenceDetectorME.train(params.getLang(), sampleStream,
           sdFactory, mlParams);
     } catch (IOException e) {
-      throw new TerminateToolException(-1, "IO error while reading training data or indexing data: "
-          + e.getMessage(), e);
+      throw createTerminationIOException(e);
     }
     finally {
       try {

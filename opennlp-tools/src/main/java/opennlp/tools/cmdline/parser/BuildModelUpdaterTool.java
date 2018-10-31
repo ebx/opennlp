@@ -20,14 +20,16 @@ package opennlp.tools.cmdline.parser;
 import java.io.IOException;
 
 import opennlp.tools.dictionary.Dictionary;
-import opennlp.tools.ml.model.AbstractModel;
+import opennlp.tools.ml.EventTrainer;
+import opennlp.tools.ml.TrainerFactory;
 import opennlp.tools.ml.model.Event;
+import opennlp.tools.ml.model.MaxentModel;
 import opennlp.tools.parser.Parse;
 import opennlp.tools.parser.ParserEventTypeEnum;
 import opennlp.tools.parser.ParserModel;
-import opennlp.tools.parser.chunking.Parser;
 import opennlp.tools.parser.chunking.ParserEventStream;
 import opennlp.tools.util.ObjectStream;
+import opennlp.tools.util.model.ModelUtil;
 
 public final class BuildModelUpdaterTool extends ModelUpdaterTool {
 
@@ -40,20 +42,22 @@ public final class BuildModelUpdaterTool extends ModelUpdaterTool {
       ObjectStream<Parse> parseSamples, ModelUpdaterParams parameters)
       throws IOException {
 
-      Dictionary mdict = ParserTrainerTool.buildDictionary(parseSamples, originalModel.getHeadRules(), 5);
+    Dictionary mdict = ParserTrainerTool.buildDictionary(parseSamples, originalModel.getHeadRules(), 5);
 
-      parseSamples.reset();
+    parseSamples.reset();
 
-      // TODO: training individual models should be in the chunking parser, not here
-      // Training build
-      System.out.println("Training builder");
-      ObjectStream<Event> bes = new ParserEventStream(parseSamples,
-          originalModel.getHeadRules(), ParserEventTypeEnum.BUILD, mdict);
-      AbstractModel buildModel = Parser.train(bes,
-          100, 5);
+    // TODO: training individual models should be in the chunking parser, not here
+    // Training build
+    System.out.println("Training builder");
+    ObjectStream<Event> bes = new ParserEventStream(parseSamples,
+        originalModel.getHeadRules(), ParserEventTypeEnum.BUILD, mdict);
 
-      parseSamples.close();
+    EventTrainer trainer = TrainerFactory.getEventTrainer(
+        ModelUtil.createDefaultTrainingParameters(), null);
+    MaxentModel buildModel = trainer.train(bes);
 
-      return originalModel.updateBuildModel(buildModel);
+    parseSamples.close();
+
+    return originalModel.updateBuildModel(buildModel);
   }
 }

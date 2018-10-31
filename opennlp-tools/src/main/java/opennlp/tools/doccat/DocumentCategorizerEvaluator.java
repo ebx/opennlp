@@ -14,6 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package opennlp.tools.doccat;
 
 import opennlp.tools.tokenize.TokenSample;
@@ -28,7 +29,7 @@ import opennlp.tools.util.eval.Mean;
  * @see DocumentCategorizer
  * @see DocumentSample
  */
-public class DocumentCategorizerEvaluator extends Evaluator<DocumentSample>{
+public class DocumentCategorizerEvaluator extends Evaluator<DocumentSample> {
 
   private DocumentCategorizer categorizer;
 
@@ -56,9 +57,9 @@ public class DocumentCategorizerEvaluator extends Evaluator<DocumentSample>{
    */
   public DocumentSample processSample(DocumentSample sample) {
 
-    String document[] = sample.getText();
+    String[] document = sample.getText();
 
-    double probs[] = categorizer.categorize(document, sample.getExtraInformation());
+    double[] probs = categorizer.categorize(document);
 
     String cat = categorizer.getBestCategory(probs);
 

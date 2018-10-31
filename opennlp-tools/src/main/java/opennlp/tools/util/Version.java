@@ -20,6 +20,7 @@ package opennlp.tools.util;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Objects;
 import java.util.Properties;
 
 /**
@@ -78,7 +79,6 @@ public class Version {
    this(major, minor, revision, false);
   }
 
-
   /**
    * Retrieves the major version.
    *
@@ -125,20 +125,26 @@ public class Version {
   }
 
   @Override
-  public boolean equals(Object o) {
-    if (o == this) {
+  public int hashCode() {
+    return Objects.hash(getMajor(), getMinor(), getRevision(), isSnapshot());
+  }
+
+  @Override
+  public boolean equals(Object obj) {
+    if (obj == this) {
       return true;
-    } else if (o instanceof Version) {
-      Version version = (Version) o;
+    }
+
+    if (obj instanceof Version) {
+      Version version = (Version) obj;
 
       return getMajor() == version.getMajor()
           && getMinor() == version.getMinor()
           && getRevision() == version.getRevision()
           && isSnapshot() == version.isSnapshot();
     }
-    else {
-      return false;
-    }
+
+    return false;
   }
 
   /**
@@ -150,7 +156,7 @@ public class Version {
    * @return the version represented by the string value
    *
    * @throws NumberFormatException if the string does
-   * not contain a valid version
+   *     not contain a valid version
    */
   public static Version parse(String version) {
 
@@ -159,7 +165,7 @@ public class Version {
     int indexSecondDot = version.indexOf('.', indexFirstDot + 1);
 
     if (indexFirstDot == -1 || indexSecondDot == -1) {
-        throw new NumberFormatException("Invalid version format '" + version + "', expected two dots!");
+      throw new NumberFormatException("Invalid version format '" + version + "', expected two dots!");
     }
 
     int indexFirstDash = version.indexOf('-');
@@ -191,7 +197,7 @@ public class Version {
     // Try to read the version from the version file if it is available,
     // otherwise set the version to the development version
 
-    try (InputStream versionIn = 
+    try (InputStream versionIn =
         Version.class.getResourceAsStream("opennlp.version")) {
       if (versionIn != null) {
         manifest.load(versionIn);
@@ -200,8 +206,7 @@ public class Version {
       // ignore error
     }
 
-    String versionString =
-      manifest.getProperty("OpenNLP-Version", DEV_VERSION_STRING);
+    String versionString = manifest.getProperty("OpenNLP-Version", DEV_VERSION_STRING);
 
     if (versionString.equals("${pom.version}"))
       versionString = DEV_VERSION_STRING;

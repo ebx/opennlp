@@ -26,28 +26,23 @@ import java.util.LinkedList;
 import java.util.List;
 
 import opennlp.tools.cmdline.AbstractCrossValidatorTool;
-import opennlp.tools.cmdline.ArgumentParser.OptionalParameter;
-import opennlp.tools.cmdline.ArgumentParser.ParameterDescription;
 import opennlp.tools.cmdline.CmdLineUtil;
 import opennlp.tools.cmdline.TerminateToolException;
 import opennlp.tools.cmdline.doccat.DoccatCrossValidatorTool.CVToolParams;
 import opennlp.tools.cmdline.params.CVParams;
+import opennlp.tools.cmdline.params.FineGrainedEvaluatorParams;
 import opennlp.tools.doccat.DoccatCrossValidator;
 import opennlp.tools.doccat.DoccatEvaluationMonitor;
 import opennlp.tools.doccat.DoccatFactory;
 import opennlp.tools.doccat.DocumentSample;
 import opennlp.tools.doccat.FeatureGenerator;
-import opennlp.tools.tokenize.Tokenizer;
 import opennlp.tools.util.eval.EvaluationMonitor;
 import opennlp.tools.util.model.ModelUtil;
 
 public final class DoccatCrossValidatorTool extends
     AbstractCrossValidatorTool<DocumentSample, CVToolParams> {
 
-  interface CVToolParams extends CVParams, TrainingParams {
-    @ParameterDescription(valueName = "outputFile", description = "the path of the fine-grained report file.")
-    @OptionalParameter
-    File getReportOutputFile();
+  interface CVToolParams extends CVParams, TrainingParams, FineGrainedEvaluatorParams {
   }
 
   public DoccatCrossValidatorTool() {
@@ -66,7 +61,7 @@ public final class DoccatCrossValidatorTool extends
       mlParams = ModelUtil.createDefaultTrainingParameters();
     }
 
-    List<EvaluationMonitor<DocumentSample>> listeners = new LinkedList<EvaluationMonitor<DocumentSample>>();
+    List<EvaluationMonitor<DocumentSample>> listeners = new LinkedList<>();
     if (params.getMisclassified()) {
       listeners.add(new DoccatEvaluationErrorListener());
     }
@@ -81,33 +76,26 @@ public final class DoccatCrossValidatorTool extends
         reportListener = new DoccatFineGrainedReportListener(reportOutputStream);
         listeners.add(reportListener);
       } catch (FileNotFoundException e) {
-        throw new TerminateToolException(-1,
-            "IO error while creating Doccat fine-grained report file: "
-                + e.getMessage());
+        throw createTerminationIOException(e);
       }
     }
 
     FeatureGenerator[] featureGenerators = DoccatTrainerTool
         .createFeatureGenerators(params.getFeatureGenerators());
 
-    Tokenizer tokenizer = DoccatTrainerTool.createTokenizer(params
-        .getTokenizer());
-
     DoccatEvaluationMonitor[] listenersArr = listeners
         .toArray(new DoccatEvaluationMonitor[listeners.size()]);
 
     DoccatCrossValidator validator;
     try {
-      DoccatFactory factory = DoccatFactory.create(params.getFactory(),
-          tokenizer, featureGenerators);
+      DoccatFactory factory = DoccatFactory.create(params.getFactory(), featureGenerators);
       validator = new DoccatCrossValidator(params.getLang(), mlParams,
           factory, listenersArr);
 
       validator.evaluate(sampleStream, params.getFolds());
     } catch (IOException e) {
       throw new TerminateToolException(-1,
-          "IO error while reading training data or indexing data: "
-              + e.getMessage(), e);
+          "IO error while reading training data or indexing data: " + e.getMessage(), e);
     } finally {
       try {
         sampleStream.close();

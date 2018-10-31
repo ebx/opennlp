@@ -42,7 +42,7 @@ public abstract class AbstractConverterTool<T> extends TypedCmdLineTool<T> {
   public String getShortDescription() {
     Map<String, ObjectStreamFactory<T>> factories = StreamFactoryRegistry.getFactories(type);
     StringBuilder help = new StringBuilder();
-    if (2 == factories.keySet().size()) {//opennlp + foreign
+    if (2 == factories.keySet().size()) { //opennlp + foreign
       for (String format : factories.keySet()) {
         if (!StreamFactoryRegistry.DEFAULT_FORMAT.equals(format)) {
           help.append(format);
@@ -89,7 +89,7 @@ public abstract class AbstractConverterTool<T> extends TypedCmdLineTool<T> {
       format = args[0];
       ObjectStreamFactory<T> streamFactory = getStreamFactory(format);
 
-      String formatArgs[] = new String[args.length - 1];
+      String[] formatArgs = new String[args.length - 1];
       System.arraycopy(args, 1, formatArgs, 0, formatArgs.length);
 
       String helpString = createHelpString(format, ArgumentParser.createUsage(streamFactory.getParameters()));
@@ -105,7 +105,7 @@ public abstract class AbstractConverterTool<T> extends TypedCmdLineTool<T> {
 
       try (ObjectStream<T> sampleStream = streamFactory.create(formatArgs)) {
         Object sample;
-        while((sample = sampleStream.read()) != null) {
+        while ((sample = sampleStream.read()) != null) {
           System.out.println(sample.toString());
         }
       }

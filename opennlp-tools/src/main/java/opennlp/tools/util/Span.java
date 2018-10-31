@@ -14,13 +14,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package opennlp.tools.util;
+
+import java.io.Serializable;
+import java.util.Objects;
 
 /**
  * Class for storing start and end integer offsets.
  *
  */
-public class Span implements Comparable<Span> {
+public class Span implements Comparable<Span>, Serializable {
 
   private final int start;
   private final int end;
@@ -35,24 +39,17 @@ public class Span implements Comparable<Span> {
    * @param type the type of the span
    */
   public Span(int s, int e, String type) {
-
-    if (s < 0) {
-      throw new IllegalArgumentException("start index must be zero or greater: " + s);
-    }
-    if (e < 0) {
-      throw new IllegalArgumentException("end index must be zero or greater: " + e);
-    }
-    if (s > e) {
-      throw new IllegalArgumentException("start index must not be larger than end index: "
-              + "start=" + s + ", end=" + e);
-    }
-
-    start = s;
-    end = e;
-    this.type = type;
-    this.prob = 0d;
+    this(s, e, type, 0d);
   }
 
+  /**
+   * Initializes a new Span Object.
+   *
+   * @param s start of span.
+   * @param e end of span, which is +1 more than the last element in the span.
+   * @param type the type of the span
+   * @param prob probability of span.
+   */
   public Span(int s, int e, String type, double prob) {
 
     if (s < 0) {
@@ -102,11 +99,12 @@ public class Span implements Comparable<Span> {
   public Span(Span span, int offset) {
     this(span.start + offset, span.end + offset, span.getType(), span.getProb());
   }
-/**
- * Creates a new immutable span based on an existing span, where the existing span did not include the prob
- * @param span the span that has no prob or the prob is incorrect and a new Span must be generated
- * @param prob the probability of the span
- */
+
+  /**
+   * Creates a new immutable span based on an existing span, where the existing span did not include the prob
+   * @param span the span that has no prob or the prob is incorrect and a new Span must be generated
+   * @param prob the probability of the span
+   */
   public Span(Span span, double prob) {
     this(span.start, span.end, span.getType(), prob);
   }
@@ -158,8 +156,7 @@ public class Span implements Comparable<Span> {
    *
    * @param s The span to compare with this span.
    *
-   * @return true is the specified span is contained by this span; false
-   * otherwise.
+   * @return true is the specified span is contained by this span; false otherwise.
    */
   public boolean contains(Span s) {
     return start <= s.getStart() && s.getEnd() <= end;
@@ -184,7 +181,7 @@ public class Span implements Comparable<Span> {
    * @param s The span to compare with this span.
    *
    * @return true if the specified span starts with this span and is contained
-   * in this span; false otherwise
+   *     in this span; false otherwise
    */
   public boolean startsWith(Span s) {
     return getStart() == s.getStart() && contains(s);
@@ -211,7 +208,7 @@ public class Span implements Comparable<Span> {
    * @param s The span to compare with this span.
    *
    * @return true is the specified span overlaps this span and contains a
-   * non-overlapping section; false otherwise.
+   *     non-overlapping section; false otherwise.
    */
   public boolean crosses(Span s) {
     int sstart = s.getStart();
@@ -299,16 +296,7 @@ public class Span implements Comparable<Span> {
    */
   @Override
   public int hashCode() {
-    int res = 23;
-    res = res * 37 + getStart();
-    res = res * 37 + getEnd();
-    if (getType() == null) {
-      res = res * 37;
-    } else {
-      res = res * 37 + getType().hashCode();
-    }
-
-    return res;
+    return Objects.hash(getStart(), getEnd(), getType());
   }
 
   /**
@@ -316,23 +304,18 @@ public class Span implements Comparable<Span> {
    */
   @Override
   public boolean equals(Object o) {
-
-    boolean result;
-
     if (o == this) {
-      result = true;
-    } else if (o instanceof Span) {
-      Span s = (Span) o;
-
-      result = (getStart() == s.getStart())
-              && (getEnd() == s.getEnd())
-              && (getType() != null ? type.equals(s.getType()) : true)
-              && (s.getType() != null ? s.getType().equals(getType()) : true);
-    } else {
-      result = false;
+      return true;
     }
 
-    return result;
+    if (o instanceof Span) {
+      Span s = (Span) o;
+
+      return getStart() == s.getStart() && getEnd() == s.getEnd()
+          && Objects.equals(getType(), s.getType());
+    }
+
+    return false;
   }
 
   /**

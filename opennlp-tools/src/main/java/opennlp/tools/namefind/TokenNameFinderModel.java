@@ -21,9 +21,8 @@ package opennlp.tools.namefind;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
 import java.net.URL;
-import java.util.Collections;
+import java.nio.file.Path;
 import java.util.Map;
 import java.util.Properties;
 
@@ -33,13 +32,11 @@ import opennlp.tools.ml.model.SequenceClassificationModel;
 import opennlp.tools.util.BaseToolFactory;
 import opennlp.tools.util.InvalidFormatException;
 import opennlp.tools.util.SequenceCodec;
-import opennlp.tools.util.featuregen.AdaptiveFeatureGenerator;
-import opennlp.tools.util.featuregen.AggregatedFeatureGenerator;
 import opennlp.tools.util.featuregen.BrownCluster;
 import opennlp.tools.util.featuregen.WordClusterDictionary;
 import opennlp.tools.util.model.ArtifactSerializer;
 import opennlp.tools.util.model.BaseModel;
-import opennlp.tools.util.model.ModelUtil;
+import opennlp.tools.util.model.ByteArraySerializer;
 
 /**
  * The {@link TokenNameFinderModel} is the model used
@@ -53,19 +50,6 @@ public class TokenNameFinderModel extends BaseModel {
   public static class FeatureGeneratorCreationError extends RuntimeException {
     FeatureGeneratorCreationError(Throwable t) {
       super(t);
-    }
-  }
-
-  private static class ByteArraySerializer implements ArtifactSerializer<byte[]> {
-
-    public byte[] create(InputStream in) throws IOException,
-        InvalidFormatException {
-
-      return ModelUtil.read(in);
-    }
-
-    public void serialize(byte[] artifact, OutputStream out) throws IOException {
-      out.write(artifact);
     }
   }
 
@@ -116,15 +100,19 @@ public class TokenNameFinderModel extends BaseModel {
     this(languageCode, nameFinderModel, null, resources, manifestInfoEntries);
   }
 
-  public TokenNameFinderModel(InputStream in) throws IOException, InvalidFormatException {
+  public TokenNameFinderModel(InputStream in) throws IOException {
     super(COMPONENT_NAME, in);
   }
 
-  public TokenNameFinderModel(File modelFile) throws IOException, InvalidFormatException {
+  public TokenNameFinderModel(File modelFile) throws IOException {
     super(COMPONENT_NAME, modelFile);
   }
 
-  public TokenNameFinderModel(URL modelURL) throws IOException, InvalidFormatException {
+  public TokenNameFinderModel(Path modelPath) throws IOException {
+    this(modelPath.toFile());
+  }
+
+  public TokenNameFinderModel(URL modelURL) throws IOException {
     super(COMPONENT_NAME, modelURL);
   }
 
@@ -155,20 +143,6 @@ public class TokenNameFinderModel extends BaseModel {
     checkArtifactMap();
   }
 
-  /**
-   * @deprecated use getNameFinderSequenceModel instead. This method will be removed soon.
-   */
-  @Deprecated
-  public MaxentModel getNameFinderModel() {
-
-    if (artifactMap.get(MAXENT_MODEL_ENTRY_NAME) instanceof MaxentModel) {
-      return (MaxentModel) artifactMap.get(MAXENT_MODEL_ENTRY_NAME);
-    }
-    else {
-      return null;
-    }
-  }
-
   public SequenceClassificationModel<String> getNameFinderSequenceModel() {
 
     Properties manifest = (Properties) artifactMap.get(MANIFEST_ENTRY);
@@ -196,48 +170,12 @@ public class TokenNameFinderModel extends BaseModel {
     return TokenNameFinderFactory.class;
   }
 
+  public SequenceCodec<String> getSequenceCodec() {
+    return this.getFactory().getSequenceCodec();
+  }
+
   public TokenNameFinderFactory getFactory() {
     return (TokenNameFinderFactory) this.toolFactory;
-  }
-
-  // TODO: This should be moved to the NameFinderFactory ... !!!
-  // Lets deprecate it!
-
-  /**
-   * Creates the {@link AdaptiveFeatureGenerator}. Usually this
-   * is a set of generators contained in the {@link AggregatedFeatureGenerator}.
-   *
-   * Note:
-   * The generators are created on every call to this method.
-   *
-   * @return the feature generator or null if there is no descriptor in the model
-   * @deprecated use TokenNameFinderFactory.createFeatureGenerators instead!
-   */
-  @Deprecated
-  public AdaptiveFeatureGenerator createFeatureGenerators() {
-    return getFactory().createFeatureGenerators();
-  }
-
-  public TokenNameFinderModel updateFeatureGenerator(byte descriptor[]) {
-
-    TokenNameFinderModel model;
-
-    if (getNameFinderModel() != null) {
-      model = new TokenNameFinderModel(getLanguage(), getNameFinderModel(), 1,
-          descriptor, Collections.<String, Object>emptyMap(), Collections.<String, String>emptyMap(),
-          getFactory().createSequenceCodec(), getFactory());
-    }
-    else {
-      model = new TokenNameFinderModel(getLanguage(), getNameFinderSequenceModel(),
-          descriptor, Collections.<String, Object>emptyMap(), Collections.<String, String>emptyMap(),
-          getFactory().createSequenceCodec(), getFactory());
-    }
-
-    model.artifactMap.clear();
-    model.artifactMap.putAll(artifactMap);
-    model.artifactMap.put(GENERATOR_DESCRIPTOR_ENTRY_NAME, descriptor);
-
-    return model;
   }
 
   @Override
@@ -276,9 +214,9 @@ public class TokenNameFinderModel extends BaseModel {
     return serializers;
   }
 
-  boolean isModelValid(MaxentModel model) {
+  private boolean isModelValid(MaxentModel model) {
 
-    String outcomes[] = new String[model.getNumOutcomes()];
+    String[] outcomes = new String[model.getNumOutcomes()];
 
     for (int i = 0; i < model.getNumOutcomes(); i++) {
       outcomes[i] = model.getOutcome(i);
@@ -291,13 +229,8 @@ public class TokenNameFinderModel extends BaseModel {
   protected void validateArtifactMap() throws InvalidFormatException {
     super.validateArtifactMap();
 
-    if (artifactMap.get(MAXENT_MODEL_ENTRY_NAME) instanceof MaxentModel ||
-        artifactMap.get(MAXENT_MODEL_ENTRY_NAME) instanceof SequenceClassificationModel) {
-      // TODO: Check should be performed on the possible outcomes!
-//      MaxentModel model = (MaxentModel) artifactMap.get(MAXENT_MODEL_ENTRY_NAME);
-//      isModelValid(model);
-    }
-    else {
+    if (!(artifactMap.get(MAXENT_MODEL_ENTRY_NAME) instanceof MaxentModel) &&
+        !(artifactMap.get(MAXENT_MODEL_ENTRY_NAME) instanceof SequenceClassificationModel)) {
       throw new InvalidFormatException("Token Name Finder model is incomplete!");
     }
   }

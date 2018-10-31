@@ -19,81 +19,77 @@ package opennlp.tools.ml;
 
 import java.io.IOException;
 
+import opennlp.tools.ml.model.AbstractDataIndexer;
 import opennlp.tools.ml.model.DataIndexer;
+import opennlp.tools.ml.model.DataIndexerFactory;
 import opennlp.tools.ml.model.Event;
 import opennlp.tools.ml.model.HashSumEventStream;
 import opennlp.tools.ml.model.MaxentModel;
-import opennlp.tools.ml.model.OnePassDataIndexer;
-import opennlp.tools.ml.model.TwoPassDataIndexer;
+import opennlp.tools.util.InsufficientTrainingDataException;
 import opennlp.tools.util.ObjectStream;
+import opennlp.tools.util.TrainingParameters;
 
-public abstract class AbstractEventTrainer extends AbstractTrainer implements
-    EventTrainer {
+public abstract class AbstractEventTrainer extends AbstractTrainer implements EventTrainer {
 
   public static final String DATA_INDEXER_PARAM = "DataIndexer";
   public static final String DATA_INDEXER_ONE_PASS_VALUE = "OnePass";
   public static final String DATA_INDEXER_TWO_PASS_VALUE = "TwoPass";
+  public static final String DATA_INDEXER_ONE_PASS_REAL_VALUE = "OnePassRealValue";
 
   public AbstractEventTrainer() {
   }
 
+  public AbstractEventTrainer(TrainingParameters parameters) {
+    super(parameters);
+  }
+
+  @Override
+  public void validate() {
+    super.validate();
+  }
+
+  @Deprecated
   @Override
   public boolean isValid() {
-    if (!super.isValid()) {
-      return false;
-    }
-
-    String dataIndexer = getStringParam(DATA_INDEXER_PARAM,
-        DATA_INDEXER_TWO_PASS_VALUE);
-
-    if (dataIndexer != null) {
-      if (!(DATA_INDEXER_ONE_PASS_VALUE.equals(dataIndexer) || DATA_INDEXER_TWO_PASS_VALUE
-          .equals(dataIndexer))) {
-        return false;
-      }
-    }
-    // TODO: Check data indexing ...
-
-    return true;
+    return super.isValid();
   }
 
   public abstract boolean isSortAndMerge();
 
   public DataIndexer getDataIndexer(ObjectStream<Event> events) throws IOException {
 
-    String dataIndexerName = getStringParam(DATA_INDEXER_PARAM,
-        DATA_INDEXER_TWO_PASS_VALUE);
-
-    int cutoff = getCutoff();
-    boolean sortAndMerge = isSortAndMerge();
-    DataIndexer indexer = null;
-
-    if (DATA_INDEXER_ONE_PASS_VALUE.equals(dataIndexerName)) {
-      indexer = new OnePassDataIndexer(events, cutoff, sortAndMerge);
-    } else if (DATA_INDEXER_TWO_PASS_VALUE.equals(dataIndexerName)) {
-      indexer = new TwoPassDataIndexer(events, cutoff, sortAndMerge);
-    } else {
-      throw new IllegalStateException("Unexpected data indexer name: "
-          + dataIndexerName);
+    trainingParameters.put(AbstractDataIndexer.SORT_PARAM, isSortAndMerge());
+    // If the cutoff was set, don't overwrite the value.
+    if (trainingParameters.getIntParameter(CUTOFF_PARAM, -1) == -1) {
+      trainingParameters.put(CUTOFF_PARAM, 5);
     }
+    
+    DataIndexer indexer = DataIndexerFactory.getDataIndexer(trainingParameters, reportMap);
+    indexer.index(events);
     return indexer;
   }
 
   public abstract MaxentModel doTrain(DataIndexer indexer) throws IOException;
 
-  public final MaxentModel train(ObjectStream<Event> events) throws IOException {
+  public final MaxentModel train(DataIndexer indexer) throws IOException {
+    validate();
 
-    if (!isValid()) {
-      throw new IllegalArgumentException("trainParams are not valid!");
+    if (indexer.getOutcomeLabels().length <= 1) {
+      throw new InsufficientTrainingDataException("Training data must contain more than one outcome");
     }
+
+    MaxentModel model = doTrain(indexer);
+    addToReport(AbstractTrainer.TRAINER_TYPE_PARAM, EventTrainer.EVENT_VALUE);
+    return model;
+  }
+
+  public final MaxentModel train(ObjectStream<Event> events) throws IOException {
+    validate();
 
     HashSumEventStream hses = new HashSumEventStream(events);
     DataIndexer indexer = getDataIndexer(hses);
 
-    MaxentModel model = doTrain(indexer);
-
     addToReport("Training-Eventhash", hses.calculateHashSum().toString(16));
-    addToReport(AbstractTrainer.TRAINER_TYPE_PARAM, EventTrainer.EVENT_VALUE);
-    return model;
+    return train(indexer);
   }
 }

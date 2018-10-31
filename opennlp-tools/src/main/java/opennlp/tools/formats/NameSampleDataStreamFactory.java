@@ -14,6 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package opennlp.tools.formats;
 
 import java.io.IOException;
@@ -54,7 +55,7 @@ public class NameSampleDataStreamFactory extends AbstractSampleStreamFactory<Nam
 
     ObjectStream<String> lineStream = null;
     try {
-      lineStream = new PlainTextByLineStream((sampleDataIn), params.getEncoding());
+      lineStream = new PlainTextByLineStream(sampleDataIn, params.getEncoding());
     } catch (IOException ex) {
       CmdLineUtil.handleCreateObjectStreamError(ex);
     }

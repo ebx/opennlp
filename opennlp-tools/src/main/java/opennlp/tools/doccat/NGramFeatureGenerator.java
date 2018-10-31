@@ -17,12 +17,13 @@
 
 package opennlp.tools.doccat;
 
-import opennlp.tools.util.InvalidFormatException;
-
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+
+import opennlp.tools.util.InvalidFormatException;
 
 /**
  * Generates ngram features for a document.
@@ -30,9 +31,8 @@ import java.util.Map;
  */
 public class NGramFeatureGenerator implements FeatureGenerator {
 
-  //default values for bigrams
-  private int minGram = 2;
-  private int maxGram = 2;
+  private final int minGram;
+  private final int maxGram;
 
   /**
    * Constructor for ngrams.
@@ -47,17 +47,20 @@ public class NGramFeatureGenerator implements FeatureGenerator {
         this.minGram = minGram;
         this.maxGram = maxGram;
       } else {
-        throw new InvalidFormatException("Minimum range value (minGram) should be less than or equal to maximum range value (maxGram)!");
+        throw new InvalidFormatException(
+            "Minimum range value (minGram) should be less than or equal to maximum range value (maxGram)!");
       }
     } else {
-      throw new InvalidFormatException("Both minimum range value (minGram) & maximum range value (maxGram) should be greater than or equal to 1!");
+      throw new InvalidFormatException("Both minimum range value (minGram) & maximum " +
+          "range value (maxGram) should be greater than or equal to 1!");
     }
   }
 
   /**
    * Default constructor for Bi grams
    */
-  public NGramFeatureGenerator() {
+  public NGramFeatureGenerator() throws InvalidFormatException {
+    this(2, 2);
   }
 
   /**
@@ -68,16 +71,18 @@ public class NGramFeatureGenerator implements FeatureGenerator {
    * @return a collection of n gram features
    */
   public Collection<String> extractFeatures(String[] text, Map<String, Object> extraInfo) {
-
-    List<String> features = new ArrayList<String>();
+    Objects.requireNonNull(text, "text must not be null");
+    List<String> features = new ArrayList<>();
 
     for (int i = 0; i <= text.length - minGram; i++) {
-      String feature = "ng=";
+      final StringBuilder sb = new StringBuilder();
+      sb.append("ng=");
       for (int y = 0; y < maxGram && i + y < text.length; y++) {
-        feature = feature + ":" + text[i + y];
+        sb.append(":");
+        sb.append(text[i + y]);
         int gramCount = y + 1;
         if (maxGram >= gramCount && gramCount >= minGram) {
-          features.add(feature);
+          features.add(sb.toString());
         }
       }
     }

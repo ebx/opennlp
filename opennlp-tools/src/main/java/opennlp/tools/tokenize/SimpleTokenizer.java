@@ -15,10 +15,8 @@
  * limitations under the License.
  */
 
-
 package opennlp.tools.tokenize;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -30,6 +28,24 @@ import opennlp.tools.util.StringUtil;
  */
 public class SimpleTokenizer extends AbstractTokenizer {
 
+  static class CharacterEnum {
+    static final CharacterEnum WHITESPACE = new CharacterEnum("whitespace");
+    static final CharacterEnum ALPHABETIC = new CharacterEnum("alphabetic");
+    static final CharacterEnum NUMERIC = new CharacterEnum("numeric");
+    static final CharacterEnum OTHER = new CharacterEnum("other");
+
+    private String name;
+
+    private CharacterEnum(String name) {
+      this.name = name;
+    }
+
+    @Override
+    public String toString() {
+      return name;
+    }
+  }
+  
   public static final SimpleTokenizer INSTANCE;
 
   static {
@@ -38,7 +54,7 @@ public class SimpleTokenizer extends AbstractTokenizer {
 
   /**
    * @deprecated Use INSTANCE field instead to obtain an instance, constructor
-   * will be made private in the future.
+   *     will be made private in the future.
    */
   @Deprecated
   public SimpleTokenizer() {
@@ -48,7 +64,7 @@ public class SimpleTokenizer extends AbstractTokenizer {
     CharacterEnum charType = CharacterEnum.WHITESPACE;
     CharacterEnum state = charType;
 
-    List<Span> tokens = new ArrayList<Span>();
+    List<Span> tokens = new ArrayList<>();
     int sl = s.length();
     int start = -1;
     char pc = 0;
@@ -84,58 +100,5 @@ public class SimpleTokenizer extends AbstractTokenizer {
       tokens.add(new Span(start, sl));
     }
     return tokens.toArray(new Span[tokens.size()]);
-  }
-
-
-  /**
-   *
-   * @param args the command line arguments
-   *
-   * @throws IOException if reading or writing from stdin or stdout fails in anyway
-   *
-   * @deprecated this method will be removed, use the new command line interface instead!
-   */
-  @Deprecated
-  public static void main(String[] args) throws IOException {
-    if (args.length != 0) {
-      System.err.println("Usage:  java opennlp.tools.tokenize.SimpleTokenizer < sentences");
-      System.exit(1);
-    }
-    opennlp.tools.tokenize.Tokenizer tokenizer = new SimpleTokenizer();
-    java.io.BufferedReader inReader = new java.io.BufferedReader(new java.io.InputStreamReader(System.in));
-    for (String line = inReader.readLine(); line != null; line = inReader.readLine()) {
-      if (line.equals("")) {
-        System.out.println();
-      }
-      else {
-        String[] tokens = tokenizer.tokenize(line);
-        if (tokens.length > 0) {
-          System.out.print(tokens[0]);
-        }
-        for (int ti=1,tn=tokens.length;ti<tn;ti++) {
-          System.out.print(" "+tokens[ti]);
-        }
-        System.out.println();
-      }
-    }
-  }
-
-}
-
-class CharacterEnum {
-  static final CharacterEnum WHITESPACE = new CharacterEnum("whitespace");
-  static final CharacterEnum ALPHABETIC = new CharacterEnum("alphabetic");
-  static final CharacterEnum NUMERIC = new CharacterEnum("numeric");
-  static final CharacterEnum OTHER = new CharacterEnum("other");
-
-  private String name;
-
-  private CharacterEnum(String name) {
-    this.name = name;
-  }
-
-  @Override
-  public String toString() {
-    return name;
   }
 }

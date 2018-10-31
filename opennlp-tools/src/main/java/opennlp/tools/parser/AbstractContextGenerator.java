@@ -36,29 +36,25 @@ public abstract class AbstractContextGenerator {
   protected boolean useLabel;
 
   /**
-   * Creates punctuation feature for the specified punctuation at the specified index based on the punctuation mark.
+   * Creates punctuation feature for the specified punctuation at the specified index
+   * based on the punctuation mark.
    * @param punct The punctuation which is in context.
    * @param i The index of the punctuation with relative to the parse.
    * @return Punctuation feature for the specified parse and the specified punctuation at the specfied index.
    */
   protected String punct(Parse punct, int i) {
-    StringBuilder feat = new StringBuilder(5);
-    feat.append(i).append("=");
-    feat.append(punct.getCoveredText());
-    return feat.toString();
+    return String.valueOf(i) + "=" + punct.getCoveredText();
   }
 
   /**
-   * Creates punctuation feature for the specified punctuation at the specfied index based on the punctuation's tag.
+   * Creates punctuation feature for the specified punctuation at the specfied index
+   * based on the punctuation's tag.
    * @param punct The punctuation which is in context.
    * @param i The index of the punctuation relative to the parse.
    * @return Punctuation feature for the specified parse and the specified punctuation at the specfied index.
    */
   protected String punctbo(Parse punct, int i) {
-    StringBuilder feat = new StringBuilder(5);
-    feat.append(i).append("=");
-    feat.append(punct.getType());
-    return (feat.toString());
+    return String.valueOf(i) + "=" + punct.getType();
   }
 
   protected String cons(Parse p, int i) {
@@ -73,7 +69,7 @@ public abstract class AbstractContextGenerator {
     else {
       feat.append(EOS);
     }
-    return (feat.toString());
+    return feat.toString();
   }
 
   protected String consbo(Parse p, int i) { //cons back-off
@@ -88,7 +84,7 @@ public abstract class AbstractContextGenerator {
     else {
       feat.append(EOS);
     }
-    return (feat.toString());
+    return feat.toString();
   }
 
   /**
@@ -97,7 +93,7 @@ public abstract class AbstractContextGenerator {
    * @param p The parse which stats teh production.
    * @param includePunctuation Whether punctuation should be included in the production.
    * @return a string representing the grammar rule production that the specified parse
-   * is starting.
+   *     is starting.
    */
   protected String production(Parse p, boolean includePunctuation) {
     StringBuilder production = new StringBuilder(20);
@@ -105,12 +101,12 @@ public abstract class AbstractContextGenerator {
     Parse[] children = AbstractBottomUpParser.collapsePunctuation(p.getChildren(),punctSet);
     for (int ci = 0; ci < children.length; ci++) {
       production.append(children[ci].getType());
-      if (ci+1 != children.length) {
+      if (ci + 1 != children.length) {
         production.append(",");
         Collection<Parse> nextPunct = children[ci].getNextPunctuationSet();
         if (includePunctuation && nextPunct != null) {
           //TODO: make sure multiple punctuation comes out the same
-          for (Iterator<Parse> pit=nextPunct.iterator();pit.hasNext();) {
+          for (Iterator<Parse> pit = nextPunct.iterator(); pit.hasNext();) {
             Parse punct = pit.next();
             production.append(punct.getType()).append(",");
           }
@@ -124,27 +120,26 @@ public abstract class AbstractContextGenerator {
     if (punct1s != null) {
       for (Iterator<Parse> pi = punct1s.iterator();pi.hasNext();) {
         Parse p = pi.next();
-//        String punct = punct(p,c1.index);
-        String punctbo = punctbo(p,c1.index <= 0 ? c1.index -1 : c1.index);
+        String punctbo = punctbo(p,c1.index <= 0 ? c1.index - 1 : c1.index);
 
         //punctbo(1);
         features.add(punctbo);
         if (c0.index == 0) { //TODO look at removing case
           //cons(0)punctbo(1)
-          if (c0.unigram) features.add(c0.cons+","+punctbo);
-          features.add(c0.consbo+","+punctbo);
+          if (c0.unigram) features.add(c0.cons + "," + punctbo);
+          features.add(c0.consbo + "," + punctbo);
         }
         if (c1.index == 0) { //TODO look at removing case
           //punctbo(1)cons(1)
-          if (c1.unigram) features.add(punctbo+","+c1.cons);
-          features.add(punctbo+","+c1.consbo);
+          if (c1.unigram) features.add(punctbo + "," + c1.cons);
+          features.add(punctbo + "," + c1.consbo);
         }
 
         //cons(0)punctbo(1)cons(1)
-        if (bigram) features.add(c0.cons+","+punctbo+","+c1.cons);
-        if (c1.unigram)  features.add(c0.consbo+","+punctbo+","+c1.cons);
-        if (c0.unigram)  features.add(c0.cons+","+punctbo+","+c1.consbo);
-        features.add(c0.consbo+","+punctbo+","+c1.consbo);
+        if (bigram) features.add(c0.cons + "," + punctbo + "," + c1.cons);
+        if (c1.unigram)  features.add(c0.consbo + "," + punctbo + "," + c1.cons);
+        if (c0.unigram)  features.add(c0.cons + "," + punctbo + "," + c1.consbo);
+        features.add(c0.consbo + "," + punctbo + "," + c1.consbo);
       }
     }
     else {
@@ -165,18 +160,20 @@ public abstract class AbstractContextGenerator {
    * @param punct1s The punctuation between the first and second node.
    * @param punct2s The punctuation between the second and third node.
    * @param trigram Specifies whether lexical tri-gram features between these nodes should be generated.
-   * @param bigram1 Specifies whether lexical bi-gram features between the first and second node should be generated.
-   * @param bigram2 Specifies whether lexical bi-gram features between the second and third node should be generated.
+   * @param bigram1 Specifies whether lexical bi-gram features between the first and second
+   *                node should be generated.
+   * @param bigram2 Specifies whether lexical bi-gram features between the second and third
+   *                node should be generated.
    */
   protected void cons3(List<String> features, Cons c0, Cons c1, Cons c2, Collection<Parse> punct1s,
       Collection<Parse> punct2s, boolean trigram, boolean bigram1, boolean bigram2) {
     //  features.add("stage=cons(0),cons(1),cons(2)");
     if (punct1s != null) {
       if (c0.index == -2) {
-        for (Iterator<Parse> pi=punct1s.iterator();pi.hasNext();) {
+        for (Iterator<Parse> pi = punct1s.iterator(); pi.hasNext();) {
           Parse p = pi.next();
-//          String punct = punct(p,c1.index);
-          String punctbo = punctbo(p,c1.index <= 0 ? c1.index -1 : c1.index);
+          // String punct = punct(p,c1.index);
+          String punctbo = punctbo(p,c1.index <= 0 ? c1.index - 1 : c1.index);
           //punct(-2)
           //TODO consider changing
           //features.add(punct);
@@ -188,10 +185,10 @@ public abstract class AbstractContextGenerator {
     }
     if (punct2s != null) {
       if (c2.index == 2) {
-        for (Iterator<Parse> pi=punct2s.iterator();pi.hasNext();) {
+        for (Iterator<Parse> pi = punct2s.iterator(); pi.hasNext();) {
           Parse p = pi.next();
-//          String punct = punct(p,c2.index);
-          String punctbo = punctbo(p,c2.index <= 0 ? c2.index -1 : c2.index);
+          // String punct = punct(p,c2.index);
+          String punctbo = punctbo(p, c2.index);
           //punct(2)
           //TODO consider changing
           //features.add(punct);
@@ -202,45 +199,55 @@ public abstract class AbstractContextGenerator {
       }
       if (punct1s != null) {
         //cons(0),punctbo(1),cons(1),punctbo(2),cons(2)
-        for (Iterator<Parse> pi2=punct2s.iterator();pi2.hasNext();) {
-          String punctbo2 = punctbo(pi2.next(),c2.index <= 0 ? c2.index -1 : c2.index);
-          for (Iterator<Parse> pi1=punct1s.iterator();pi1.hasNext();) {
-            String punctbo1 = punctbo(pi1.next(),c1.index <= 0 ? c1.index -1 : c1.index);
-            if (trigram) features.add(c0.cons   + "," + punctbo1+","+c1.cons   + "," + punctbo2+","+c2.cons);
+        for (Iterator<Parse> pi2 = punct2s.iterator(); pi2.hasNext();) {
+          String punctbo2 = punctbo(pi2.next(),c2.index <= 0 ? c2.index - 1 : c2.index);
+          for (Iterator<Parse> pi1 = punct1s.iterator(); pi1.hasNext();) {
+            String punctbo1 = punctbo(pi1.next(),c1.index <= 0 ? c1.index - 1 : c1.index);
+            if (trigram)
+              features.add(c0.cons + "," + punctbo1 + "," + c1.cons + "," + punctbo2 + "," + c2.cons);
 
-            if (bigram2) features.add(c0.consbo + "," + punctbo1+","+c1.cons   + "," + punctbo2+","+c2.cons);
-            if (c0.unigram && c2.unigram) features.add(c0.cons   + "," + punctbo1+","+c1.consbo + "," + punctbo2+","+c2.cons);
-            if (bigram1) features.add(c0.cons   + "," + punctbo1+","+c1.cons   + "," + punctbo2+","+c2.consbo);
+            if (bigram2)
+              features.add(c0.consbo + "," + punctbo1 + "," + c1.cons   + "," + punctbo2 + "," + c2.cons);
+            if (c0.unigram && c2.unigram)
+              features.add(c0.cons + "," + punctbo1 + "," + c1.consbo + "," + punctbo2 + "," + c2.cons);
+            if (bigram1)
+              features.add(c0.cons + "," + punctbo1 + "," + c1.cons + "," + punctbo2 + ","  + c2.consbo);
 
-            if (c2.unigram) features.add(c0.consbo + "," + punctbo1+","+c1.consbo + "," + punctbo2+","+c2.cons);
-            if (c1.unigram) features.add(c0.consbo + "," + punctbo1+","+c1.cons   + "," + punctbo2+","+c2.consbo);
-            if (c0.unigram) features.add(c0.cons   + "," + punctbo1+","+c1.consbo + "," + punctbo2+","+c2.consbo);
+            if (c2.unigram)
+              features.add(c0.consbo + "," + punctbo1 + "," + c1.consbo + "," + punctbo2 + "," + c2.cons);
+            if (c1.unigram)
+              features.add(c0.consbo + "," + punctbo1 + "," + c1.cons   + "," + punctbo2 + "," + c2.consbo);
+            if (c0.unigram)
+              features.add(c0.cons   + "," + punctbo1 + "," + c1.consbo + "," + punctbo2 + "," + c2.consbo);
 
-            features.add(c0.consbo + "," + punctbo1+","+c1.consbo + "," + punctbo2+","+c2.consbo);
+            features.add(c0.consbo + "," + punctbo1 + "," + c1.consbo + "," + punctbo2 + "," + c2.consbo);
+
             if (zeroBackOff) {
-              if (bigram1) features.add(c0.cons   + "," + punctbo1+","+c1.cons   + "," + punctbo2);
-              if (c1.unigram)  features.add(c0.consbo + "," + punctbo1+","+c1.cons   + "," + punctbo2);
-              if (c0.unigram)  features.add(c0.cons   + "," + punctbo1+","+c1.consbo + "," + punctbo2);
-              features.add(c0.consbo + "," + punctbo1+","+c1.consbo + "," + punctbo2);
+              if (bigram1) features.add(c0.cons   + "," + punctbo1 + "," + c1.cons   + "," + punctbo2);
+              if (c1.unigram)  features.add(c0.consbo + "," + punctbo1 + "," + c1.cons   + "," + punctbo2);
+              if (c0.unigram)  features.add(c0.cons   + "," + punctbo1 + "," + c1.consbo + "," + punctbo2);
+              features.add(c0.consbo + "," + punctbo1 + "," + c1.consbo + "," + punctbo2);
             }
           }
         }
       }
       else { //punct1s == null
         //cons(0),cons(1),punctbo(2),cons(2)
-        for (Iterator<Parse> pi2=punct2s.iterator();pi2.hasNext();) {
-          String punctbo2 = punctbo(pi2.next(),c2.index <= 0 ? c2.index -1 : c2.index);
-          if (trigram) features.add(c0.cons   + "," + c1.cons   + "," + punctbo2+","+c2.cons);
+        for (Iterator<Parse> pi2 = punct2s.iterator(); pi2.hasNext();) {
+          String punctbo2 = punctbo(pi2.next(),c2.index <= 0 ? c2.index - 1 : c2.index);
+          if (trigram) features.add(c0.cons   + "," + c1.cons   + "," + punctbo2 + "," + c2.cons);
 
-          if (bigram2) features.add(c0.consbo + "," + c1.cons   + ","  + punctbo2+ "," + c2.cons);
-          if (c0.unigram && c2.unigram) features.add(c0.cons    + "," + c1.consbo + "," + punctbo2+","+c2.cons);
-          if (bigram1) features.add(c0.cons   + "," + c1.cons   + "," +  punctbo2+","+c2.consbo);
+          if (bigram2)
+            features.add(c0.consbo + "," + c1.cons   + ","  + punctbo2 + "," + c2.cons);
+          if (c0.unigram && c2.unigram)
+            features.add(c0.cons    + "," + c1.consbo + "," + punctbo2 + "," + c2.cons);
+          if (bigram1) features.add(c0.cons + "," + c1.cons   + "," +  punctbo2 + "," + c2.consbo);
 
-          if (c2.unigram) features.add(c0.consbo + "," + c1.consbo + "," + punctbo2+","+c2.cons);
-          if (c1.unigram) features.add(c0.consbo + "," + c1.cons   + "," + punctbo2+","+c2.consbo);
-          if (c0.unigram) features.add(c0.cons   + "," + c1.consbo + "," + punctbo2+","+c2.consbo);
+          if (c2.unigram) features.add(c0.consbo + "," + c1.consbo + "," + punctbo2 + "," + c2.cons);
+          if (c1.unigram) features.add(c0.consbo + "," + c1.cons   + "," + punctbo2 + "," + c2.consbo);
+          if (c0.unigram) features.add(c0.cons   + "," + c1.consbo + "," + punctbo2 + "," + c2.consbo);
 
-          features.add(c0.consbo + "," + c1.consbo + "," + punctbo2+","+c2.consbo);
+          features.add(c0.consbo + "," + c1.consbo + "," + punctbo2 + "," + c2.consbo);
 
           if (zeroBackOff) {
             if (bigram1) features.add(c0.cons   + "," + c1.cons   + "," + punctbo2);
@@ -254,19 +261,26 @@ public abstract class AbstractContextGenerator {
     else {
       if (punct1s != null) {
         //cons(0),punctbo(1),cons(1),cons(2)
-        for (Iterator<Parse> pi1=punct1s.iterator();pi1.hasNext();) {
-          String punctbo1 = punctbo(pi1.next(),c1.index <= 0 ? c1.index -1 : c1.index);
-          if (trigram) features.add(c0.cons     + "," + punctbo1   +","+ c1.cons   +","+c2.cons);
+        for (Iterator<Parse> pi1 = punct1s.iterator(); pi1.hasNext();) {
+          String punctbo1 = punctbo(pi1.next(), c1.index <= 0 ? c1.index - 1 : c1.index);
+          if (trigram)
+            features.add(c0.cons + "," + punctbo1 + "," + c1.cons + "," + c2.cons);
 
-          if (bigram2) features.add(c0.consbo    + "," + punctbo1   +","+ c1.cons   +","+c2.cons);
-          if (c0.unigram && c2.unigram) features.add(c0.cons + "," + punctbo1   +","+ c1.consbo +","+c2.cons);
-          if (bigram1) features.add(c0.cons      + "," + punctbo1   +","+ c1.cons   +","+c2.consbo);
+          if (bigram2)
+            features.add(c0.consbo + "," + punctbo1 + "," + c1.cons + "," + c2.cons);
+          if (c0.unigram && c2.unigram)
+            features.add(c0.cons + "," + punctbo1 + "," + c1.consbo + "," + c2.cons);
+          if (bigram1)
+            features.add(c0.cons + "," + punctbo1   + "," + c1.cons + "," + c2.consbo);
 
-          if (c2.unigram) features.add(c0.consbo  + "," + punctbo1   +","+ c1.consbo +","+c2.cons);
-          if (c1.unigram) features.add(c0.consbo  + "," + punctbo1   +","+ c1.cons   +","+c2.consbo);
-          if (c0.unigram) features.add(c0.cons    + "," + punctbo1   +","+ c1.consbo +","+c2.consbo);
+          if (c2.unigram)
+            features.add(c0.consbo + "," + punctbo1 + "," + c1.consbo + "," + c2.cons);
+          if (c1.unigram)
+            features.add(c0.consbo + "," + punctbo1 + "," + c1.cons   + "," + c2.consbo);
+          if (c0.unigram)
+            features.add(c0.cons + "," + punctbo1 + "," + c1.consbo + "," + c2.consbo);
 
-          features.add(c0.consbo + "," + punctbo1   +","+ c1.consbo +","+c2.consbo);
+          features.add(c0.consbo + "," + punctbo1   + "," + c1.consbo + "," + c2.consbo);
 
           //zero backoff case covered by cons(0)cons(1)
         }
@@ -296,14 +310,16 @@ public abstract class AbstractContextGenerator {
    * @param punctuation The punctuation adjacent and between the specified surrounding node.
    * @param features A list to which features are added.
    */
-  protected void surround(Parse node, int i, String type, Collection<Parse> punctuation, List<String> features) {
+  protected void surround(Parse node, int i, String type, Collection<Parse> punctuation,
+      List<String> features) {
     StringBuilder feat = new StringBuilder(20);
     feat.append("s").append(i).append("=");
-    if (punctuation !=null) {
-      for (Iterator<Parse> pi=punctuation.iterator();pi.hasNext();) {
+    if (punctuation != null) {
+      for (Iterator<Parse> pi = punctuation.iterator(); pi.hasNext();) {
         Parse punct = pi.next();
         if (node != null) {
-          feat.append(node.getHead().getCoveredText()).append("|").append(type).append("|").append(node.getType()).append("|").append(punct.getType());
+          feat.append(node.getHead().getCoveredText()).append("|").append(type)
+              .append("|").append(node.getType()).append("|").append(punct.getType());
         }
         else {
           feat.append(type).append("|").append(EOS).append("|").append(punct.getType());
@@ -328,7 +344,8 @@ public abstract class AbstractContextGenerator {
     }
     else {
       if (node != null) {
-        feat.append(node.getHead().getCoveredText()).append("|").append(type).append("|").append(node.getType());
+        feat.append(node.getHead().getCoveredText()).append("|").append(type)
+            .append("|").append(node.getType());
       }
       else {
         feat.append(type).append("|").append(EOS);
@@ -357,7 +374,8 @@ public abstract class AbstractContextGenerator {
    */
   protected void checkcons(Parse child, String i, String type, List<String> features) {
     StringBuilder feat = new StringBuilder(20);
-    feat.append("c").append(i).append("=").append(child.getType()).append("|").append(child.getHead().getCoveredText()).append("|").append(type);
+    feat.append("c").append(i).append("=").append(child.getType()).append("|")
+        .append(child.getHead().getCoveredText()).append("|").append(type);
     features.add(feat.toString());
     feat.setLength(0);
     feat.append("c").append(i).append("*=").append(child.getType()).append("|").append(type);
@@ -366,16 +384,21 @@ public abstract class AbstractContextGenerator {
 
   protected void checkcons(Parse p1, Parse p2, String type, List<String> features) {
     StringBuilder feat = new StringBuilder(20);
-    feat.append("cil=").append(type).append(",").append(p1.getType()).append("|").append(p1.getHead().getCoveredText()).append(",").append(p2.getType()).append("|").append(p2.getHead().getCoveredText());
+    feat.append("cil=").append(type).append(",").append(p1.getType()).append("|")
+        .append(p1.getHead().getCoveredText()).append(",").append(p2.getType())
+        .append("|").append(p2.getHead().getCoveredText());
     features.add(feat.toString());
     feat.setLength(0);
-    feat.append("ci*l=").append(type).append(",").append(p1.getType()).append(",").append(p2.getType()).append("|").append(p2.getHead().getCoveredText());
+    feat.append("ci*l=").append(type).append(",").append(p1.getType()).append(",")
+        .append(p2.getType()).append("|").append(p2.getHead().getCoveredText());
     features.add(feat.toString());
     feat.setLength(0);
-    feat.append("cil*=").append(type).append(",").append(p1.getType()).append("|").append(p1.getHead().getCoveredText()).append(",").append(p2.getType());
+    feat.append("cil*=").append(type).append(",").append(p1.getType()).append("|")
+        .append(p1.getHead().getCoveredText()).append(",").append(p2.getType());
     features.add(feat.toString());
     feat.setLength(0);
-    feat.append("ci*l*=").append(type).append(",").append(p1.getType()).append(",").append(p2.getType());
+    feat.append("ci*l*=").append(type).append(",").append(p1.getType())
+        .append(",").append(p2.getType());
     features.add(feat.toString());
   }
 
@@ -390,7 +413,7 @@ public abstract class AbstractContextGenerator {
     int leftIndex = 0;
     int prevHeadIndex = -1;
 
-    for (int fi=0;fi<rf.size();fi++) {
+    for (int fi = 0; fi < rf.size(); fi++) {
       Parse fn = rf.get(fi);
       int headIndex = fn.getHeadIndex();
       if (headIndex != prevHeadIndex) {
@@ -402,7 +425,7 @@ public abstract class AbstractContextGenerator {
         }
       }
     }
-    for (int ni=leftIndex;ni<nodes.length;ni++){
+    for (int ni = leftIndex; ni < nodes.length; ni++) {
       nodes[ni] = null;
     }
   }

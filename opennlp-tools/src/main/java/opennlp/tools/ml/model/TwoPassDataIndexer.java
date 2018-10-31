@@ -1,38 +1,35 @@
 /*
- * Licensed to the Apache Software Foundation (ASF) under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership.  The ASF licenses this file
- * to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
  *
- *   http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied.  See the License for the
- * specific language governing permissions and limitations
- * under the License.
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package opennlp.tools.ml.model;
 
-import java.io.BufferedWriter;
+
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.OutputStreamWriter;
-import java.io.Writer;
-import java.util.ArrayList;
-import java.util.Arrays;
+import java.math.BigInteger;
 import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import opennlp.tools.util.ObjectStream;
 
@@ -45,149 +42,157 @@ import opennlp.tools.util.ObjectStream;
  * the events.  During the first pass a temporary event file is created which
  * is read during the second pass.
  */
-public class TwoPassDataIndexer extends AbstractDataIndexer{
+public class TwoPassDataIndexer extends AbstractDataIndexer {
 
-  /**
-   * One argument constructor for DataIndexer which calls the two argument
-   * constructor assuming no cutoff.
-   *
-   * @param eventStream An Event[] which contains the a list of all the Events
-   *               seen in the training data.
-   */
-  public TwoPassDataIndexer(ObjectStream<Event> eventStream) throws IOException {
-    this(eventStream, 0);
-  }
+  public TwoPassDataIndexer() {}
 
-  public TwoPassDataIndexer(ObjectStream<Event> eventStream, int cutoff) throws IOException {
-    this(eventStream,cutoff,true);
-  }
-  /**
-   * Two argument constructor for DataIndexer.
-   *
-   * @param eventStream An Event[] which contains the a list of all the Events
-   *               seen in the training data.
-   * @param cutoff The minimum number of times a predicate must have been
-   *               observed in order to be included in the model.
-   */
-  public TwoPassDataIndexer(ObjectStream<Event> eventStream, int cutoff, boolean sort) throws IOException {
-    Map<String,Integer> predicateIndex = new HashMap<String,Integer>();
+  @Override
+  public void index(ObjectStream<Event> eventStream) throws IOException {
+    int cutoff = trainingParameters.getIntParameter(CUTOFF_PARAM, CUTOFF_DEFAULT);
+    boolean sort = trainingParameters.getBooleanParameter(SORT_PARAM, SORT_DEFAULT);
+
+    long start = System.currentTimeMillis();
+
+    display("Indexing events with TwoPass using cutoff of " + cutoff + "\n\n");
+
+    display("\tComputing event counts...  ");
+
+    Map<String,Integer> predicateIndex = new HashMap<>();
+
+    File tmp = File.createTempFile("events", null);
+    tmp.deleteOnExit();
+    int numEvents;
+    BigInteger writeHash;
+    HashSumEventStream writeEventStream = new HashSumEventStream(eventStream);  // do not close.
+    try (DataOutputStream dos = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(tmp)))) {
+      numEvents = computeEventCounts(writeEventStream, dos, predicateIndex, cutoff);
+    }
+    writeHash = writeEventStream.calculateHashSum();
+
+    display("done. " + numEvents + " events\n");
+
+    display("\tIndexing...  ");
+
     List<ComparableEvent> eventsToCompare;
-
-    System.out.println("Indexing events using cutoff of " + cutoff + "\n");
-
-    System.out.print("\tComputing event counts...  ");
-    try {
-      File tmp = File.createTempFile("events", null);
-      tmp.deleteOnExit();
-      Writer osw = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(tmp),"UTF8"));
-      int numEvents = computeEventCounts(eventStream, osw, predicateIndex, cutoff);
-      System.out.println("done. " + numEvents + " events");
-
-      System.out.print("\tIndexing...  ");
-
-      try (FileEventStream fes = new FileEventStream(tmp)) {
-        eventsToCompare = index(numEvents, fes, predicateIndex);
-      }
-      // done with predicates
-      predicateIndex = null;
-      tmp.delete();
-      System.out.println("done.");
-
-      if (sort) {
-        System.out.print("Sorting and merging events... ");
-      }
-      else {
-        System.out.print("Collecting events... ");
-      }
-      sortAndMerge(eventsToCompare,sort);
-      System.out.println("Done indexing.");
+    BigInteger readHash = null;
+    try (HashSumEventStream readStream = new HashSumEventStream(new EventStream(tmp))) {
+      eventsToCompare = index(readStream, predicateIndex);
+      readHash = readStream.calculateHashSum();
     }
-    catch(IOException e) {
-      System.err.println(e);
+    tmp.delete();
+
+    if (readHash.compareTo(writeHash) != 0)
+      throw new IOException("Event hash for writing and reading events did not match.");
+
+    display("done.\n");
+
+    if (sort) {
+      display("Sorting and merging events... ");
     }
+    else {
+      display("Collecting events... ");
+    }
+    sortAndMerge(eventsToCompare,sort);
+    display(String.format("Done indexing in %.2f s.\n", (System.currentTimeMillis() - start) / 1000d));
   }
 
   /**
-      * Reads events from <tt>eventStream</tt> into a linked list.  The
-      * predicates associated with each event are counted and any which
-      * occur at least <tt>cutoff</tt> times are added to the
-      * <tt>predicatesInOut</tt> map along with a unique integer index.
-      *
-      * @param eventStream an <code>EventStream</code> value
-      * @param eventStore a writer to which the events are written to for later processing.
-      * @param predicatesInOut a <code>TObjectIntHashMap</code> value
-      * @param cutoff an <code>int</code> value
-      */
-  private int computeEventCounts(ObjectStream<Event> eventStream, Writer eventStore, Map<String,Integer> predicatesInOut, int cutoff) throws IOException {
-    Map<String,Integer> counter = new HashMap<String,Integer>();
+   * Reads events from <tt>eventStream</tt> into a linked list.  The
+   * predicates associated with each event are counted and any which
+   * occur at least <tt>cutoff</tt> times are added to the
+   * <tt>predicatesInOut</tt> map along with a unique integer index.
+   *
+   * Protocol:
+   *  1 - (utf string) - Event outcome
+   *  2 - (int) - Event context array length
+   *  3+ - (utf string) - Event context string
+   *  4 - (int) - Event values array length
+   *  5+ - (float) - Event value
+   *
+   * @param eventStream an <code>EventStream</code> value
+   * @param eventStore a writer to which the events are written to for later processing.
+   * @param predicatesInOut a <code>TObjectIntHashMap</code> value
+   * @param cutoff an <code>int</code> value
+   */
+  private int computeEventCounts(ObjectStream<Event> eventStream, DataOutputStream eventStore,
+      Map<String,Integer> predicatesInOut, int cutoff) throws IOException {
+    Map<String,Integer> counter = new HashMap<>();
     int eventCount = 0;
-    Set<String> predicateSet = new HashSet<String>();
 
     Event ev;
     while ((ev = eventStream.read()) != null) {
       eventCount++;
-      eventStore.write(FileEventStream.toLine(ev));
+
+      eventStore.writeUTF(ev.getOutcome());
+
+      eventStore.writeInt(ev.getContext().length);
       String[] ec = ev.getContext();
-      update(ec,predicateSet,counter,cutoff);
+      update(ec, counter);
+      for (String ctxString : ec)
+        eventStore.writeUTF(ctxString);
+
+      if (ev.getValues() == null) {
+        eventStore.writeInt(0);
+      }
+      else {
+        eventStore.writeInt(ev.getValues().length);
+        for (float value : ev.getValues())
+          eventStore.writeFloat(value);
+      }
     }
-    predCounts = new int[predicateSet.size()];
-    int index = 0;
-    for (Iterator<String> pi=predicateSet.iterator();pi.hasNext();index++) {
-      String predicate = pi.next();
-      predCounts[index] = counter.get(predicate);
-      predicatesInOut.put(predicate,index);
+
+    String[] predicateSet = counter.entrySet().stream()
+        .filter(entry -> entry.getValue() >= cutoff)
+        .map(Map.Entry::getKey).sorted()
+        .toArray(String[]::new);
+
+    predCounts = new int[predicateSet.length];
+    for (int i = 0; i < predicateSet.length; i++) {
+      predCounts[i] = counter.get(predicateSet[i]);
+      predicatesInOut.put(predicateSet[i], i);
     }
-    eventStore.close();
+
     return eventCount;
   }
 
-  private List<ComparableEvent> index(int numEvents, ObjectStream<Event> es, Map<String,Integer> predicateIndex) throws IOException {
-    Map<String,Integer> omap = new HashMap<String,Integer>();
-    int outcomeCount = 0;
-    List<ComparableEvent> eventsToCompare = new ArrayList<ComparableEvent>(numEvents);
-    List<Integer> indexedContext = new ArrayList<Integer>();
+  private static class EventStream implements ObjectStream<Event> {
 
-    Event ev;
-    while ((ev = es.read()) != null) {
-      String[] econtext = ev.getContext();
-      ComparableEvent ce;
+    private final DataInputStream inputStream;
 
-      int ocID;
-      String oc = ev.getOutcome();
-
-      if (omap.containsKey(oc)) {
-        ocID = omap.get(oc);
-      }
-      else {
-        ocID = outcomeCount++;
-        omap.put(oc, ocID);
-      }
-
-      for (String pred : econtext) {
-        if (predicateIndex.containsKey(pred)) {
-          indexedContext.add(predicateIndex.get(pred));
-        }
-      }
-
-      // drop events with no active features
-      if (indexedContext.size() > 0) {
-        int[] cons = new int[indexedContext.size()];
-        for (int ci=0;ci<cons.length;ci++) {
-          cons[ci] = indexedContext.get(ci);
-        }
-        ce = new ComparableEvent(ocID, cons);
-        eventsToCompare.add(ce);
-      }
-      else {
-        System.err.println("Dropped event " + ev.getOutcome() + ":" + Arrays.asList(ev.getContext()));
-      }
-      // recycle the TIntArrayList
-      indexedContext.clear();
+    public EventStream(File file) throws IOException {
+      inputStream = new DataInputStream(new BufferedInputStream(new FileInputStream(file)));
     }
-    outcomeLabels = toIndexedStringArray(omap);
-    predLabels = toIndexedStringArray(predicateIndex);
-    return eventsToCompare;
+
+    @Override
+    public Event read() throws IOException {
+      if (inputStream.available() != 0) {
+        String outcome = inputStream.readUTF();
+        int contextLenght = inputStream.readInt();
+        String[] context = new String[contextLenght];
+        for (int i = 0; i < contextLenght; i++)
+          context[i] = inputStream.readUTF();
+        int valuesLength = inputStream.readInt();
+        float[] values = null;
+        if (valuesLength > 0) {
+          values = new float[valuesLength];
+          for (int i = 0; i < valuesLength; i++)
+            values[i] = inputStream.readFloat();
+        }
+        return new Event(outcome, context, values);
+      }
+      else {
+        return null;
+      }
+    }
+
+    @Override
+    public void reset() throws IOException, UnsupportedOperationException {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void close() throws IOException {
+      inputStream.close();
+    }
   }
-
 }
-

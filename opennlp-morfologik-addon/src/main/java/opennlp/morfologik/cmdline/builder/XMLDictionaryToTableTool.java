@@ -28,6 +28,7 @@ import java.util.Iterator;
 import java.util.Properties;
 
 import morfologik.stemming.DictionaryMetadata;
+
 import opennlp.tools.cmdline.BasicCmdLineTool;
 import opennlp.tools.cmdline.CmdLineUtil;
 import opennlp.tools.cmdline.TerminateToolException;
@@ -35,13 +36,10 @@ import opennlp.tools.postag.POSDictionary;
 
 public class XMLDictionaryToTableTool extends BasicCmdLineTool {
 
-  interface Params extends XMLDictionaryToTableParams {
-  }
-
   private String SEPARATOR;
 
   public String getShortDescription() {
-    return "reads an OpenNLP XML tag dictionary and outputs it in a tab separated file";
+    return "reads an OpenNLP XML tag dictionary and outputs it in a tabular file";
   }
 
   public String getHelp() {
@@ -59,7 +57,7 @@ public class XMLDictionaryToTableTool extends BasicCmdLineTool {
     CmdLineUtil.checkInputFile("dictionary input file", dictInFile);
     CmdLineUtil.checkOutputFile("dictionary output file", dictOutFile);
 
-    POSDictionary tagDictionary = null;
+    POSDictionary tagDictionary;
     try {
       tagDictionary = POSDictionary.create(new FileInputStream(dictInFile));
     } catch (IOException e) {
@@ -73,7 +71,7 @@ public class XMLDictionaryToTableTool extends BasicCmdLineTool {
       while (iterator.hasNext()) {
         String word = iterator.next();
         for (String tag : tagDictionary.getTags(word)) {
-          if(valid(word,tag)) {
+          if (valid(word, tag)) {
             String entry = createEntry(word, tag);
             writer.write(entry);
             writer.newLine();
@@ -86,14 +84,14 @@ public class XMLDictionaryToTableTool extends BasicCmdLineTool {
       throw new TerminateToolException(-1, "Error while writing output: "
           + e.getMessage(), e);
     }
-    
+
     Properties info = new Properties();
     info.setProperty("fsa.dict.separator", SEPARATOR);
     info.setProperty("fsa.dict.encoding", params.getEncoding().name());
     info.setProperty("fsa.dict.encoder", params.getEncoder());
-    
+
     Path metaPath = DictionaryMetadata.getExpectedMetadataLocation(dictOutFile.toPath());
-    
+
     try {
       info.store(Files.newOutputStream(metaPath), "Info file for FSA Morfologik dictionary.");
     } catch (IOException e) {
@@ -101,27 +99,26 @@ public class XMLDictionaryToTableTool extends BasicCmdLineTool {
           + e.getMessage(), e);
     }
     System.out.println("Created metadata: " + dictOutFile.toPath());
-    
+
   }
 
   private boolean valid(String word, String tag) {
-    if(word.contains(SEPARATOR) || tag.contains(SEPARATOR)) {
+    if (word.contains(SEPARATOR) || tag.contains(SEPARATOR)) {
       System.out
           .println("Warn: invalid entry because contains separator - word: "
               + word + " tag: " + tag);
       return false;
     }
-    
+
     return true;
   }
 
   private String createEntry(String word, String tag) {
-    
-    String entry = "" + SEPARATOR +// base
-        word + SEPARATOR +
-        tag;
-        
-    return entry;
+
+    return "" + SEPARATOR + // base
+        word + SEPARATOR + tag;
   }
 
+  interface Params extends XMLDictionaryToTableParams {
+  }
 }

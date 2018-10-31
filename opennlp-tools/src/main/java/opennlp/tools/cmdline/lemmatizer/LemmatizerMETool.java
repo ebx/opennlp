@@ -14,6 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package opennlp.tools.cmdline.lemmatizer;
 
 import java.io.File;
@@ -51,7 +52,7 @@ public class LemmatizerMETool extends BasicCmdLineTool {
 
       LemmatizerME lemmatizer = new LemmatizerME(model);
 
-      ObjectStream<String> lineStream = null;
+      ObjectStream<String> lineStream;
       PerformanceMonitor perfMon = null;
 
       try {
@@ -71,10 +72,8 @@ public class LemmatizerMETool extends BasicCmdLineTool {
             continue;
           }
 
-          String[] preds = lemmatizer.lemmatize(posSample.getSentence(),
+          String[] lemmas = lemmatizer.lemmatize(posSample.getSentence(),
               posSample.getTags());
-          String[] lemmas = lemmatizer.decodeLemmas(posSample.getSentence(),
-              preds);
 
           System.out.println(new LemmaSample(posSample.getSentence(),
               posSample.getTags(), lemmas).toString());

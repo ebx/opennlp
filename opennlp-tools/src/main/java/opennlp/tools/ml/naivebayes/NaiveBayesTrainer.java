@@ -1,20 +1,18 @@
 /*
- * Licensed to the Apache Software Foundation (ASF) under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership.  The ASF licenses this file
- * to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
  *
- *   http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied.  See the License for the
- * specific language governing permissions and limitations
- * under the License.
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package opennlp.tools.ml.naivebayes;
@@ -22,17 +20,18 @@ package opennlp.tools.ml.naivebayes;
 import java.io.IOException;
 
 import opennlp.tools.ml.AbstractEventTrainer;
+import opennlp.tools.ml.ArrayMath;
 import opennlp.tools.ml.model.AbstractModel;
 import opennlp.tools.ml.model.DataIndexer;
 import opennlp.tools.ml.model.EvalParameters;
 import opennlp.tools.ml.model.MutableContext;
+import opennlp.tools.util.TrainingParameters;
 
 /**
- * Trains models using the perceptron algorithm.  Each outcome is represented as
- * a binary perceptron classifier.  This supports standard (integer) weighting as well
- * average weighting as described in:
- * Discriminative Training Methods for Hidden Markov Models: Theory and Experiments
- * with the Perceptron Algorithm. Michael Collins, EMNLP 2002.
+ * Trains models using the combination of EM algorithm and Naive Bayes classifier
+ * which is described in:
+ * Text Classification from Labeled and Unlabeled Documents using EM
+ * Nigam, McCallum, et al paper of 2000
  */
 public class NaiveBayesTrainer extends AbstractEventTrainer {
 
@@ -91,20 +90,18 @@ public class NaiveBayesTrainer extends AbstractEventTrainer {
    */
   private String[] predLabels;
 
-  private boolean printMessages = true;
-
   public NaiveBayesTrainer() {
   }
 
+  public NaiveBayesTrainer(TrainingParameters parameters) {
+    super(parameters);
+  }
+  
   public boolean isSortAndMerge() {
     return false;
   }
 
   public AbstractModel doTrain(DataIndexer indexer) throws IOException {
-    if (!isValid()) {
-      throw new IllegalArgumentException("trainParams are not valid!");
-    }
-
     return this.trainModel(indexer);
   }
 
@@ -137,7 +134,7 @@ public class NaiveBayesTrainer extends AbstractEventTrainer {
 
     display("...done.\n");
 
-    /*************** Create and return the model ******************/
+    /* Create and return the model ****/
     return new NaiveBayesModel(finalParameters, predLabels, outcomeLabels);
   }
 
@@ -147,7 +144,7 @@ public class NaiveBayesTrainer extends AbstractEventTrainer {
     for (int oi = 0; oi < numOutcomes; oi++)
       allOutcomesPattern[oi] = oi;
 
-    /** Stores the estimated parameter value of each predicate during iteration. */
+    /* Stores the estimated parameter value of each predicate during iteration. */
     MutableContext[] params = new MutableContext[numPreds];
     for (int pi = 0; pi < numPreds; pi++) {
       params[pi] = new MutableContext(allOutcomesPattern, new double[numOutcomes]);
@@ -157,7 +154,7 @@ public class NaiveBayesTrainer extends AbstractEventTrainer {
 
     EvalParameters evalParams = new EvalParameters(params, numOutcomes);
 
-    double stepsize = 1;
+    double stepSize = 1;
 
     for (int ei = 0; ei < numUniqueEvents; ei++) {
       int targetOutcome = outcomeList[ei];
@@ -165,9 +162,9 @@ public class NaiveBayesTrainer extends AbstractEventTrainer {
         for (int ci = 0; ci < contexts[ei].length; ci++) {
           int pi = contexts[ei][ci];
           if (values == null) {
-            params[pi].updateParameter(targetOutcome, stepsize);
+            params[pi].updateParameter(targetOutcome, stepSize);
           } else {
-            params[pi].updateParameter(targetOutcome, stepsize * values[ei][ci]);
+            params[pi].updateParameter(targetOutcome, stepSize * values[ei][ci]);
           }
         }
       }
@@ -193,7 +190,7 @@ public class NaiveBayesTrainer extends AbstractEventTrainer {
         else
           NaiveBayesModel.eval(contexts[ei], null, modelDistribution, evalParams, false);
 
-        int max = maxIndex(modelDistribution);
+        int max = ArrayMath.argmax(modelDistribution);
         if (max == outcomeList[ei])
           numCorrect++;
       }
@@ -203,17 +200,4 @@ public class NaiveBayesTrainer extends AbstractEventTrainer {
     return trainingAccuracy;
   }
 
-
-  private int maxIndex(double[] values) {
-    int max = 0;
-    for (int i = 1; i < values.length; i++)
-      if (values[i] > values[max])
-        max = i;
-    return max;
-  }
-
-  private void display(String s) {
-    if (printMessages)
-      System.out.print(s);
-  }
 }

@@ -15,19 +15,19 @@
  * limitations under the License.
  */
 
-
 package opennlp.tools.util;
 
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
+import java.util.Objects;
 
 /**
  * The {@link StringList} is an immutable list of {@link String}s.
  */
 public class StringList implements Iterable<String> {
 
-  private String tokens[];
+  private String[] tokens;
 
   /**
    * Initializes the current instance.
@@ -38,9 +38,7 @@ public class StringList implements Iterable<String> {
    * @param singleToken one single token
    */
   public StringList(String singleToken) {
-    tokens = new String[] {
-          singleToken.intern()
-        };
+    tokens = new String[]{singleToken.intern()};
   }
 
   /**
@@ -50,13 +48,12 @@ public class StringList implements Iterable<String> {
    * Token Strings will be replaced by identical internal String object.
    *
    * @param tokens the string parts of the new {@link StringList}, an empty
-   * tokens array or null is not permitted.
+   *     tokens array or null is not permitted.
    */
   public StringList(String... tokens) {
 
-    if (tokens == null) {
-      throw new IllegalArgumentException("tokens must not be null");
-    }
+    Objects.requireNonNull(tokens, "tokens must not be null");
+
     if (tokens.length == 0) {
       throw new IllegalArgumentException("tokens must not be empty");
     }
@@ -146,54 +143,24 @@ public class StringList implements Iterable<String> {
     return true;
   }
 
-
   @Override
-  public boolean equals(Object obj) {
-
-    boolean result;
-
-    if (this == obj) {
-      result = true;
-    }
-    else if (obj instanceof StringList) {
-      StringList tokenList = (StringList) obj;
-
-      result = Arrays.equals(tokens, tokenList.tokens);
-    }
-    else {
-      result = false;
-    }
-
-    return result;
+  public int hashCode() {
+    return Arrays.hashCode(tokens);
   }
 
   @Override
-  public int hashCode() {
-    int numBitsRegular = 32 / size();
-    int numExtra = 32 % size();
-    int maskExtra = 0xFFFFFFFF >>> (32 - numBitsRegular + 1);
-    int maskRegular = 0xFFFFFFFF >>> 32 - numBitsRegular;
-    int code = 0x000000000;
-    int leftMostBit = 0;
-
-    for (int wi = 0; wi < size(); wi++) {
-      int word;
-      int mask;
-      int numBits;
-      if (wi < numExtra) {
-        mask = maskExtra;
-        numBits = numBitsRegular + 1;
-      } else {
-        mask = maskRegular;
-        numBits = numBitsRegular;
-      }
-      word = getToken(wi).hashCode() & mask; // mask off top bits
-      word <<= 32 - leftMostBit - numBits; // move to correct position
-      leftMostBit += numBits; // set for next iteration
-      code |= word;
+  public boolean equals(Object obj) {
+    if (this == obj) {
+      return true;
     }
 
-    return code;
+    if (obj instanceof StringList) {
+      StringList tokenList = (StringList) obj;
+
+      return Arrays.equals(tokens, tokenList.tokens);
+    }
+
+    return false;
   }
 
   @Override

@@ -22,13 +22,6 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 
-import opennlp.tools.postag.POSModel;
-import opennlp.tools.postag.POSTaggerME;
-import opennlp.uima.util.AnnotationComboIterator;
-import opennlp.uima.util.AnnotationIteratorPair;
-import opennlp.uima.util.AnnotatorUtil;
-import opennlp.uima.util.UimaUtil;
-
 import org.apache.uima.UimaContext;
 import org.apache.uima.analysis_component.CasAnnotator_ImplBase;
 import org.apache.uima.analysis_engine.AnalysisEngineProcessException;
@@ -42,27 +35,35 @@ import org.apache.uima.resource.ResourceInitializationException;
 import org.apache.uima.util.Level;
 import org.apache.uima.util.Logger;
 
+import opennlp.tools.postag.POSModel;
+import opennlp.tools.postag.POSTaggerME;
+import opennlp.uima.util.AnnotationComboIterator;
+import opennlp.uima.util.AnnotationIteratorPair;
+import opennlp.uima.util.AnnotatorUtil;
+import opennlp.uima.util.UimaUtil;
+
 /**
  * OpenNLP Part Of Speech annotator.
  * <p>
  * Mandatory parameters
  * <table border=1>
- *   <caption></caption>
- *   <tr><th>Type</th> <th>Name</th> <th>Description</th></tr>
- *   <tr><td>String</td> <td>opennlp.uima.ModelName</td> <td>The name of the model file</td></tr>
- *   <tr><td>String</td> <td>opennlp.uima.SentenceType</td> <td>The full name of the sentence type</td></tr>
- *   <tr><td>String</td> <td>opennlp.uima.TokenType</td> <td>The full name of the token type</td></tr>
- *   <tr><td>String</td> <td>opennlp.uima.POSFeature</td> <td>The name of the token pos feature,
- *       the feature must be of type String</td></tr>
+ * <caption></caption>
+ * <tr><th>Type</th> <th>Name</th> <th>Description</th></tr>
+ * <tr><td>String</td> <td>opennlp.uima.ModelName</td> <td>The name of the model file</td></tr>
+ * <tr><td>String</td> <td>opennlp.uima.SentenceType</td> <td>The full name of the sentence type</td></tr>
+ * <tr><td>String</td> <td>opennlp.uima.TokenType</td> <td>The full name of the token type</td></tr>
+ * <tr><td>String</td> <td>opennlp.uima.POSFeature</td> <td>The name of the token pos feature,
+ * the feature must be of type String</td></tr>
  * </table>
  * <p>
  * Optional parameters
  * <table border=1>
- *   <caption></caption>
- *   <tr><th>Type</th> <th>Name</th> <th>Description</th></tr>
- *   <tr><td>String</td> <td>opennlp.uima.ProbabilityFeature</td> <td>The name of the double probability feature (not set by default)</td></tr>
- *   <tr><td>Integer</td> <td>opennlp.uima.BeamSize</td>
- *   <tr><td>String</td> <td>opennlp.uima.DictionaryName</td> <td>The name of the dictionary file</td></tr>
+ * <caption></caption>
+ * <tr><th>Type</th> <th>Name</th> <th>Description</th></tr>
+ * <tr><td>String</td> <td>opennlp.uima.ProbabilityFeature</td>
+ * <td>The name of the double probability feature (not set by default)</td></tr>
+ * <tr><td>Integer</td> <td>opennlp.uima.BeamSize</td></tr>
+ * <tr><td>String</td> <td>opennlp.uima.DictionaryName</td> <td>The name of the dictionary file</td></tr>
  * </table>
  */
 public final class POSTagger extends CasAnnotator_ImplBase {
@@ -83,7 +84,7 @@ public final class POSTagger extends CasAnnotator_ImplBase {
 
   /**
    * Initializes a new instance.
-   *
+   * <p>
    * Note: Use {@link #initialize(UimaContext) } to initialize this instance. Not use the
    * constructor.
    */
@@ -93,7 +94,7 @@ public final class POSTagger extends CasAnnotator_ImplBase {
 
   /**
    * Initializes the current instance with the given context.
-   *
+   * <p>
    * Note: Do all initialization in this method, do not use the constructor.
    */
   @Override
@@ -125,8 +126,9 @@ public final class POSTagger extends CasAnnotator_ImplBase {
     Integer beamSize = AnnotatorUtil.getOptionalIntegerParameter(context,
         UimaUtil.BEAM_SIZE_PARAMETER);
 
-    if (beamSize == null)
+    if (beamSize == null) {
       beamSize = POSTaggerME.DEFAULT_BEAM_SIZE;
+    }
 
     this.posTagger = new POSTaggerME(model);
   }
@@ -164,9 +166,9 @@ public final class POSTagger extends CasAnnotator_ImplBase {
 
     for (AnnotationIteratorPair annotationIteratorPair : comboIterator) {
 
-      final List<AnnotationFS> sentenceTokenAnnotationList = new LinkedList<AnnotationFS>();
+      final List<AnnotationFS> sentenceTokenAnnotationList = new LinkedList<>();
 
-      final List<String> sentenceTokenList = new LinkedList<String>();
+      final List<String> sentenceTokenList = new LinkedList<>();
 
       for (AnnotationFS tokenAnnotation : annotationIteratorPair.getSubIterator()) {
 
@@ -176,9 +178,9 @@ public final class POSTagger extends CasAnnotator_ImplBase {
       }
 
       final List<String> posTags = Arrays.asList(this.posTagger.tag(
-              sentenceTokenList.toArray(new String[sentenceTokenList.size()])));
+          sentenceTokenList.toArray(new String[sentenceTokenList.size()])));
 
-      double posProbabilities[] = null;
+      double[] posProbabilities = null;
 
       if (this.probabilityFeature != null) {
         posProbabilities = this.posTagger.probs();
@@ -217,7 +219,9 @@ public final class POSTagger extends CasAnnotator_ImplBase {
 
         // delete last whitespace
         if (sentenceWithPos.length() > 1) // not 0 because it contains already the " char
+        {
           sentenceWithPos.setLength(sentenceWithPos.length() - 1);
+        }
 
         sentenceWithPos.append("\"");
 

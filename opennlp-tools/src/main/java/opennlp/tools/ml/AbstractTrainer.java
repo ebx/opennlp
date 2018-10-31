@@ -17,9 +17,11 @@
 
 package opennlp.tools.ml;
 
+import java.util.HashMap;
 import java.util.Map;
 
-import opennlp.tools.ml.maxent.GIS;
+import opennlp.tools.ml.maxent.GISTrainer;
+import opennlp.tools.util.TrainingParameters;
 
 public abstract class AbstractTrainer {
 
@@ -33,96 +35,129 @@ public abstract class AbstractTrainer {
   public static final String ITERATIONS_PARAM = "Iterations";
   public static final int ITERATIONS_DEFAULT = 100;
 
-  private Map<String, String> trainParams;
-  private Map<String, String> reportMap;
+  public static final String VERBOSE_PARAM = "PrintMessages";
+  public static final boolean VERBOSE_DEFAULT = true;
+
+  protected TrainingParameters trainingParameters;
+  protected Map<String,String> reportMap;
+
+  protected boolean printMessages;
 
   public AbstractTrainer() {
   }
 
-  public void init(Map<String, String> trainParams, Map<String, String> reportMap) {
-    this.trainParams = trainParams;
+  public AbstractTrainer(TrainingParameters parameters) {
+    init(parameters,new HashMap<>());
+  }
+  
+  public void init(TrainingParameters trainingParameters, Map<String,String> reportMap) {
+    this.trainingParameters = trainingParameters;
+    if (reportMap == null) reportMap = new HashMap<>();
     this.reportMap = reportMap;
+    printMessages = trainingParameters.getBooleanParameter(VERBOSE_PARAM, VERBOSE_DEFAULT);
+  }
+  
+  @Deprecated
+  public void init(Map<String, String> trainParams, Map<String, String> reportMap) {
+    init(new TrainingParameters(trainParams),reportMap);
   }
 
   public String getAlgorithm() {
-    return getStringParam(ALGORITHM_PARAM, GIS.MAXENT_VALUE);
+    return trainingParameters.getStringParameter(ALGORITHM_PARAM, GISTrainer.MAXENT_VALUE);
   }
 
   public int getCutoff() {
-    return getIntParam(CUTOFF_PARAM, CUTOFF_DEFAULT);
+    return trainingParameters.getIntParameter(CUTOFF_PARAM, CUTOFF_DEFAULT);
   }
 
   public int getIterations() {
-    return getIntParam(ITERATIONS_PARAM, ITERATIONS_DEFAULT);
+    return trainingParameters.getIntParameter(ITERATIONS_PARAM, ITERATIONS_DEFAULT);
   }
 
-  protected String getStringParam(String key, String defaultValue) {
-
-    String valueString = trainParams.get(key);
-
-    if (valueString == null)
-      valueString = defaultValue;
-
-    if (reportMap != null)
-      reportMap.put(key, valueString);
-
-    return valueString;
-  }
-
-  protected int getIntParam(String key, int defaultValue) {
-
-    String valueString = trainParams.get(key);
-
-    if (valueString != null)
-      return Integer.parseInt(valueString);
-    else
-      return defaultValue;
-  }
-
-  protected double getDoubleParam(String key, double defaultValue) {
-
-    String valueString = trainParams.get(key);
-
-    if (valueString != null)
-      return Double.parseDouble(valueString);
-    else
-      return defaultValue;
-  }
-
-  protected boolean getBooleanParam(String key, boolean defaultValue) {
-
-    String valueString = trainParams.get(key);
-
-    if (valueString != null)
-      return Boolean.parseBoolean(valueString);
-    else
-      return defaultValue;
-  }
-
-  protected void addToReport(String key, String value) {
-    if (reportMap != null) {
-      reportMap.put(key, value);
-    }
-  }
-
-  public boolean isValid() {
-
+  /**
+   * Check parameters. If subclass overrides this, it should call super.validate();
+   *
+   * @throws java.lang.IllegalArgumentException
+   */
+  public void validate() {
     // TODO: Need to validate all parameters correctly ... error prone?!
-
     // should validate if algorithm is set? What about the Parser?
 
     try {
-      String cutoffString = trainParams.get(CUTOFF_PARAM);
-      if (cutoffString != null)
-        Integer.parseInt(cutoffString);
-
-      String iterationsString = trainParams.get(ITERATIONS_PARAM);
-      if (iterationsString != null)
-        Integer.parseInt(iterationsString);
+      trainingParameters.getIntParameter(CUTOFF_PARAM, CUTOFF_DEFAULT);
+      trainingParameters.getIntParameter(ITERATIONS_PARAM, ITERATIONS_DEFAULT);
     } catch (NumberFormatException e) {
+      throw new IllegalArgumentException(e);
+    }
+  }
+
+  /**
+   * @deprecated Use {@link #validate()} instead.
+   * @return
+   */
+  @Deprecated
+  public boolean isValid() {
+    try {
+      validate();
+      return true;
+    }
+    catch (IllegalArgumentException e) {
       return false;
     }
+  }
 
-    return true;
+/**
+   * Use the TrainingParameters directly...
+   * @param key
+   * @param defaultValue
+   */
+  @Deprecated
+  protected String getStringParam(String key, String defaultValue) {
+    return trainingParameters.getStringParameter(key, defaultValue);
+  }
+
+  /**
+   * Use the PluggableParameters directly...
+   * @param key
+   * @param defaultValue
+   */
+  @Deprecated
+  protected int TrainingParameters(String key, int defaultValue) {
+    return trainingParameters.getIntParameter(key, defaultValue);
+  }
+  
+  /**
+   * Use the PluggableParameters directly...
+   * @param key
+   * @param defaultValue
+   */
+  @Deprecated
+  protected double getDoubleParam(String key, double defaultValue) {
+    return trainingParameters.getDoubleParameter(key, defaultValue);
+  }
+
+  /**
+   * Use the PluggableParameters directly...
+   * @param key
+   * @param defaultValue
+   */
+  @Deprecated
+  protected boolean getBooleanParam(String key, boolean defaultValue) {
+    return trainingParameters.getBooleanParameter(key, defaultValue);
+  }
+
+  /**
+   * Adds the key/Value to the report map.
+   * @param key
+   * @param value
+   */
+  protected void addToReport(String key, String value) {
+    reportMap.put(key, value);
+  }
+
+  protected void display(String s) {
+    if (printMessages) {
+      System.out.print(s);
+    }
   }
 }

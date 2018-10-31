@@ -22,13 +22,14 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.Map;
 
 import opennlp.tools.cmdline.AbstractCrossValidatorTool;
-import opennlp.tools.cmdline.ArgumentParser.OptionalParameter;
-import opennlp.tools.cmdline.ArgumentParser.ParameterDescription;
 import opennlp.tools.cmdline.CmdLineUtil;
 import opennlp.tools.cmdline.TerminateToolException;
+import opennlp.tools.cmdline.namefind.TokenNameFinderTrainerTool;
 import opennlp.tools.cmdline.params.CVParams;
+import opennlp.tools.cmdline.params.FineGrainedEvaluatorParams;
 import opennlp.tools.cmdline.postag.POSTaggerCrossValidatorTool.CVToolParams;
 import opennlp.tools.postag.POSSample;
 import opennlp.tools.postag.POSTaggerCrossValidator;
@@ -38,11 +39,7 @@ import opennlp.tools.util.model.ModelUtil;
 public final class POSTaggerCrossValidatorTool
     extends AbstractCrossValidatorTool<POSSample, CVToolParams> {
 
-  interface CVToolParams extends CVParams, TrainingParams {
-    @ParameterDescription(valueName = "outputFile",
-        description = "the path of the fine-grained report file.")
-    @OptionalParameter
-    File getReportOutputFile();
+  interface CVToolParams extends CVParams, TrainingParams, FineGrainedEvaluatorParams {
   }
 
   public POSTaggerCrossValidatorTool() {
@@ -76,16 +73,25 @@ public final class POSTaggerCrossValidatorTool
         reportListener = new POSTaggerFineGrainedReportListener(
             reportOutputStream);
       } catch (FileNotFoundException e) {
-        throw new TerminateToolException(-1,
-            "IO error while creating POS Tagger fine-grained report file: "
-                + e.getMessage());
+        throw createTerminationIOException(e);
       }
     }
+
+    Map<String, Object> resources;
+    try {
+      resources = TokenNameFinderTrainerTool.loadResources(params.getResources(), params.getFeaturegen());
+    }
+    catch (IOException e) {
+      throw new TerminateToolException(-1,"IO error while loading resources", e);
+    }
+
+    byte[] featureGeneratorBytes =
+        TokenNameFinderTrainerTool.openFeatureGeneratorBytes(params.getFeaturegen());
 
     POSTaggerCrossValidator validator;
     try {
       validator = new POSTaggerCrossValidator(params.getLang(), mlParams,
-          params.getDict(), params.getNgram(), params.getTagDictCutoff(),
+          params.getDict(), featureGeneratorBytes, resources, params.getTagDictCutoff(),
           params.getFactory(), missclassifiedListener, reportListener);
 
       validator.evaluate(sampleStream, params.getFolds());

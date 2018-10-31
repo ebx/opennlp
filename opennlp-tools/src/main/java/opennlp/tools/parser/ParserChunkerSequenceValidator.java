@@ -22,22 +22,23 @@ import java.util.Map;
 
 import opennlp.tools.parser.chunking.Parser;
 import opennlp.tools.util.SequenceValidator;
+import opennlp.tools.util.TokenTag;
 
-public class ParserChunkerSequenceValidator implements SequenceValidator<String> {
+public class ParserChunkerSequenceValidator implements SequenceValidator<TokenTag> {
 
   private Map<String, String> continueStartMap;
 
-  public ParserChunkerSequenceValidator(String outcomes[]) {
+  public ParserChunkerSequenceValidator(String[] outcomes) {
 
-    continueStartMap =
-        new HashMap<String, String>(outcomes.length);
-    for (int oi=0, on = outcomes.length; oi<on; oi++) {
+    continueStartMap = new HashMap<>(outcomes.length);
+    for (int oi = 0, on = outcomes.length; oi < on; oi++) {
       String outcome = outcomes[oi];
-      if (outcome.startsWith(Parser.CONT)){
-        continueStartMap.put(outcome,Parser.START+outcome.substring(
+      if (outcome.startsWith(Parser.CONT)) {
+        continueStartMap.put(outcome,Parser.START + outcome.substring(
             Parser.CONT.length()));
       }
-    }  }
+    }
+  }
 
   public boolean validSequence(int i, String[] inputSequence,
       String[] tagList, String outcome) {
@@ -51,7 +52,7 @@ public class ParserChunkerSequenceValidator implements SequenceValidator<String>
         String lastTag = tagList[lti];
 
         if (lastTag.equals(outcome)) {
-           return true;
+          return true;
         }
 
         if (lastTag.equals(continueStartMap.get(outcome))) {
@@ -65,5 +66,11 @@ public class ParserChunkerSequenceValidator implements SequenceValidator<String>
       }
     }
     return true;
+  }
+
+  @Override
+  public boolean validSequence(int i, TokenTag[] inputTuples, String[] outcomesSequence, String outcome) {
+    String[] inputSequence = TokenTag.extractTokens(inputTuples);
+    return validSequence(i, inputSequence, outcomesSequence, outcome);
   }
 }

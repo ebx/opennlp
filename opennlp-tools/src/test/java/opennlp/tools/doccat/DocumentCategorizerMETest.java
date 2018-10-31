@@ -14,57 +14,68 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package opennlp.tools.doccat;
 
-import static org.junit.Assert.assertEquals;
-
 import java.io.IOException;
-import java.util.Map;
 import java.util.Set;
 import java.util.SortedMap;
 
+import org.junit.Assert;
+import org.junit.Test;
+
+import opennlp.tools.util.InsufficientTrainingDataException;
 import opennlp.tools.util.ObjectStream;
 import opennlp.tools.util.ObjectStreamUtils;
 import opennlp.tools.util.TrainingParameters;
-
-import org.junit.Test;
 
 public class DocumentCategorizerMETest {
 
   @Test
   public void testSimpleTraining() throws IOException {
 
-    ObjectStream<DocumentSample> samples = ObjectStreamUtils.createObjectStream(new DocumentSample[]{
-      new DocumentSample("1", new String[]{"a", "b", "c"}),
-      new DocumentSample("1", new String[]{"a", "b", "c", "1", "2"}),
-      new DocumentSample("1", new String[]{"a", "b", "c", "3", "4"}),
-      new DocumentSample("0", new String[]{"x", "y", "z"}),
-      new DocumentSample("0", new String[]{"x", "y", "z", "5", "6"}),
-      new DocumentSample("0", new String[]{"x", "y", "z", "7", "8"})
-    });
+    ObjectStream<DocumentSample> samples = ObjectStreamUtils.createObjectStream(
+        new DocumentSample("1", new String[]{"a", "b", "c"}),
+        new DocumentSample("1", new String[]{"a", "b", "c", "1", "2"}),
+        new DocumentSample("1", new String[]{"a", "b", "c", "3", "4"}),
+        new DocumentSample("0", new String[]{"x", "y", "z"}),
+        new DocumentSample("0", new String[]{"x", "y", "z", "5", "6"}),
+        new DocumentSample("0", new String[]{"x", "y", "z", "7", "8"}));
 
     TrainingParameters params = new TrainingParameters();
-    params.put(TrainingParameters.ITERATIONS_PARAM, Integer.toString(100));
-    params.put(TrainingParameters.CUTOFF_PARAM, Integer.toString(0));
+    params.put(TrainingParameters.ITERATIONS_PARAM, 100);
+    params.put(TrainingParameters.CUTOFF_PARAM, 0);
 
     DoccatModel model = DocumentCategorizerME.train("x-unspecified", samples,
-            params, new BagOfWordsFeatureGenerator());
+            params, new DoccatFactory());
 
     DocumentCategorizer doccat = new DocumentCategorizerME(model);
 
-    double aProbs[] = doccat.categorize("a");
-    assertEquals("1", doccat.getBestCategory(aProbs));
+    double[] aProbs = doccat.categorize(new String[]{"a"});
+    Assert.assertEquals("1", doccat.getBestCategory(aProbs));
 
-    double bProbs[] = doccat.categorize("x");
-    assertEquals("0", doccat.getBestCategory(bProbs));
+    double[] bProbs = doccat.categorize(new String[]{"x"});
+    Assert.assertEquals("0", doccat.getBestCategory(bProbs));
 
     //test to make sure sorted map's last key is cat 1 because it has the highest score.
-    SortedMap<Double, Set<String>> sortedScoreMap = doccat.sortedScoreMap("a");
-    for (String cat : sortedScoreMap.get(sortedScoreMap.lastKey())) {
-      assertEquals("1", cat);
-      break;
-    }
-    System.out.println("");
+    SortedMap<Double, Set<String>> sortedScoreMap = doccat.sortedScoreMap(new String[]{"a"});
+    Set<String> cat = sortedScoreMap.get(sortedScoreMap.lastKey());
+    Assert.assertEquals(1, cat.size());
+  }
+  
+  @Test(expected = InsufficientTrainingDataException.class)
+  public void insufficientTestData() throws IOException {
+
+    ObjectStream<DocumentSample> samples = ObjectStreamUtils.createObjectStream(
+        new DocumentSample("1", new String[]{"a", "b", "c"}));
+
+    TrainingParameters params = new TrainingParameters();
+    params.put(TrainingParameters.ITERATIONS_PARAM, 100);
+    params.put(TrainingParameters.CUTOFF_PARAM, 0);
+
+    DocumentCategorizerME.train("x-unspecified", samples,
+        params, new DoccatFactory());
 
   }
+  
 }

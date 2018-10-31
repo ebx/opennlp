@@ -17,14 +17,11 @@
 
 package opennlp.uima.namefind;
 
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
-
-import opennlp.tools.util.Span;
-import opennlp.uima.util.AnnotationComboIterator;
-import opennlp.uima.util.AnnotationIteratorPair;
-import opennlp.uima.util.AnnotatorUtil;
-import opennlp.uima.util.UimaUtil;
+import java.util.Map;
 
 import org.apache.uima.UimaContext;
 import org.apache.uima.analysis_component.CasAnnotator_ImplBase;
@@ -37,6 +34,12 @@ import org.apache.uima.resource.ResourceInitializationException;
 import org.apache.uima.util.Level;
 import org.apache.uima.util.Logger;
 
+import opennlp.tools.util.Span;
+import opennlp.uima.util.AnnotationComboIterator;
+import opennlp.uima.util.AnnotationIteratorPair;
+import opennlp.uima.util.AnnotatorUtil;
+import opennlp.uima.util.UimaUtil;
+
 abstract class AbstractNameFinder extends CasAnnotator_ImplBase {
 
   protected final String name;
@@ -46,6 +49,8 @@ abstract class AbstractNameFinder extends CasAnnotator_ImplBase {
   protected Type mTokenType;
 
   protected Type mNameType;
+
+  protected Map<String, Type> mNameTypeMapping = Collections.emptyMap();
 
   protected UimaContext context;
 
@@ -62,22 +67,21 @@ abstract class AbstractNameFinder extends CasAnnotator_ImplBase {
 
   public final void initialize(UimaContext context) throws ResourceInitializationException {
 
-	super.initialize(context);
+    super.initialize(context);
 
-	this.context = context;
+    this.context = context;
 
     mLogger = context.getLogger();
 
     if (mLogger.isLoggable(Level.INFO)) {
-      mLogger.log(Level.INFO,
-      "Initializing the " + name + ".");
+      mLogger.log(Level.INFO, "Initializing the " + name + ".");
     }
 
     isRemoveExistingAnnotations = AnnotatorUtil.getOptionalBooleanParameter(
         context, UimaUtil.IS_REMOVE_EXISTINGS_ANNOTAIONS);
 
     if (isRemoveExistingAnnotations == null) {
-        isRemoveExistingAnnotations = false;
+      isRemoveExistingAnnotations = false;
     }
 
     initialize();
@@ -90,7 +94,7 @@ abstract class AbstractNameFinder extends CasAnnotator_ImplBase {
       throws AnalysisEngineProcessException {
 
     // sentence type
-	  mSentenceType = AnnotatorUtil.getRequiredTypeParameter(context, typeSystem,
+    mSentenceType = AnnotatorUtil.getRequiredTypeParameter(context, typeSystem,
         UimaUtil.SENTENCE_TYPE_PARAMETER);
 
     // token type
@@ -98,12 +102,40 @@ abstract class AbstractNameFinder extends CasAnnotator_ImplBase {
         UimaUtil.TOKEN_TYPE_PARAMETER);
 
     // name type
-    mNameType = AnnotatorUtil.getRequiredTypeParameter(context, typeSystem,
+    mNameType = AnnotatorUtil.getOptionalTypeParameter(context, typeSystem,
         NameFinder.NAME_TYPE_PARAMETER);
+
+    String typeMapString = (String) context.getConfigParameterValue(
+            NameFinder.NAME_TYPE_MAP_PARAMETER);
+
+    if (typeMapString != null) {
+      Map<String, Type> nameTypeMap = new HashMap<>();
+
+      String[] mappings = typeMapString.split(",");
+
+      for (String mapping : mappings) {
+        String[] parts = mapping.split(":");
+
+        if (parts.length == 2) {
+          nameTypeMap.put(parts[0].trim(), typeSystem.getType(parts[1].trim()));
+        }
+        else {
+          mLogger.log(Level.WARNING,
+              String.format("Failed to parse a part of the type mapping [%s]", mapping));
+        }
+      }
+
+      mNameTypeMapping = Collections.unmodifiableMap(nameTypeMap);
+    }
+
+    if (mNameType == null && mNameTypeMapping.size() == 0) {
+      throw new AnalysisEngineProcessException(
+          new Exception("No name type or valid name type mapping configured!"));
+    }
   }
 
-  protected void postProcessAnnotations(Span detectedNames[],
-		  AnnotationFS[] nameAnnotations) {
+  protected void postProcessAnnotations(Span[] detectedNames,
+      AnnotationFS[] nameAnnotations) {
   }
 
   /**
@@ -123,7 +155,7 @@ abstract class AbstractNameFinder extends CasAnnotator_ImplBase {
       final AnnotationComboIterator sentenceNameCombo = new AnnotationComboIterator(cas,
           mSentenceType, mNameType);
 
-      List<AnnotationFS> removeAnnotations = new LinkedList<AnnotationFS>();
+      List<AnnotationFS> removeAnnotations = new LinkedList<>();
       for (AnnotationIteratorPair annotationIteratorPair : sentenceNameCombo) {
         for (AnnotationFS nameAnnotation : annotationIteratorPair.getSubIterator()) {
           removeAnnotations.add(nameAnnotation);
@@ -140,9 +172,9 @@ abstract class AbstractNameFinder extends CasAnnotator_ImplBase {
 
     for (AnnotationIteratorPair annotationIteratorPair : sentenceTokenCombo) {
 
-      final List<AnnotationFS> sentenceTokenAnnotationList = new LinkedList<AnnotationFS>();
+      final List<AnnotationFS> sentenceTokenAnnotationList = new LinkedList<>();
 
-      final List<String> sentenceTokenList = new LinkedList<String>();
+      final List<String> sentenceTokenList = new LinkedList<>();
 
       for (AnnotationFS tokenAnnotation : annotationIteratorPair.getSubIterator()) {
 
@@ -152,22 +184,30 @@ abstract class AbstractNameFinder extends CasAnnotator_ImplBase {
       }
 
       Span[] names  = find(cas,
-          (String[]) sentenceTokenList.toArray(new String[sentenceTokenList.size()]));
+          sentenceTokenList.toArray(new String[sentenceTokenList.size()]));
 
-      AnnotationFS nameAnnotations[] = new AnnotationFS[names.length];
+      AnnotationFS[] nameAnnotations = new AnnotationFS[names.length];
 
       for (int i = 0; i < names.length; i++) {
 
-        int startIndex = ((AnnotationFS) sentenceTokenAnnotationList.get(
-            names[i].getStart())).getBegin();
+        int startIndex = sentenceTokenAnnotationList.get(
+            names[i].getStart()).getBegin();
 
-        int endIndex = ((AnnotationFS) sentenceTokenAnnotationList.get(
-            names[i].getEnd() - 1)).getEnd();
+        int endIndex = sentenceTokenAnnotationList.get(
+            names[i].getEnd() - 1).getEnd();
 
-        nameAnnotations[i] =
-            cas.createAnnotation(mNameType, startIndex, endIndex);
+        Type nameType = mNameTypeMapping.get(names[i].getType());
 
-        cas.getIndexRepository().addFS(nameAnnotations[i]);
+        if (nameType == null) {
+          nameType = mNameType;
+        }
+
+        // Types in the model which are not mapped should be ignored,
+        // this allows the usage of only some types in the model
+        if (nameType != null) {
+          nameAnnotations[i] = cas.createAnnotation(nameType, startIndex, endIndex);
+          cas.getIndexRepository().addFS(nameAnnotations[i]);
+        }
       }
 
       postProcessAnnotations(names, nameAnnotations);

@@ -19,17 +19,13 @@
 package opennlp.tools.sentdetect;
 
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
+import java.nio.file.Path;
 import java.util.Map;
 
 import opennlp.tools.dictionary.Dictionary;
-import opennlp.tools.ml.model.AbstractModel;
-import opennlp.tools.ml.model.GenericModelReader;
 import opennlp.tools.ml.model.MaxentModel;
 import opennlp.tools.util.BaseToolFactory;
 import opennlp.tools.util.InvalidFormatException;
@@ -61,8 +57,8 @@ public class SentenceModel extends BaseModel {
    *             {@link #SentenceModel(String, MaxentModel, Map, SentenceDetectorFactory)}
    *             instead and pass in a {@link SentenceDetectorFactory}
    */
-  public SentenceModel(String languageCode, MaxentModel sentModel,
-      boolean useTokenEnd, Dictionary abbreviations, char[] eosCharacters, Map<String, String> manifestInfoEntries) {
+  public SentenceModel(String languageCode, MaxentModel sentModel, boolean useTokenEnd,
+      Dictionary abbreviations, char[] eosCharacters, Map<String, String> manifestInfoEntries) {
     this(languageCode, sentModel, manifestInfoEntries,
         new SentenceDetectorFactory(languageCode, useTokenEnd, abbreviations,
             eosCharacters));
@@ -92,15 +88,19 @@ public class SentenceModel extends BaseModel {
     this (languageCode, sentModel, useTokenEnd, abbreviations, null, null);
   }
 
-  public SentenceModel(InputStream in) throws IOException, InvalidFormatException {
+  public SentenceModel(InputStream in) throws IOException {
     super(COMPONENT_NAME, in);
   }
 
-  public SentenceModel(File modelFile) throws IOException, InvalidFormatException {
+  public SentenceModel(File modelFile) throws IOException {
     super(COMPONENT_NAME, modelFile);
   }
 
-  public SentenceModel(URL modelURL) throws IOException, InvalidFormatException {
+  public SentenceModel(Path modelPath) throws IOException {
+    this(modelPath.toFile());
+  }
+
+  public SentenceModel(URL modelURL) throws IOException {
     super(COMPONENT_NAME, modelURL);
   }
 
@@ -116,7 +116,7 @@ public class SentenceModel extends BaseModel {
     if (!ModelUtil.validateOutcomes(getMaxentModel(), SentenceDetectorME.SPLIT,
         SentenceDetectorME.NO_SPLIT)) {
       throw new InvalidFormatException("The maxent model is not compatible " +
-      		"with the sentence detector!");
+          "with the sentence detector!");
     }
   }
 
@@ -141,10 +141,7 @@ public class SentenceModel extends BaseModel {
   }
 
   public boolean useTokenEnd() {
-    if (getFactory() != null) {
-      return getFactory().isUseTokenEnd();
-    }
-    return true;
+    return getFactory() == null || getFactory().isUseTokenEnd();
   }
 
   public char[] getEosCharacters() {
@@ -152,35 +149,5 @@ public class SentenceModel extends BaseModel {
       return getFactory().getEOSCharacters();
     }
     return null;
-  }
-
-  public static void main(String[] args) throws FileNotFoundException, IOException, InvalidFormatException {
-    if (args.length < 3){
-      System.err.println("SentenceModel [-abbreviationsDictionary] [-useTokenEnd] languageCode packageName modelName");
-      System.exit(1);
-    }
-
-    int ai = 0;
-
-    Dictionary abbreviations = null;
-    if ("-abbreviationsDictionary".equals(args[ai])) {
-      ai++;
-      abbreviations = new Dictionary(new FileInputStream(args[ai++]));
-    }
-
-    boolean useTokenEnd = false;
-    if ("-useTokenEnd".equals(args[ai])) {
-      useTokenEnd = true;
-      ai++;
-    }
-
-    String languageCode = args[ai++];
-    String packageName = args[ai++];
-    String modelName = args[ai];
-
-    AbstractModel model = new GenericModelReader(new File(modelName)).getModel();
-    SentenceModel packageModel = new SentenceModel(languageCode, model,
-        useTokenEnd, abbreviations, (char[]) null);
-    packageModel.serialize(new FileOutputStream(packageName));
   }
 }

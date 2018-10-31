@@ -1,21 +1,20 @@
 /*
- * Licensed to the Apache Software Foundation (ASF) under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership.  The ASF licenses this file
- * to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
  *
- *   http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied.  See the License for the
- * specific language governing permissions and limitations
- * under the License.
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
+
 package opennlp.tools.ngram;
 
 import java.util.Collection;
@@ -35,12 +34,12 @@ public class NGramUtils {
    *
    * @param ngram the ngram to get the probability for
    * @param set   the vocabulary
-   * @param size  the size of the vocabulary
    * @param k     the smoothing factor
    * @return the Laplace smoothing probability
    * @see <a href="https://en.wikipedia.org/wiki/Additive_smoothing">Additive Smoothing</a>
    */
-  public static double calculateLaplaceSmoothingProbability(StringList ngram, Iterable<StringList> set, int size, Double k) {
+  public static double calculateLaplaceSmoothingProbability(StringList ngram,
+      Iterable<StringList> set, Double k) {
     return (count(ngram, set) + k) / (count(getNMinusOneTokenFirst(ngram), set) + k * 1);
   }
 
@@ -80,7 +79,8 @@ public class NGramUtils {
    * @param set the vocabulary
    * @return the maximum likelihood probability
    */
-  public static double calculateTrigramMLProbability(String x0, String x1, String x2, Iterable<StringList> set) {
+  public static double calculateTrigramMLProbability(String x0, String x1, String x2,
+                                                     Iterable<StringList> set) {
     return calculateNgramMLProbability(new StringList(x0, x1, x2), set);
   }
 
@@ -105,7 +105,8 @@ public class NGramUtils {
    * @param k   the smoothing factor
    * @return the prior Laplace smoothiing probability
    */
-  public static double calculateBigramPriorSmoothingProbability(String x0, String x1, Collection<StringList> set, Double k) {
+  public static double calculateBigramPriorSmoothingProbability(String x0, String x1,
+                                                                Collection<StringList> set, Double k) {
     return (count(new StringList(x0, x1), set) + k * calculateUnigramMLProbability(x1, set)) /
         (count(new StringList(x0), set) + k * set.size());
   }
@@ -122,8 +123,9 @@ public class NGramUtils {
    * @param lambda3 unigram interpolation factor
    * @return the linear interpolation probability
    */
-  public static double calculateTrigramLinearInterpolationProbability(String x0, String x1, String x2, Collection<StringList> set,
-                                                                      Double lambda1, Double lambda2, Double lambda3) {
+  public static double calculateTrigramLinearInterpolationProbability(String x0, String x1,
+                                                                      String x2, Collection<StringList> set,
+      Double lambda1, Double lambda2, Double lambda3) {
     assert lambda1 + lambda2 + lambda3 == 1 : "lambdas sum should be equals to 1";
     assert lambda1 > 0 && lambda2 > 0 && lambda3 > 0 : "lambdas should all be greater than 0";
 
@@ -141,7 +143,8 @@ public class NGramUtils {
    * @param set      the vocabulary
    * @return the probability
    */
-  public static double calculateMissingNgramProbabilityMass(StringList ngram, Double discount, Iterable<StringList> set) {
+  public static double calculateMissingNgramProbabilityMass(StringList ngram, Double discount,
+                                                            Iterable<StringList> set) {
     Double missingMass = 0d;
     Double countWord = count(ngram, set);
     for (String word : flatSet(set)) {
@@ -226,7 +229,7 @@ public class NGramUtils {
   }
 
   /**
-   * get the ngrams of dimension n of a certain input sequence of tokens
+   * Get the ngrams of dimension n of a certain input sequence of tokens.
    *
    * @param sequence a sequence of tokens
    * @param size     the size of the resulting ngrmams
@@ -246,8 +249,31 @@ public class NGramUtils {
         ngrams.add(new StringList(ngram));
       }
     }
-
     return ngrams;
   }
 
+  /**
+   * Get the ngrams of dimension n of a certain input sequence of tokens.
+   *
+   * @param sequence a sequence of tokens
+   * @param size     the size of the resulting ngrmams
+   * @return all the possible ngrams of the given size derivable from the input sequence
+   */
+  public static Collection<String[]> getNGrams(String[] sequence, int size) {
+    Collection<String[]> ngrams = new LinkedList<>();
+    if (size == -1 || size >= sequence.length) {
+      ngrams.add(sequence);
+    } else {
+      for (int i = 0; i < sequence.length - size + 1; i++) {
+        String[] ngram = new String[size];
+        ngram[0] = sequence[i];
+        for (int j = 1; j < size; j++) {
+          ngram[j] = sequence[i + j];
+        }
+        ngrams.add(ngram);
+      }
+    }
+
+    return ngrams;
+  }
 }

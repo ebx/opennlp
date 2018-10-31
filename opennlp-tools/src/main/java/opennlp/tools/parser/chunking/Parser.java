@@ -31,10 +31,8 @@ import opennlp.tools.dictionary.Dictionary;
 import opennlp.tools.ml.BeamSearch;
 import opennlp.tools.ml.EventTrainer;
 import opennlp.tools.ml.TrainerFactory;
-import opennlp.tools.ml.model.AbstractModel;
 import opennlp.tools.ml.model.Event;
 import opennlp.tools.ml.model.MaxentModel;
-import opennlp.tools.ml.model.TwoPassDataIndexer;
 import opennlp.tools.parser.AbstractBottomUpParser;
 import opennlp.tools.parser.ChunkSampleStream;
 import opennlp.tools.parser.HeadRules;
@@ -86,7 +84,8 @@ public class Parser extends AbstractBottomUpParser {
   }
 
   /**
-   * Creates a new parser using the specified models and head rules using the specified beam size and advance percentage.
+   * Creates a new parser using the specified models and head rules using the specified beam
+   * size and advance percentage.
    * @param buildModel The model to assign constituent labels.
    * @param checkModel The model to determine a constituent is complete.
    * @param tagger The model to assign pos-tags.
@@ -94,9 +93,10 @@ public class Parser extends AbstractBottomUpParser {
    * @param headRules The head rules for head word perculation.
    * @param beamSize The number of different parses kept during parsing.
    * @param advancePercentage The minimal amount of probability mass which advanced outcomes must represent.
-   * Only outcomes which contribute to the top "advancePercentage" will be explored.
+   *     Only outcomes which contribute to the top "advancePercentage" will be explored.
    */
-  private Parser(MaxentModel buildModel, MaxentModel checkModel, POSTagger tagger, Chunker chunker, HeadRules headRules, int beamSize, double advancePercentage) {
+  private Parser(MaxentModel buildModel, MaxentModel checkModel, POSTagger tagger, Chunker chunker,
+                 HeadRules headRules, int beamSize, double advancePercentage) {
     super(tagger, chunker, headRules, beamSize, advancePercentage);
     this.buildModel = buildModel;
     this.checkModel = checkModel;
@@ -104,8 +104,8 @@ public class Parser extends AbstractBottomUpParser {
     cprobs = new double[checkModel.getNumOutcomes()];
     this.buildContextGenerator = new BuildContextGenerator();
     this.checkContextGenerator = new CheckContextGenerator();
-    startTypeMap = new HashMap<String, String>();
-    contTypeMap = new HashMap<String, String>();
+    startTypeMap = new HashMap<>();
+    contTypeMap = new HashMap<>();
     for (int boi = 0, bon = buildModel.getNumOutcomes(); boi < bon; boi++) {
       String outcome = buildModel.getOutcome(boi);
       if (outcome.startsWith(START)) {
@@ -134,16 +134,16 @@ public class Parser extends AbstractBottomUpParser {
   @Override
   protected Parse[] advanceParses(final Parse p, double probMass) {
     double q = 1 - probMass;
-    /** The closest previous node which has been labeled as a start node. */
+    /* The closest previous node which has been labeled as a start node. */
     Parse lastStartNode = null;
-    /** The index of the closest previous node which has been labeled as a start node. */
+    /* The index of the closest previous node which has been labeled as a start node. */
     int lastStartIndex = -1;
-    /** The type of the closest previous node which has been labeled as a start node. */
+    /* The type of the closest previous node which has been labeled as a start node. */
     String lastStartType = null;
-    /** The index of the node which will be labeled in this iteration of advancing the parse. */
+    /* The index of the node which will be labeled in this iteration of advancing the parse. */
     int advanceNodeIndex;
-    /** The node which will be labeled in this iteration of advancing the parse. */
-    Parse advanceNode=null;
+    /* The node which will be labeled in this iteration of advancing the parse. */
+    Parse advanceNode = null;
     Parse[] originalChildren = p.getChildren();
     Parse[] children = collapsePunctuation(originalChildren,punctSet);
     int numNodes = children.length;
@@ -164,7 +164,7 @@ public class Parser extends AbstractBottomUpParser {
       }
     }
     int originalAdvanceIndex = mapParseIndex(advanceNodeIndex,children,originalChildren);
-    List<Parse> newParsesList = new ArrayList<Parse>(buildModel.getNumOutcomes());
+    List<Parse> newParsesList = new ArrayList<>(buildModel.getNumOutcomes());
     //call build
     buildModel.eval(buildContextGenerator.getContext(children, advanceNodeIndex), bprobs);
     double bprobSum = 0;
@@ -200,13 +200,18 @@ public class Parser extends AbstractBottomUpParser {
       }
       Parse newParse1 = (Parse) p.clone(); //clone parse
       if (createDerivationString) newParse1.getDerivation().append(max).append("-");
-      newParse1.setChild(originalAdvanceIndex,tag); //replace constituent being labeled to create new derivation
+      //replace constituent being labeled to create new derivation
+      newParse1.setChild(originalAdvanceIndex,tag);
       newParse1.addProb(Math.log(bprob));
       //check
-      //String[] context = checkContextGenerator.getContext(newParse1.getChildren(), lastStartType, lastStartIndex, advanceNodeIndex);
-      checkModel.eval(checkContextGenerator.getContext(collapsePunctuation(newParse1.getChildren(),punctSet), lastStartType, lastStartIndex, advanceNodeIndex), cprobs);
-      //System.out.println("check "+lastStartType+" "+cprobs[completeIndex]+" "+cprobs[incompleteIndex]+" "+tag+" "+java.util.Arrays.asList(context));
-      Parse newParse2 = newParse1;
+      //String[] context = checkContextGenerator.getContext(newParse1.getChildren(), lastStartType,
+      // lastStartIndex, advanceNodeIndex);
+      checkModel.eval(checkContextGenerator.getContext(
+          collapsePunctuation(newParse1.getChildren(),punctSet), lastStartType, lastStartIndex,
+          advanceNodeIndex), cprobs);
+      //System.out.println("check "+lastStartType+" "+cprobs[completeIndex]+" "+cprobs[incompleteIndex]
+      // +" "+tag+" "+java.util.Arrays.asList(context));
+      Parse newParse2;
       if (cprobs[completeIndex] > q) { //make sure a reduce is likely
         newParse2 = (Parse) newParse1.clone();
         if (createDerivationString) newParse2.getDerivation().append(1).append(".");
@@ -225,12 +230,18 @@ public class Parser extends AbstractBottomUpParser {
           flat &= cons[ci].isPosTag();
         }
         if (!flat) { //flat chunks are done by chunker
-          if (lastStartIndex == 0 && advanceNodeIndex == numNodes-1) { //check for top node to include end and begining punctuation
-            //System.err.println("ParserME.advanceParses: reducing entire span: "+new Span(lastStartNode.getSpan().getStart(), advanceNode.getSpan().getEnd())+" "+lastStartType+" "+java.util.Arrays.asList(children));
-            newParse2.insert(new Parse(p.getText(), p.getSpan(), lastStartType, cprobs[1], headRules.getHead(cons, lastStartType)));
+          //check for top node to include end and begining punctuation
+          if (lastStartIndex == 0 && advanceNodeIndex == numNodes - 1) {
+            //System.err.println("ParserME.advanceParses: reducing entire span: "
+            // +new Span(lastStartNode.getSpan().getStart(), advanceNode.getSpan().getEnd())+" "
+            // +lastStartType+" "+java.util.Arrays.asList(children));
+            newParse2.insert(new Parse(p.getText(), p.getSpan(), lastStartType, cprobs[1],
+                headRules.getHead(cons, lastStartType)));
           }
           else {
-            newParse2.insert(new Parse(p.getText(), new Span(lastStartNode.getSpan().getStart(), advanceNode.getSpan().getEnd()), lastStartType, cprobs[1], headRules.getHead(cons, lastStartType)));
+            newParse2.insert(new Parse(p.getText(), new Span(lastStartNode.getSpan().getStart(),
+                advanceNode.getSpan().getEnd()), lastStartType, cprobs[1],
+                headRules.getHead(cons, lastStartType)));
           }
           newParsesList.add(newParse2);
         }
@@ -248,15 +259,6 @@ public class Parser extends AbstractBottomUpParser {
     return newParses;
   }
 
-  /**
-   * @deprecated Please do not use anymore, use the ObjectStream train methods instead! This method
-   * will be removed soon.
-   */
-  @Deprecated
-  public static AbstractModel train(ObjectStream<Event> es, int iterations, int cut) throws java.io.IOException {
-    return opennlp.tools.ml.maxent.GIS.trainModel(iterations, new TwoPassDataIndexer(es, cut));
-  }
-
   public static void mergeReportIntoManifest(Map<String, String> manifest,
       Map<String, String> report, String namespace) {
 
@@ -265,7 +267,8 @@ public class Parser extends AbstractBottomUpParser {
     }
   }
 
-  public static ParserModel train(String languageCode, ObjectStream<Parse> parseSamples, HeadRules rules, TrainingParameters mlParams)
+  public static ParserModel train(String languageCode, ObjectStream<Parse> parseSamples,
+                                  HeadRules rules, TrainingParameters mlParams)
           throws IOException {
 
     System.err.println("Building dictionary");
@@ -274,13 +277,14 @@ public class Parser extends AbstractBottomUpParser {
 
     parseSamples.reset();
 
-    Map<String, String> manifestInfoEntries = new HashMap<String, String>();
+    Map<String, String> manifestInfoEntries = new HashMap<>();
 
     // build
     System.err.println("Training builder");
     ObjectStream<Event> bes = new ParserEventStream(parseSamples, rules, ParserEventTypeEnum.BUILD, mdict);
-    Map<String, String> buildReportMap = new HashMap<String, String>();
-    EventTrainer buildTrainer = TrainerFactory.getEventTrainer(mlParams.getSettings("build"), buildReportMap);
+    Map<String, String> buildReportMap = new HashMap<>();
+    EventTrainer buildTrainer =
+        TrainerFactory.getEventTrainer(mlParams.getParameters("build"), buildReportMap);
     MaxentModel buildModel = buildTrainer.train(bes);
     mergeReportIntoManifest(manifestInfoEntries, buildReportMap, "build");
 
@@ -289,9 +293,8 @@ public class Parser extends AbstractBottomUpParser {
     // tag
     TrainingParameters posTaggerParams = mlParams.getParameters("tagger");
 
-    if (!posTaggerParams.getSettings().containsKey(BeamSearch.BEAM_SIZE_PARAMETER)) {
-      mlParams.put("tagger", BeamSearch.BEAM_SIZE_PARAMETER,
-          Integer.toString(10));
+    if (!posTaggerParams.getObjectSettings().containsKey(BeamSearch.BEAM_SIZE_PARAMETER)) {
+      mlParams.put("tagger", BeamSearch.BEAM_SIZE_PARAMETER, 10);
     }
 
     POSModel posModel = POSTaggerME.train(languageCode, new PosSampleStream(parseSamples),
@@ -308,37 +311,15 @@ public class Parser extends AbstractBottomUpParser {
     // check
     System.err.println("Training checker");
     ObjectStream<Event> kes = new ParserEventStream(parseSamples, rules, ParserEventTypeEnum.CHECK);
-    Map<String, String> checkReportMap = new HashMap<String, String>();
-    EventTrainer checkTrainer = TrainerFactory.getEventTrainer( mlParams.getSettings("check"), checkReportMap);
+    Map<String, String> checkReportMap = new HashMap<>();
+    EventTrainer checkTrainer =
+        TrainerFactory.getEventTrainer(mlParams.getParameters("check"), checkReportMap);
     MaxentModel checkModel = checkTrainer.train(kes);
     mergeReportIntoManifest(manifestInfoEntries, checkReportMap, "check");
 
     // TODO: Remove cast for HeadRules
     return new ParserModel(languageCode, buildModel, checkModel,
-        posModel, chunkModel, (opennlp.tools.parser.HeadRules) rules,
+        posModel, chunkModel, rules,
         ParserType.CHUNKING, manifestInfoEntries);
-  }
-
-  /**
-  * @deprecated use {@link #train(String, ObjectStream, HeadRules, TrainingParameters)}
-  * instead and pass in a TrainingParameters object.
-  */
-  @Deprecated
-  public static ParserModel train(String languageCode, ObjectStream<Parse> parseSamples, HeadRules rules, int iterations, int cut)
-      throws IOException {
-
-    TrainingParameters params = new TrainingParameters();
-    params.put("dict", TrainingParameters.CUTOFF_PARAM, Integer.toString(cut));
-
-    params.put("tagger", TrainingParameters.CUTOFF_PARAM, Integer.toString(cut));
-    params.put("tagger", TrainingParameters.ITERATIONS_PARAM, Integer.toString(iterations));
-    params.put("chunker", TrainingParameters.CUTOFF_PARAM, Integer.toString(cut));
-    params.put("chunker", TrainingParameters.ITERATIONS_PARAM, Integer.toString(iterations));
-    params.put("check", TrainingParameters.CUTOFF_PARAM, Integer.toString(cut));
-    params.put("check", TrainingParameters.ITERATIONS_PARAM, Integer.toString(iterations));
-    params.put("build", TrainingParameters.CUTOFF_PARAM, Integer.toString(cut));
-    params.put("build", TrainingParameters.ITERATIONS_PARAM, Integer.toString(iterations));
-
-    return train(languageCode, parseSamples, rules, params);
   }
 }

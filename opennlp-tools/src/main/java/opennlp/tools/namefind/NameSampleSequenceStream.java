@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
- package opennlp.tools.namefind;
+package opennlp.tools.namefind;
 
 import java.io.IOException;
 import java.util.Collections;
@@ -40,12 +40,13 @@ public class NameSampleSequenceStream implements SequenceStream {
   }
 
   public NameSampleSequenceStream(ObjectStream<NameSample> psi, AdaptiveFeatureGenerator featureGen)
-  throws IOException {
+      throws IOException {
     this(psi, new DefaultNameContextGenerator(featureGen), true);
   }
 
-  public NameSampleSequenceStream(ObjectStream<NameSample> psi, AdaptiveFeatureGenerator featureGen, boolean useOutcomes)
-  throws IOException {
+  public NameSampleSequenceStream(ObjectStream<NameSample> psi,
+      AdaptiveFeatureGenerator featureGen, boolean useOutcomes)
+      throws IOException {
     this(psi, new DefaultNameContextGenerator(featureGen), useOutcomes);
   }
 
@@ -61,7 +62,7 @@ public class NameSampleSequenceStream implements SequenceStream {
 
   public NameSampleSequenceStream(ObjectStream<NameSample> psi, NameContextGenerator pcg, boolean useOutcomes,
       SequenceCodec<String> seqCodec)
-      throws IOException {
+          throws IOException {
     this.psi = psi;
     this.useOutcomes = useOutcomes;
     this.pcg = pcg;
@@ -70,9 +71,9 @@ public class NameSampleSequenceStream implements SequenceStream {
 
   @SuppressWarnings("unchecked")
   public Event[] updateContext(Sequence sequence, AbstractModel model) {
-    Sequence<NameSample> pss = sequence;
-    TokenNameFinder tagger = new NameFinderME(new TokenNameFinderModel("x-unspecified", model, Collections.<String, Object>emptyMap(), null));
-    String[] sentence = pss.getSource().getSentence();
+    TokenNameFinder tagger = new NameFinderME(new TokenNameFinderModel(
+        "x-unspecified", model, Collections.emptyMap(), null));
+    String[] sentence = ((Sequence<NameSample>) sequence).getSource().getSentence();
     String[] tags = seqCodec.encode(tagger.find(sentence), sentence.length);
     Event[] events = new Event[sentence.length];
 
@@ -85,11 +86,11 @@ public class NameSampleSequenceStream implements SequenceStream {
   public Sequence read() throws IOException {
     NameSample sample = psi.read();
     if (sample != null) {
-      String sentence[] = sample.getSentence();
-      String tags[] = seqCodec.encode(sample.getNames(), sentence.length);
+      String[] sentence = sample.getSentence();
+      String[] tags = seqCodec.encode(sample.getNames(), sentence.length);
       Event[] events = new Event[sentence.length];
 
-      for (int i=0; i < sentence.length; i++) {
+      for (int i = 0; i < sentence.length; i++) {
 
         // it is safe to pass the tags as previous tags because
         // the context generator does not look for non predicted tags
@@ -103,12 +104,11 @@ public class NameSampleSequenceStream implements SequenceStream {
 
         events[i] = new Event(tags[i], context);
       }
-      Sequence<NameSample> sequence = new Sequence<NameSample>(events,sample);
-      return sequence;
-      }
-      else {
-        return null;
-      }
+      return new Sequence<>(events,sample);
+    }
+    else {
+      return null;
+    }
   }
 
   @Override

@@ -18,9 +18,11 @@
 
 package opennlp.tools.postag;
 
+import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 
 import opennlp.tools.tokenize.WhitespaceTokenizer;
 import opennlp.tools.util.InvalidFormatException;
@@ -28,7 +30,7 @@ import opennlp.tools.util.InvalidFormatException;
 /**
  * Represents an pos-tagged sentence.
  */
-public class POSSample {
+public class POSSample implements Serializable {
 
   private List<String> sentence;
 
@@ -36,7 +38,7 @@ public class POSSample {
 
   private final String[][] additionalContext;
 
-  public POSSample(String sentence[], String tags[]) {
+  public POSSample(String[] sentence, String[] tags) {
     this(sentence, tags, null);
   }
 
@@ -65,7 +67,7 @@ public class POSSample {
     this.additionalContext = ac;
   }
 
-  public POSSample(String sentence[], String tags[],
+  public POSSample(String[] sentence, String[] tags,
       String[][] additionalContext) {
     this(Arrays.asList(sentence), Arrays.asList(tags), additionalContext);
   }
@@ -77,12 +79,12 @@ public class POSSample {
             ", tags: " + tags.size());
     }
 
-      if (sentence.contains(null)) {
-        throw new IllegalArgumentException("null elements are not allowed in sentence tokens!");
-      }
-      if (tags.contains(null)) {
-        throw new IllegalArgumentException("null elements are not allowed in tags!");
-      }
+    if (sentence.contains(null)) {
+      throw new IllegalArgumentException("null elements are not allowed in sentence tokens!");
+    }
+    if (tags.contains(null)) {
+      throw new IllegalArgumentException("null elements are not allowed in tags!");
+    }
   }
 
   public String[] getSentence() {
@@ -119,10 +121,10 @@ public class POSSample {
 
   public static POSSample parse(String sentenceString) throws InvalidFormatException {
 
-    String tokenTags[] = WhitespaceTokenizer.INSTANCE.tokenize(sentenceString);
+    String[] tokenTags = WhitespaceTokenizer.INSTANCE.tokenize(sentenceString);
 
-    String sentence[] = new String[tokenTags.length];
-    String tags[] = new String[tokenTags.length];
+    String[] sentence = new String[tokenTags.length];
+    String[] tags = new String[tokenTags.length];
 
     for (int i = 0; i < tokenTags.length; i++) {
       int split = tokenTags[i].lastIndexOf("_");
@@ -132,23 +134,30 @@ public class POSSample {
       }
 
       sentence[i] = tokenTags[i].substring(0, split);
-      tags[i] = tokenTags[i].substring(split+1);
+      tags[i] = tokenTags[i].substring(split + 1);
     }
 
     return new POSSample(sentence, tags);
   }
 
   @Override
+  public int hashCode() {
+    return Objects.hash(Arrays.hashCode(getSentence()), Arrays.hashCode(getTags()));
+  }
+
+  @Override
   public boolean equals(Object obj) {
-    if (this == obj) {
+    if (obj == this) {
       return true;
-    } else if (obj instanceof POSSample) {
+    }
+
+    if (obj instanceof POSSample) {
       POSSample a = (POSSample) obj;
 
       return Arrays.equals(getSentence(), a.getSentence())
           && Arrays.equals(getTags(), a.getTags());
-    } else {
-      return false;
     }
+
+    return this == obj;
   }
 }

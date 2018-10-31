@@ -1,22 +1,23 @@
 /*
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
  *
- *       http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- *  under the License.
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package opennlp.tools.formats;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.charset.Charset;
 import java.util.Locale;
 
@@ -67,27 +68,11 @@ public class NameFinderCensus90NameStream implements ObjectStream<StringList> {
    *
    * @param in  an <code>InputStreamFactory</code> for the input file.
    * @param encoding  the <code>Charset</code> to apply to the input stream.
-   * @throws IOException 
+   * @throws IOException
    */
   public NameFinderCensus90NameStream(InputStreamFactory in, Charset encoding)
       throws IOException {
     this.locale = new Locale("en"); // locale is English
-    this.encoding = encoding;
-    this.lineStream = new PlainTextByLineStream(in, this.encoding);
-  }
-
-
-  /**
-   * This constructor takes an <code>InputStream</code> and a <code>Charset</code>
-   * and opens an associated stream object with the specified encoding specified.
-   *
-   * @param in  an <code>InputStream</code> for the input file.
-   * @param encoding  the <code>Charset</code> to apply to the input stream.
-   * 
-   * @deprecated use {@link NameFinderCensus90NameStream#NameFinderCensus90NameStream(InputStreamFactory, Charset)}
-   */
-  public NameFinderCensus90NameStream(InputStream in, Charset encoding) {
-    this.locale = new Locale("en");   // locale is English
     this.encoding = encoding;
     this.lineStream = new PlainTextByLineStream(in, this.encoding);
   }

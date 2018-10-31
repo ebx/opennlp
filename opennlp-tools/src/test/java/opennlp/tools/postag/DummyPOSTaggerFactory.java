@@ -23,7 +23,6 @@ import java.io.OutputStream;
 import java.util.Map;
 
 import opennlp.tools.dictionary.Dictionary;
-import opennlp.tools.util.InvalidFormatException;
 import opennlp.tools.util.SequenceValidator;
 import opennlp.tools.util.model.ArtifactSerializer;
 import opennlp.tools.util.model.UncloseableInputStream;
@@ -37,8 +36,8 @@ public class DummyPOSTaggerFactory extends POSTaggerFactory {
   public DummyPOSTaggerFactory() {
   }
 
-  public DummyPOSTaggerFactory(Dictionary ngramDictionary, DummyPOSDictionary posDictionary) {
-    super(ngramDictionary, null);
+  public DummyPOSTaggerFactory(DummyPOSDictionary posDictionary) {
+    super(null, null, null);
     this.dict = posDictionary;
   }
 
@@ -69,7 +68,7 @@ public class DummyPOSTaggerFactory extends POSTaggerFactory {
   @Override
   public Map<String, Object> createArtifactMap() {
     Map<String, Object> artifactMap = super.createArtifactMap();
-    if(this.dict != null)
+    if (this.dict != null)
       artifactMap.put(DUMMY_POSDICT, this.dict);
     return artifactMap;
   }
@@ -82,10 +81,9 @@ public class DummyPOSTaggerFactory extends POSTaggerFactory {
 
   }
 
-  static class DummyPOSDictionarySerializer implements ArtifactSerializer<DummyPOSDictionary> {
+  public static class DummyPOSDictionarySerializer implements ArtifactSerializer<DummyPOSDictionary> {
 
-    public DummyPOSDictionary create(InputStream in) throws IOException,
-        InvalidFormatException {
+    public DummyPOSDictionary create(InputStream in) throws IOException {
       return DummyPOSDictionary.create(new UncloseableInputStream(in));
     }
 
@@ -108,12 +106,15 @@ public class DummyPOSTaggerFactory extends POSTaggerFactory {
 
     private POSDictionary dict;
 
+    public DummyPOSDictionary() {
+    }
+
     public DummyPOSDictionary(POSDictionary dict) {
       this.dict = dict;
     }
 
     public static DummyPOSDictionary create(
-        UncloseableInputStream uncloseableInputStream) throws InvalidFormatException, IOException {
+        UncloseableInputStream uncloseableInputStream) throws IOException {
       return new DummyPOSDictionary(POSDictionary.create(uncloseableInputStream));
     }
 
@@ -125,6 +126,9 @@ public class DummyPOSTaggerFactory extends POSTaggerFactory {
       return dict.getTags(word);
     }
 
+    @Override
+    public Class<?> getArtifactSerializerClass() {
+      return DummyPOSDictionarySerializer.class;
+    }
   }
-
 }

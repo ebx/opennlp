@@ -1,20 +1,18 @@
 /*
- * Licensed to the Apache Software Foundation (ASF) under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership.  The ASF licenses this file
- * to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
  *
- *   http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied.  See the License for the
- * specific language governing permissions and limitations
- * under the License.
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package opennlp.tools.ml.maxent.io;
@@ -38,25 +36,24 @@ import opennlp.tools.ml.model.Context;
 public abstract class GISModelWriter extends AbstractModelWriter {
   protected Context[] PARAMS;
   protected String[] OUTCOME_LABELS;
-  protected int CORRECTION_CONSTANT;
-  protected double CORRECTION_PARAM;
   protected String[] PRED_LABELS;
 
   public GISModelWriter(AbstractModel model) {
 
     Object[] data = model.getDataStructures();
 
-    PARAMS = (Context[]) data[0];
-
     @SuppressWarnings("unchecked")
-    Map<String, Integer> pmap = (Map<String, Integer>) data[1];
-    OUTCOME_LABELS = (String[]) data[2];
-    CORRECTION_CONSTANT = (Integer) data[3];
-    CORRECTION_PARAM = (Double) data[4];
+    Map<String, Context> pmap = (Map<String, Context>) data[1];
 
+    OUTCOME_LABELS = (String[]) data[2];
+    PARAMS = new Context[pmap.size()];
     PRED_LABELS = new String[pmap.size()];
-    for (String pred : pmap.keySet()) {
-      PRED_LABELS[pmap.get(pred)] = pred;
+
+    int i = 0;
+    for (Map.Entry<String, Context> pred : pmap.entrySet()) {
+      PRED_LABELS[i] = pred.getKey();
+      PARAMS[i] = pred.getValue();
+      i++;
     }
   }
 
@@ -75,17 +72,18 @@ public abstract class GISModelWriter extends AbstractModelWriter {
     // the type of model (GIS)
     writeUTF("GIS");
 
-    // the value of the correction constant
-    writeInt(CORRECTION_CONSTANT);
+    // the value of the correction constant (not used anymore)
+    writeInt(1);
 
-    // the value of the correction constant
-    writeDouble(CORRECTION_PARAM);
+    // the value of the correction params (not used anymore)
+    writeDouble(1);
 
     // the mapping from outcomes to their integer indexes
     writeInt(OUTCOME_LABELS.length);
 
-    for (int i = 0; i < OUTCOME_LABELS.length; i++)
-      writeUTF(OUTCOME_LABELS[i]);
+    for (String OUTCOME_LABEL : OUTCOME_LABELS) {
+      writeUTF(OUTCOME_LABEL);
+    }
 
     // the mapping from predicates to the outcomes they contributed to.
     // The sorting is done so that we actually can write this out more
@@ -95,21 +93,23 @@ public abstract class GISModelWriter extends AbstractModelWriter {
 
     writeInt(compressed.size());
 
-    for (int i = 0; i < compressed.size(); i++) {
-      List a = compressed.get(i);
-      writeUTF(a.size() + a.get(0).toString());
+    for (List<ComparablePredicate> aCompressed : compressed) {
+      writeUTF(aCompressed.size() + ((List<?>) aCompressed).get(0).toString());
     }
 
     // the mapping from predicate names to their integer indexes
     writeInt(PARAMS.length);
 
-    for (int i = 0; i < sorted.length; i++)
-      writeUTF(sorted[i].name);
+    for (ComparablePredicate aSorted : sorted) {
+      writeUTF(aSorted.name);
+    }
 
     // write out the parameters
-    for (int i = 0; i < sorted.length; i++)
-      for (int j = 0; j < sorted[i].params.length; j++)
-        writeDouble(sorted[i].params[j]);
+    for (ComparablePredicate aSorted : sorted) {
+      for (int j = 0; j < aSorted.params.length; j++) {
+        writeDouble(aSorted.params[j]);
+      }
+    }
 
     close();
   }
@@ -123,7 +123,6 @@ public abstract class GISModelWriter extends AbstractModelWriter {
       int[] predkeys = PARAMS[pid].getOutcomes();
       // Arrays.sort(predkeys);
       int numActive = predkeys.length;
-      int[] activeOutcomes = predkeys;
       double[] activeParams = PARAMS[pid].getParameters();
 
       numParams += numActive;
@@ -135,7 +134,7 @@ public abstract class GISModelWriter extends AbstractModelWriter {
        * PARAMS[pid].getParams(oid); id++; }
        */
       sortPreds[pid] = new ComparablePredicate(PRED_LABELS[pid],
-          activeOutcomes, activeParams);
+        predkeys, activeParams);
     }
 
     Arrays.sort(sortPreds);
@@ -143,21 +142,21 @@ public abstract class GISModelWriter extends AbstractModelWriter {
   }
 
   protected List<List<ComparablePredicate>> compressOutcomes(ComparablePredicate[] sorted) {
-    List<List<ComparablePredicate>> outcomePatterns = new ArrayList<List<ComparablePredicate>>();
-    if(sorted.length > 0) {
-        ComparablePredicate cp = sorted[0];    
-        List<ComparablePredicate> newGroup = new ArrayList<ComparablePredicate>();
-        for (int i = 0; i < sorted.length; i++) {
-          if (cp.compareTo(sorted[i]) == 0) {
-            newGroup.add(sorted[i]);
-          } else {
-            cp = sorted[i];
-            outcomePatterns.add(newGroup);
-            newGroup = new ArrayList<ComparablePredicate>();
-            newGroup.add(sorted[i]);
-          }
+    List<List<ComparablePredicate>> outcomePatterns = new ArrayList<>();
+    if (sorted.length > 0) {
+      ComparablePredicate cp = sorted[0];
+      List<ComparablePredicate> newGroup = new ArrayList<>();
+      for (int i = 0; i < sorted.length; i++) {
+        if (cp.compareTo(sorted[i]) == 0) {
+          newGroup.add(sorted[i]);
+        } else {
+          cp = sorted[i];
+          outcomePatterns.add(newGroup);
+          newGroup = new ArrayList<>();
+          newGroup.add(sorted[i]);
         }
-        outcomePatterns.add(newGroup);
+      }
+      outcomePatterns.add(newGroup);
     }
     return outcomePatterns;
   }

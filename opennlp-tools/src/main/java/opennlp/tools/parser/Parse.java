@@ -18,13 +18,13 @@
 
 package opennlp.tools.parser;
 
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.Stack;
 import java.util.TreeSet;
@@ -137,8 +137,8 @@ public class Parse implements Cloneable, Comparable<Parse> {
   private static boolean useFunctionTags;
 
   /**
-   * Creates a new parse node for this specified text and span of the specified type with the specified probability
-   * and the specified head index.
+   * Creates a new parse node for this specified text and span of the specified type
+   * with the specified probability and the specified head index.
    *
    * @param text The text of the sentence for which this node is a part of.
    * @param span The character offsets for this node within the specified text.
@@ -153,14 +153,14 @@ public class Parse implements Cloneable, Comparable<Parse> {
     this.prob = p;
     this.head = this;
     this.headIndex = index;
-    this.parts = new LinkedList<Parse>();
+    this.parts = new LinkedList<>();
     this.label = null;
     this.parent = null;
   }
 
   /**
-   * Creates a new parse node for this specified text and span of the specified type with the specified probability
-   * and the specified head and head index.
+   * Creates a new parse node for this specified text and span of the specified type with
+   * the specified probability and the specified head and head index.
    *
    * @param text The text of the sentence for which this node is a part of.
    * @param span The character offsets for this node within the specified text.
@@ -179,7 +179,7 @@ public class Parse implements Cloneable, Comparable<Parse> {
   @Override
   public Object clone() {
     Parse p = new Parse(this.text, this.span, this.type, this.prob, this.head);
-    p.parts = new LinkedList<Parse>();
+    p.parts = new LinkedList<>();
     p.parts.addAll(this.parts);
 
     if (derivation != null) {
@@ -202,11 +202,12 @@ public class Parse implements Cloneable, Comparable<Parse> {
     }
     else {
       Parse c = (Parse) this.clone();
-      Parse lc = c.parts.get(parts.size()-1);
-      c.parts.set(parts.size()-1,lc.clone(node));
+      Parse lc = c.parts.get(parts.size() - 1);
+      c.parts.set(parts.size() - 1,lc.clone(node));
       return c;
     }
   }
+
   /**
    * Clones the right frontier of this root parse up to and including the specified node.
    *
@@ -265,7 +266,7 @@ public class Parse implements Cloneable, Comparable<Parse> {
    */
   public void addPreviousPunctuation(Parse punct) {
     if (this.prevPunctSet == null) {
-      this.prevPunctSet = new TreeSet<Parse>();
+      this.prevPunctSet = new TreeSet<>();
     }
     prevPunctSet.add(punct);
   }
@@ -286,7 +287,7 @@ public class Parse implements Cloneable, Comparable<Parse> {
    */
   public void addNextPunctuation(Parse punct) {
     if (this.nextPunctSet == null) {
-      this.nextPunctSet = new TreeSet<Parse>();
+      this.nextPunctSet = new TreeSet<>();
     }
     nextPunctSet.add(punct);
   }
@@ -319,7 +320,7 @@ public class Parse implements Cloneable, Comparable<Parse> {
     Span ic = constituent.span;
     if (span.contains(ic)) {
       //double oprob=c.prob;
-      int pi=0;
+      int pi = 0;
       int pn = parts.size();
       for (; pi < pn; pi++) {
         Parse subPart = parts.get(pi);
@@ -347,7 +348,8 @@ public class Parse implements Cloneable, Comparable<Parse> {
       //System.err.println("Parse.insert:adding con="+constituent+" to "+this);
       parts.add(pi, constituent);
       constituent.setParent(this);
-      //System.err.println("Parse.insert: "+constituent.hashCode()+" -> "+constituent.getParent().hashCode());
+      // System.err.println("Parse.insert: "+constituent.hashCode()+" -> "
+      // +constituent.getParent().hashCode());
     }
     else {
       throw new IllegalArgumentException("Inserting constituent not contained in the sentence!");
@@ -391,7 +393,7 @@ public class Parse implements Cloneable, Comparable<Parse> {
    * Displays this parse using Penn Treebank-style formatting.
    */
   public void show() {
-    StringBuffer sb = new StringBuffer(text.length()*4);
+    StringBuffer sb = new StringBuffer(text.length() * 4);
     show(sb);
     System.out.println(sb);
   }
@@ -467,9 +469,11 @@ public class Parse implements Cloneable, Comparable<Parse> {
   }
 
   /**
-   * Returns the log of the product of the probability associated with all the decisions which formed this constituent.
+   * Returns the log of the product of the probability associated with all the
+   * decisions which formed this constituent.
    *
-   * @return The log of the product of the probability associated with all the decisions which formed this constituent.
+   * @return The log of the product of the probability associated with all the
+   * decisions which formed this constituent.
    */
   public double getProb() {
     return prob;
@@ -481,7 +485,7 @@ public class Parse implements Cloneable, Comparable<Parse> {
    * @param logProb The probability of an action performed on this parse.
    */
   public void addProb(double logProb) {
-    this.prob+=logProb;
+    this.prob += logProb;
   }
 
   /**
@@ -512,24 +516,23 @@ public class Parse implements Cloneable, Comparable<Parse> {
     parts.add(daughter);
     this.span = new Span(span.getStart(),daughter.getSpan().getEnd());
     this.head = rules.getHead(getChildren(),type);
-    if (head == null) {
-      System.err.println(parts);
-    }
     this.headIndex = head.headIndex;
   }
 
   public void remove(int index) {
     parts.remove(index);
-    if(! parts.isEmpty()) {
-        if (index == 0 || index == parts.size()) { //size is orig last element
-            span = new Span((parts.get(0)).span.getStart(),(parts.get(parts.size()-1)).span.getEnd());
-          }
+    if (! parts.isEmpty()) {
+      if (index == 0 || index == parts.size()) { //size is orig last element
+        span = new Span((parts.get(0)).span.getStart(),(parts.get(parts.size() - 1)).span.getEnd());
+      }
     }
   }
 
   public Parse adjoinRoot(Parse node, HeadRules rules, int parseIndex) {
     Parse lastChild = parts.get(parseIndex);
-    Parse adjNode = new Parse(this.text,new Span(lastChild.getSpan().getStart(),node.getSpan().getEnd()),lastChild.getType(),1,rules.getHead(new Parse[]{lastChild,node},lastChild.getType()));
+    Parse adjNode = new Parse(this.text,new Span(lastChild.getSpan().getStart(),
+        node.getSpan().getEnd()),lastChild.getType(),1,
+        rules.getHead(new Parse[]{lastChild,node},lastChild.getType()));
     adjNode.parts.add(lastChild);
     if (node.prevPunctSet != null) {
       adjNode.parts.addAll(node.prevPunctSet);
@@ -548,14 +551,15 @@ public class Parse implements Cloneable, Comparable<Parse> {
    * @return The new parent node of this node and the specified sister node.
    */
   public Parse adjoin(Parse sister, HeadRules rules) {
-    Parse lastChild = parts.get(parts.size()-1);
-    Parse adjNode = new Parse(this.text,new Span(lastChild.getSpan().getStart(),sister.getSpan().getEnd()),lastChild.getType(),1,rules.getHead(new Parse[]{lastChild,sister},lastChild.getType()));
+    Parse lastChild = parts.get(parts.size() - 1);
+    Parse adjNode = new Parse(this.text,new Span(lastChild.getSpan().getStart(),sister.getSpan().getEnd()),
+        lastChild.getType(),1,rules.getHead(new Parse[]{lastChild,sister},lastChild.getType()));
     adjNode.parts.add(lastChild);
     if (sister.prevPunctSet != null) {
       adjNode.parts.addAll(sister.prevPunctSet);
     }
     adjNode.parts.add(sister);
-    parts.set(parts.size()-1,adjNode);
+    parts.set(parts.size() - 1, adjNode);
     this.span = new Span(span.getStart(),sister.getSpan().getEnd());
     this.head = rules.getHead(getChildren(),type);
     this.headIndex = head.headIndex;
@@ -565,7 +569,7 @@ public class Parse implements Cloneable, Comparable<Parse> {
   public void expandTopNode(Parse root) {
     boolean beforeRoot = true;
     //System.err.println("expandTopNode: parts="+parts);
-    for (int pi=0,ai=0;pi<parts.size();pi++,ai++) {
+    for (int pi = 0, ai = 0; pi < parts.size(); pi++,ai++) {
       Parse node = parts.get(pi);
       if (node == root) {
         beforeRoot = false;
@@ -673,7 +677,7 @@ public class Parse implements Cloneable, Comparable<Parse> {
           Matcher funMatcher = funTypePattern.matcher(rest);
           if (funMatcher.find()) {
             String ftag = funMatcher.group(1);
-            type = type+"-"+ftag;
+            type = type + "-" + ftag;
           }
         }
         return type;
@@ -735,7 +739,7 @@ public class Parse implements Cloneable, Comparable<Parse> {
    * @param rest The portion of the parse string remaining to be processed.
    *
    * @return The string containing the token for the specified portion of the parse string or
-   * null if the portion of the parse string does not represent a token.
+   *     null if the portion of the parse string does not represent a token.
    */
   private static String getToken(String rest) {
     Matcher tokenMatcher = tokenPattern.matcher(rest);
@@ -753,7 +757,7 @@ public class Parse implements Cloneable, Comparable<Parse> {
    */
   public void updateHeads(HeadRules rules) {
     if (parts != null && parts.size() != 0) {
-      for (int pi=0,pn=parts.size();pi<pn;pi++) {
+      for (int pi = 0, pn = parts.size(); pi < pn; pi++) {
         Parse c = parts.get(pi);
         c.updateHeads(rules);
       }
@@ -771,7 +775,7 @@ public class Parse implements Cloneable, Comparable<Parse> {
   }
 
   public void updateSpan() {
-    span = new Span((parts.get(0)).span.getStart(),(parts.get(parts.size()-1)).span.getEnd());
+    span = new Span((parts.get(0)).span.getStart(),(parts.get(parts.size() - 1)).span.getEnd());
   }
 
   /**
@@ -780,9 +784,9 @@ public class Parse implements Cloneable, Comparable<Parse> {
    * @param parse
    */
   public static void pruneParse(Parse parse) {
-    List<Parse> nodes = new LinkedList<Parse>();
+    List<Parse> nodes = new LinkedList<>();
     nodes.add(parse);
-    while(nodes.size() != 0) {
+    while (nodes.size() != 0) {
       Parse node = nodes.remove(0);
       Parse[] children = node.getChildren();
       if (children.length == 1 && node.getType().equals(children[0].getType())) {
@@ -798,20 +802,20 @@ public class Parse implements Cloneable, Comparable<Parse> {
 
   public static void fixPossesives(Parse parse) {
     Parse[] tags = parse.getTagNodes();
-    for (int ti=0;ti<tags.length;ti++) {
+    for (int ti = 0; ti < tags.length; ti++) {
       if (tags[ti].getType().equals("POS")) {
-        if (ti+1 < tags.length && tags[ti+1].getParent() == tags[ti].getParent().getParent()) {
-          int start = tags[ti+1].getSpan().getStart();
-          int end = tags[ti+1].getSpan().getEnd();
-          for (int npi=ti+2;npi<tags.length;npi++) {
-            if (tags[npi].getParent() == tags[npi-1].getParent()) {
+        if (ti + 1 < tags.length && tags[ti + 1].getParent() == tags[ti].getParent().getParent()) {
+          int start = tags[ti + 1].getSpan().getStart();
+          int end = tags[ti + 1].getSpan().getEnd();
+          for (int npi = ti + 2; npi < tags.length; npi++) {
+            if (tags[npi].getParent() == tags[npi - 1].getParent()) {
               end = tags[npi].getSpan().getEnd();
             }
             else {
               break;
             }
           }
-          Parse npPos = new Parse(parse.getText(),new Span(start,end),"NP",1,tags[ti+1]);
+          Parse npPos = new Parse(parse.getText(), new Span(start,end), "NP", 1 , tags[ti + 1]);
           parse.insert(npPos);
         }
       }
@@ -843,8 +847,8 @@ public class Parse implements Cloneable, Comparable<Parse> {
   public static Parse parseParse(String parse, GapLabeler gl) {
     StringBuilder text = new StringBuilder();
     int offset = 0;
-    Stack<Constituent> stack = new Stack<Constituent>();
-    List<Constituent> cons = new LinkedList<Constituent>();
+    Stack<Constituent> stack = new Stack<>();
+    List<Constituent> cons = new LinkedList<>();
     for (int ci = 0, cl = parse.length(); ci < cl; ci++) {
       char c = parse.charAt(ci);
       if (c == '(') {
@@ -856,7 +860,7 @@ public class Parse implements Cloneable, Comparable<Parse> {
         String token = getToken(rest);
         stack.push(new Constituent(type, new Span(offset,offset)));
         if (token != null) {
-          if (type.equals("-NONE-") && gl != null) {
+          if (Objects.equals(type, "-NONE-") && gl != null) {
             //System.err.println("stack.size="+stack.size());
             gl.labelGaps(stack);
           }
@@ -872,18 +876,18 @@ public class Parse implements Cloneable, Comparable<Parse> {
         Constituent con = stack.pop();
         int start = con.getSpan().getStart();
         if (start < offset) {
-          cons.add(new Constituent(con.getLabel(), new Span(start, offset-1)));
+          cons.add(new Constituent(con.getLabel(), new Span(start, offset - 1)));
         }
       }
     }
     String txt = text.toString();
     int tokenIndex = -1;
     Parse p = new Parse(txt, new Span(0, txt.length()), AbstractBottomUpParser.TOP_NODE, 1,0);
-    for (int ci=0;ci < cons.size();ci++) {
+    for (int ci = 0; ci < cons.size(); ci++) {
       Constituent con = cons.get(ci);
       String type = con.getLabel();
       if (!type.equals(AbstractBottomUpParser.TOP_NODE)) {
-        if (type == AbstractBottomUpParser.TOK_NODE) {
+        if (AbstractBottomUpParser.TOK_NODE.equals(type)) {
           tokenIndex++;
         }
         Parse c = new Parse(txt, con.getSpan(), type, 1,tokenIndex);
@@ -930,7 +934,7 @@ public class Parse implements Cloneable, Comparable<Parse> {
    */
   public boolean isFlat() {
     boolean flat = true;
-    for (int ci=0;ci<parts.size();ci++) {
+    for (int ci = 0; ci < parts.size(); ci++) {
       flat &= (parts.get(ci)).isPosTag();
     }
     return flat;
@@ -950,10 +954,10 @@ public class Parse implements Cloneable, Comparable<Parse> {
    * @return the parse nodes which are children of this node and which are pos tags.
    */
   public Parse[] getTagNodes() {
-    List<Parse> tags = new LinkedList<Parse>();
-    List<Parse> nodes = new LinkedList<Parse>();
+    List<Parse> tags = new LinkedList<>();
+    List<Parse> nodes = new LinkedList<>();
     nodes.addAll(this.parts);
-    while(nodes.size() != 0) {
+    while (nodes.size() != 0) {
       Parse p = nodes.remove(0);
       if (p.isPosTag()) {
         tags.add(p);
@@ -963,6 +967,22 @@ public class Parse implements Cloneable, Comparable<Parse> {
       }
     }
     return tags.toArray(new Parse[tags.size()]);
+  }
+
+  public Parse[] getTokenNodes() {
+    List<Parse> tokens = new LinkedList<>();
+    List<Parse> nodes = new LinkedList<>();
+    nodes.addAll(this.parts);
+    while (nodes.size() != 0) {
+      Parse p = nodes.remove(0);
+      if (p.getType().equals(AbstractBottomUpParser.TOK_NODE)) {
+        tokens.add(p);
+      }
+      else {
+        nodes.addAll(0, p.parts);
+      }
+    }
+    return tokens.toArray(new Parse[tokens.size()]);
   }
 
   /**
@@ -978,9 +998,9 @@ public class Parse implements Cloneable, Comparable<Parse> {
     if (this == node) {
       return parent;
     }
-    Set<Parse> parents = new HashSet<Parse>();
+    Set<Parse> parents = new HashSet<>();
     Parse cparent = this;
-    while(cparent != null) {
+    while (cparent != null) {
       parents.add(cparent);
       cparent = cparent.getParent();
     }
@@ -994,62 +1014,35 @@ public class Parse implements Cloneable, Comparable<Parse> {
   }
 
   @Override
-  public boolean equals(Object o) {
-    if (o instanceof Parse) {
-      Parse p = (Parse) o;
-      if (this.label == null) {
-        if (p.label != null) {
-          return false;
-        }
-      }
-      else if (!this.label.equals(p.label)) {
-        return false;
-      }
-      if (!this.span.equals(p.span)) {
-        return false;
-      }
-      if (!this.text.equals(p.text)) {
-        return false;
-      }
-      if (this.parts.size() != p.parts.size()){
-      	return false;
-      }
-      for (int ci=0;ci<parts.size();ci++) {
-        if (!parts.get(ci).equals(p.parts.get(ci))) {
-          return false;
-        }
-      }
+  public boolean equals(Object obj) {
+    if (obj == this) {
       return true;
     }
+
+    if (obj instanceof Parse) {
+      Parse p = (Parse) obj;
+
+      return Objects.equals(label, p.label) && span.equals(p.span)
+          && text.equals(p.text) && parts.equals(p.parts);
+    }
+
     return false;
   }
 
   @Override
   public int hashCode() {
-    int result = 17;
-    result = 37*result + span.hashCode();
-
-    // TODO: This might lead to a performance regression
-//    result = 37*result + label.hashCode();
-    result = 37*result + text.hashCode();
-    return result;
+    // Note: label is missing here!
+    return Objects.hash(span, text);
   }
 
   public int compareTo(Parse p) {
-    if (this.getProb() > p.getProb()) {
-      return -1;
-    }
-    else if (this.getProb() < p.getProb()) {
-      return 1;
-    }
-    return 0;
+    return Double.compare(p.getProb(), this.getProb());
   }
 
   /**
    * Returns the derivation string for this parse if one has been created.
    *
-   * @return the derivation string for this parse or null if no derivation
-   * string has been created.
+   * @return the derivation string for this parse or null if no derivation string has been created.
    */
   public StringBuffer getDerivation() {
     return derivation;
@@ -1068,14 +1061,14 @@ public class Parse implements Cloneable, Comparable<Parse> {
     Parse[] kids = p.getChildren();
     StringBuilder levelsBuff = new StringBuilder();
     levelsBuff.append("[");
-    int[] nlevels = new int[levels.length+1];
-    for (int li=0;li<levels.length;li++) {
+    int[] nlevels = new int[levels.length + 1];
+    for (int li = 0; li < levels.length; li++) {
       nlevels[li] = levels[li];
       levelsBuff.append(levels[li]).append(".");
     }
-    for (int ki=0;ki<kids.length;ki++) {
+    for (int ki = 0; ki < kids.length; ki++) {
       nlevels[levels.length] = ki;
-      System.out.println(levelsBuff.toString() + ki + "] "+ kids[ki].getType() +
+      System.out.println(levelsBuff.toString() + ki + "] " + kids[ki].getType() +
           " " + kids[ki].hashCode() + " -> " + kids[ki].getParent().hashCode() +
           " " + kids[ki].getParent().getType() + " " + kids[ki].getCoveredText());
       codeTree(kids[ki],nlevels);
@@ -1098,80 +1091,37 @@ public class Parse implements Cloneable, Comparable<Parse> {
    * @param tokens
    */
   public static void addNames(String tag, Span[] names, Parse[] tokens) {
-    for (int ni=0,nn=names.length;ni<nn;ni++) {
-      Span nameTokenSpan = names[ni];
+    for (Span nameTokenSpan : names) {
       Parse startToken = tokens[nameTokenSpan.getStart()];
       Parse endToken = tokens[nameTokenSpan.getEnd() - 1];
       Parse commonParent = startToken.getCommonParent(endToken);
       //System.err.println("addNames: "+startToken+" .. "+endToken+" commonParent = "+commonParent);
       if (commonParent != null) {
-        Span nameSpan = new Span(startToken.getSpan().getStart(),endToken.getSpan().getEnd());
+        Span nameSpan = new Span(startToken.getSpan().getStart(), endToken.getSpan().getEnd());
         if (nameSpan.equals(commonParent.getSpan())) {
-          commonParent.insert(new Parse(commonParent.getText(),nameSpan,tag,1.0,endToken.getHeadIndex()));
-        }
-        else {
+          commonParent.insert(new Parse(commonParent.getText(), nameSpan, tag, 1.0, endToken.getHeadIndex()));
+        } else {
           Parse[] kids = commonParent.getChildren();
           boolean crossingKids = false;
-          for (int ki=0,kn=kids.length;ki<kn;ki++) {
-            if (nameSpan.crosses(kids[ki].getSpan())){
+          for (Parse kid : kids) {
+            if (nameSpan.crosses(kid.getSpan())) {
               crossingKids = true;
             }
           }
           if (!crossingKids) {
-            commonParent.insert(new Parse(commonParent.getText(),nameSpan,tag,1.0,endToken.getHeadIndex()));
-          }
-          else {
+            commonParent.insert(new Parse(commonParent.getText(), nameSpan,
+                tag, 1.0, endToken.getHeadIndex()));
+          } else {
             if (commonParent.getType().equals("NP")) {
               Parse[] grandKids = kids[0].getChildren();
-              if (grandKids.length > 1 && nameSpan.contains(grandKids[grandKids.length-1].getSpan())) {
-                commonParent.insert(new Parse(commonParent.getText(),commonParent.getSpan(),tag,1.0,commonParent.getHeadIndex()));
+              if (grandKids.length > 1 && nameSpan.contains(grandKids[grandKids.length - 1].getSpan())) {
+                commonParent.insert(new Parse(commonParent.getText(), commonParent.getSpan(),
+                    tag, 1.0, commonParent.getHeadIndex()));
               }
             }
           }
         }
       }
-    }
-  }
-
-  /**
-   * Reads training parses (one-sentence-per-line) and displays parse structure.
-   *
-   * @param args The head rules files.
-   *
-   * @throws IOException If the head rules file can not be opened and read.
-   */
-  @Deprecated
-  public static void main(String[] args) throws java.io.IOException {
-    if (args.length == 0) {
-      System.err.println("Usage: Parse -fun -pos head_rules < train_parses");
-      System.err.println("Reads training parses (one-sentence-per-line) and displays parse structure.");
-      System.exit(1);
-    }
-    int ai=0;
-    boolean fixPossesives = false;
-    while(args[ai].startsWith("-") && ai < args.length) {
-      if (args[ai].equals("-fun")) {
-        Parse.useFunctionTags(true);
-        ai++;
-      }
-      else if (args[ai].equals("-pos")) {
-        fixPossesives = true;
-        ai++;
-      }
-    }
-
-    opennlp.tools.parser.lang.en.HeadRules rules = new opennlp.tools.parser.lang.en.HeadRules(args[ai]);
-    java.io.BufferedReader in = new java.io.BufferedReader(new java.io.InputStreamReader(System.in));
-
-    for (String line = in.readLine(); line != null; line = in.readLine()) {
-      Parse p = Parse.parseParse(line,rules);
-      Parse.pruneParse(p);
-      if (fixPossesives) {
-        Parse.fixPossesives(p);
-      }
-      p.updateHeads(rules);
-      p.show();
-      //p.showCodeTree();
     }
   }
 }

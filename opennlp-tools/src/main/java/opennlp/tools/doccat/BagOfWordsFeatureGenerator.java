@@ -21,6 +21,7 @@ package opennlp.tools.doccat;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Map;
+import java.util.Objects;
 
 import opennlp.tools.util.featuregen.StringPattern;
 
@@ -29,9 +30,10 @@ import opennlp.tools.util.featuregen.StringPattern;
  */
 public class BagOfWordsFeatureGenerator implements FeatureGenerator {
 
-  private boolean useOnlyAllLetterTokens = false;
+  private final boolean useOnlyAllLetterTokens;
 
   public BagOfWordsFeatureGenerator() {
+    this(false);
   }
 
   BagOfWordsFeatureGenerator(boolean useOnlyAllLetterTokens) {
@@ -40,8 +42,8 @@ public class BagOfWordsFeatureGenerator implements FeatureGenerator {
 
   @Override
   public Collection<String> extractFeatures(String[] text, Map<String, Object> extraInformation) {
-
-    Collection<String> bagOfWords = new ArrayList<String>(text.length);
+    Objects.requireNonNull(text, "text must not be null");
+    Collection<String> bagOfWords = new ArrayList<>(text.length);
 
     for (String word : text) {
       if (useOnlyAllLetterTokens) {

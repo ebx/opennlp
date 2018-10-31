@@ -81,37 +81,7 @@ public class ADPOSSampleStream implements ObjectStream<POSSample> {
       boolean expandME, boolean includeFeatures) throws IOException {
 
     try {
-      this.adSentenceStream = new ADSentenceStream(new PlainTextByLineStream(
-          in, charsetName));
-      this.expandME = expandME;
-      this.isIncludeFeatures = includeFeatures;
-    } catch (UnsupportedEncodingException e) {
-      // UTF-8 is available on all JVMs, will never happen
-      throw new IllegalStateException(e);
-    }
-  }
-
-  /**
-   * Creates a new {@link POSSample} stream from a {@link InputStream}
-   *
-   * @param in
-   *          the Corpus {@link InputStream}
-   * @param charsetName
-   *          the charset of the Arvores Deitadas Corpus
-   * @param expandME
-   *          if true will expand the multiword expressions, each word of the
-   *          expression will have the POS Tag that was attributed to the
-   *          expression plus the prefix B- or I- (CONLL convention)
-   * @param includeFeatures
-   *          if true will combine the POS Tag with the feature tags
-   */
-  @Deprecated
-  public ADPOSSampleStream(InputStream in, String charsetName,
-      boolean expandME, boolean includeFeatures) {
-
-    try {
-      this.adSentenceStream = new ADSentenceStream(new PlainTextByLineStream(
-          in, charsetName));
+      this.adSentenceStream = new ADSentenceStream(new PlainTextByLineStream(in, charsetName));
       this.expandME = expandME;
       this.isIncludeFeatures = includeFeatures;
     } catch (UnsupportedEncodingException e) {
@@ -124,8 +94,8 @@ public class ADPOSSampleStream implements ObjectStream<POSSample> {
     Sentence paragraph;
     while ((paragraph = this.adSentenceStream.read()) != null) {
       Node root = paragraph.getRoot();
-      List<String> sentence = new ArrayList<String>();
-      List<String> tags = new ArrayList<String>();
+      List<String> sentence = new ArrayList<>();
+      List<String> tags = new ArrayList<>();
       process(root, sentence, tags);
 
       return new POSSample(sentence, tags);
@@ -166,8 +136,8 @@ public class ADPOSSampleStream implements ObjectStream<POSSample> {
         StringTokenizer tokenizer = new StringTokenizer(lexeme, "_");
 
         if (tokenizer.countTokens() > 0) {
-          List<String> toks = new ArrayList<String>(tokenizer.countTokens());
-          List<String> tagsWithCont = new ArrayList<String>(
+          List<String> toks = new ArrayList<>(tokenizer.countTokens());
+          List<String> tagsWithCont = new ArrayList<>(
               tokenizer.countTokens());
           toks.add(tokenizer.nextToken());
           tagsWithCont.add("B-" + tag);

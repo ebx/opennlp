@@ -14,6 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package opennlp.tools.ml.naivebayes;
 
 import opennlp.tools.ml.model.Context;
@@ -27,8 +28,9 @@ public class NaiveBayesEvalParameters extends EvalParameters {
   protected double[] outcomeTotals;
   protected long vocabulary;
 
-  public NaiveBayesEvalParameters(Context[] params, int numOutcomes, double[] outcomeTotals, long vocabulary) {
-    super(params, 0, 0, numOutcomes);
+  public NaiveBayesEvalParameters(Context[] params, int numOutcomes,
+      double[] outcomeTotals, long vocabulary) {
+    super(params, numOutcomes);
     this.outcomeTotals = outcomeTotals;
     this.vocabulary = vocabulary;
   }

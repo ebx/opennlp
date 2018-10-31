@@ -17,16 +17,14 @@
 
 package opennlp.tools.postag;
 
-import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.junit.Assert.assertTrue;
-
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 
+import org.junit.Assert;
 import org.junit.Test;
 
-import opennlp.tools.dictionary.Dictionary;
 import opennlp.tools.formats.ResourceAsStreamFactory;
 import opennlp.tools.postag.DummyPOSTaggerFactory.DummyPOSContextGenerator;
 import opennlp.tools.postag.DummyPOSTaggerFactory.DummyPOSDictionary;
@@ -37,7 +35,6 @@ import opennlp.tools.util.InvalidFormatException;
 import opennlp.tools.util.ObjectStream;
 import opennlp.tools.util.PlainTextByLineStream;
 import opennlp.tools.util.TrainingParameters;
-import opennlp.tools.util.model.ModelType;
 
 /**
  * Tests for the {@link POSTaggerFactory} class.
@@ -50,12 +47,12 @@ public class POSTaggerFactoryTest {
         POSTaggerFactoryTest.class,
         "/opennlp/tools/postag/AnnotatedSentences.txt");
 
-    return new WordTagSampleStream(new PlainTextByLineStream(in, UTF_8));
+    return new WordTagSampleStream(new PlainTextByLineStream(in, StandardCharsets.UTF_8));
   }
 
-  static POSModel trainPOSModel(ModelType type, POSTaggerFactory factory)
+  private static POSModel trainPOSModel(POSTaggerFactory factory)
       throws IOException {
-    return POSTaggerME.train("en", createSampleStream(),
+    return POSTaggerME.train("eng", createSampleStream(),
         TrainingParameters.defaultParams(), factory);
   }
 
@@ -64,15 +61,13 @@ public class POSTaggerFactoryTest {
     DummyPOSDictionary posDict = new DummyPOSDictionary(
         POSDictionary.create(POSDictionaryTest.class
             .getResourceAsStream("TagDictionaryCaseSensitive.xml")));
-    Dictionary dic = POSTaggerME.buildNGramDictionary(createSampleStream(), 0);
 
-    POSModel posModel = trainPOSModel(ModelType.MAXENT,
-        new DummyPOSTaggerFactory(dic, posDict));
+    POSModel posModel = trainPOSModel(new DummyPOSTaggerFactory(posDict));
 
     POSTaggerFactory factory = posModel.getFactory();
-    assertTrue(factory.getTagDictionary() instanceof DummyPOSDictionary);
-    assertTrue(factory.getPOSContextGenerator() instanceof DummyPOSContextGenerator);
-    assertTrue(factory.getSequenceValidator() instanceof DummyPOSSequenceValidator);
+    Assert.assertTrue(factory.getTagDictionary() instanceof DummyPOSDictionary);
+    Assert.assertTrue(factory.getPOSContextGenerator() instanceof DummyPOSContextGenerator);
+    Assert.assertTrue(factory.getSequenceValidator() instanceof DummyPOSSequenceValidator);
 
     ByteArrayOutputStream out = new ByteArrayOutputStream();
     posModel.serialize(out);
@@ -81,26 +76,21 @@ public class POSTaggerFactoryTest {
     POSModel fromSerialized = new POSModel(in);
 
     factory = fromSerialized.getFactory();
-    assertTrue(factory.getTagDictionary() instanceof DummyPOSDictionary);
-    assertTrue(factory.getPOSContextGenerator() instanceof DummyPOSContextGenerator);
-    assertTrue(factory.getSequenceValidator() instanceof DummyPOSSequenceValidator);
-    assertTrue(factory.getDictionary() instanceof Dictionary);
+    Assert.assertTrue(factory.getTagDictionary() instanceof DummyPOSDictionary);
+    Assert.assertTrue(factory.getPOSContextGenerator() instanceof DummyPOSContextGenerator);
+    Assert.assertTrue(factory.getSequenceValidator() instanceof DummyPOSSequenceValidator);
   }
 
   @Test
   public void testPOSTaggerWithDefaultFactory() throws IOException {
     POSDictionary posDict = POSDictionary.create(POSDictionaryTest.class
             .getResourceAsStream("TagDictionaryCaseSensitive.xml"));
-    Dictionary dic = POSTaggerME.buildNGramDictionary(createSampleStream(), 0);
-
-    POSModel posModel = trainPOSModel(ModelType.MAXENT,
-        new POSTaggerFactory(dic, posDict));
+    POSModel posModel = trainPOSModel(new POSTaggerFactory(null, null, posDict));
 
     POSTaggerFactory factory = posModel.getFactory();
-    assertTrue(factory.getTagDictionary() instanceof POSDictionary);
-    assertTrue(factory.getPOSContextGenerator() instanceof POSContextGenerator);
-    assertTrue(factory.getSequenceValidator() instanceof DefaultPOSSequenceValidator);
-    assertTrue(factory.getDictionary() instanceof Dictionary);
+    Assert.assertTrue(factory.getTagDictionary() instanceof POSDictionary);
+    Assert.assertTrue(factory.getPOSContextGenerator() != null);
+    Assert.assertTrue(factory.getSequenceValidator() instanceof DefaultPOSSequenceValidator);
 
     ByteArrayOutputStream out = new ByteArrayOutputStream();
     posModel.serialize(out);
@@ -109,10 +99,9 @@ public class POSTaggerFactoryTest {
     POSModel fromSerialized = new POSModel(in);
 
     factory = fromSerialized.getFactory();
-    assertTrue(factory.getTagDictionary() instanceof POSDictionary);
-    assertTrue(factory.getPOSContextGenerator() instanceof POSContextGenerator);
-    assertTrue(factory.getSequenceValidator() instanceof DefaultPOSSequenceValidator);
-    assertTrue(factory.getDictionary() instanceof Dictionary);
+    Assert.assertTrue(factory.getTagDictionary() instanceof POSDictionary);
+    Assert.assertTrue(factory.getPOSContextGenerator() != null);
+    Assert.assertTrue(factory.getSequenceValidator() instanceof DefaultPOSSequenceValidator);
   }
 
   @Test(expected = InvalidFormatException.class)

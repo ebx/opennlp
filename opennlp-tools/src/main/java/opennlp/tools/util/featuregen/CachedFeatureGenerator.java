@@ -32,24 +32,29 @@ public class CachedFeatureGenerator implements AdaptiveFeatureGenerator {
 
   private String[] prevTokens;
 
-  private Cache contextsCache;
+  private Cache<Integer, List<String>> contextsCache;
 
   private long numberOfCacheHits;
   private long numberOfCacheMisses;
 
+  @Deprecated
   public CachedFeatureGenerator(AdaptiveFeatureGenerator... generators) {
     this.generator = new AggregatedFeatureGenerator(generators);
-    contextsCache = new Cache(100);
+    contextsCache = new Cache<>(100);
   }
 
-  @SuppressWarnings("unchecked")
+  public CachedFeatureGenerator(AdaptiveFeatureGenerator generator) {
+    this.generator = generator;
+    contextsCache = new Cache<>(100);
+  }
+
   public void createFeatures(List<String> features, String[] tokens, int index,
       String[] previousOutcomes) {
 
     List<String> cacheFeatures;
 
     if (tokens == prevTokens) {
-      cacheFeatures = (List<String>) contextsCache.get(index);
+      cacheFeatures = contextsCache.get(index);
 
       if (cacheFeatures != null) {
         numberOfCacheHits++;
@@ -62,7 +67,7 @@ public class CachedFeatureGenerator implements AdaptiveFeatureGenerator {
       prevTokens = tokens;
     }
 
-    cacheFeatures = new ArrayList<String>();
+    cacheFeatures = new ArrayList<>();
 
     numberOfCacheMisses++;
 
@@ -100,7 +105,12 @@ public class CachedFeatureGenerator implements AdaptiveFeatureGenerator {
 
   @Override
   public String toString() {
-    return super.toString()+": hits=" + numberOfCacheHits+" misses="+ numberOfCacheMisses+" hit%"+ (numberOfCacheHits > 0 ?
-        (double) numberOfCacheHits/(numberOfCacheMisses+numberOfCacheHits) : 0);
+    return super.toString() + ": hits=" + numberOfCacheHits
+        + " misses=" + numberOfCacheMisses + " hit%" + (numberOfCacheHits > 0 ?
+        (double) numberOfCacheHits / (numberOfCacheMisses + numberOfCacheHits) : 0);
+  }
+
+  public AdaptiveFeatureGenerator getCachedFeatureGenerator() {
+    return generator;
   }
 }

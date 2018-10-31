@@ -17,11 +17,10 @@
 
 package opennlp.tools.util;
 
-import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.junit.Assert.assertEquals;
-
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 
+import org.junit.Assert;
 import org.junit.Test;
 
 /**
@@ -29,26 +28,45 @@ import org.junit.Test;
  */
 public class PlainTextByLineStreamTest {
 
+  static final String testString = "line1" +
+          '\n' +
+          "line2" +
+          '\n' +
+          "line3" +
+          "\r\n" +
+          "line4" +
+          '\n';
+
   @Test
   public void testLineSegmentation() throws IOException {
-    StringBuilder testString = new StringBuilder();
-    testString.append("line1");
-    testString.append('\n');
-    testString.append("line2");
-    testString.append('\n');
-    testString.append("line3");
-    testString.append("\r\n");
-    testString.append("line4");
-    testString.append('\n');
-
     ObjectStream<String> stream =
-        new PlainTextByLineStream(new MockInputStreamFactory(testString.toString()), UTF_8);
+            new PlainTextByLineStream(new MockInputStreamFactory(testString), StandardCharsets.UTF_8);
 
-    assertEquals("line1", stream.read());
-    assertEquals("line2", stream.read());
-    assertEquals("line3", stream.read());
-    assertEquals("line4", stream.read());
-    
+    Assert.assertEquals("line1", stream.read());
+    Assert.assertEquals("line2", stream.read());
+    Assert.assertEquals("line3", stream.read());
+    Assert.assertEquals("line4", stream.read());
+    Assert.assertNull(stream.read());
+
+    stream.close();
+  }
+
+  @Test
+  public void testReset() throws IOException {
+    ObjectStream<String> stream =
+            new PlainTextByLineStream(new MockInputStreamFactory(testString), StandardCharsets.UTF_8);
+
+    Assert.assertEquals("line1", stream.read());
+    Assert.assertEquals("line2", stream.read());
+    Assert.assertEquals("line3", stream.read());
+    stream.reset();
+
+    Assert.assertEquals("line1", stream.read());
+    Assert.assertEquals("line2", stream.read());
+    Assert.assertEquals("line3", stream.read());
+    Assert.assertEquals("line4", stream.read());
+    Assert.assertNull(stream.read());
+
     stream.close();
   }
 }

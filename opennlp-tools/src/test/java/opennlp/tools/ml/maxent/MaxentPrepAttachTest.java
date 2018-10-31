@@ -17,69 +17,96 @@
 
 package opennlp.tools.ml.maxent;
 
-import static opennlp.tools.ml.PrepAttachDataUtil.createTrainingStream;
-import static opennlp.tools.ml.PrepAttachDataUtil.testModel;
-
 import java.io.IOException;
 import java.util.HashMap;
-import java.util.Map;
+
+import org.junit.Before;
+import org.junit.Test;
 
 import opennlp.tools.ml.AbstractEventTrainer;
 import opennlp.tools.ml.AbstractTrainer;
 import opennlp.tools.ml.EventTrainer;
+import opennlp.tools.ml.PrepAttachDataUtil;
 import opennlp.tools.ml.TrainerFactory;
+import opennlp.tools.ml.model.AbstractDataIndexer;
 import opennlp.tools.ml.model.AbstractModel;
+import opennlp.tools.ml.model.DataIndexer;
 import opennlp.tools.ml.model.MaxentModel;
 import opennlp.tools.ml.model.TwoPassDataIndexer;
 import opennlp.tools.ml.model.UniformPrior;
-
-import org.junit.Test;
+import opennlp.tools.util.TrainingParameters;
 
 public class MaxentPrepAttachTest {
 
+  private DataIndexer testDataIndexer;
+  @Before
+  public void initIndexer() {
+    TrainingParameters trainingParameters = new TrainingParameters();
+    trainingParameters.put(AbstractTrainer.CUTOFF_PARAM, 1);
+    trainingParameters.put(AbstractDataIndexer.SORT_PARAM, false);
+    testDataIndexer = new TwoPassDataIndexer();
+    testDataIndexer.init(trainingParameters, new HashMap<>());
+  }
+  
   @Test
   public void testMaxentOnPrepAttachData() throws IOException {
+    testDataIndexer.index(PrepAttachDataUtil.createTrainingStream());
+    // this shows why the GISTrainer should be a AbstractEventTrainer.
+    // TODO: make sure that the trainingParameter cutoff and the 
+    // cutoff value passed here are equal.
     AbstractModel model =
         new GISTrainer(true).trainModel(100,
-        new TwoPassDataIndexer(createTrainingStream(), 1), 1);
-
-    testModel(model, 0.7997028967566229);
+        testDataIndexer,
+        new UniformPrior(), 1);
+    PrepAttachDataUtil.testModel(model, 0.7997028967566229);
   }
 
   @Test
   public void testMaxentOnPrepAttachData2Threads() throws IOException {
+    testDataIndexer.index(PrepAttachDataUtil.createTrainingStream());
     AbstractModel model =
         new GISTrainer(true).trainModel(100,
-            new TwoPassDataIndexer(createTrainingStream(), 1),
-            new UniformPrior(), 1, 2);
-
-    testModel(model, 0.7997028967566229);
+            testDataIndexer,
+            new UniformPrior(), 2);
+    PrepAttachDataUtil.testModel(model, 0.7997028967566229);
   }
 
   @Test
   public void testMaxentOnPrepAttachDataWithParams() throws IOException {
 
-    Map<String, String> trainParams = new HashMap<String, String>();
-    trainParams.put(AbstractTrainer.ALGORITHM_PARAM, GIS.MAXENT_VALUE);
+    TrainingParameters trainParams = new TrainingParameters();
+    trainParams.put(AbstractTrainer.ALGORITHM_PARAM, GISTrainer.MAXENT_VALUE);
     trainParams.put(AbstractEventTrainer.DATA_INDEXER_PARAM,
         AbstractEventTrainer.DATA_INDEXER_TWO_PASS_VALUE);
-    trainParams.put(AbstractTrainer.CUTOFF_PARAM, Integer.toString(1));
+    trainParams.put(AbstractTrainer.CUTOFF_PARAM, 1);
 
     EventTrainer trainer = TrainerFactory.getEventTrainer(trainParams, null);
-    MaxentModel model = trainer.train(createTrainingStream());
+    MaxentModel model = trainer.train(PrepAttachDataUtil.createTrainingStream());
 
-    testModel(model, 0.7997028967566229);
+    PrepAttachDataUtil.testModel(model, 0.7997028967566229);
   }
 
   @Test
   public void testMaxentOnPrepAttachDataWithParamsDefault() throws IOException {
 
-    Map<String, String> trainParams = new HashMap<String, String>();
-    trainParams.put(AbstractTrainer.ALGORITHM_PARAM, GIS.MAXENT_VALUE);
+    TrainingParameters trainParams = new TrainingParameters();
+    trainParams.put(AbstractTrainer.ALGORITHM_PARAM, GISTrainer.MAXENT_VALUE);
 
     EventTrainer trainer = TrainerFactory.getEventTrainer(trainParams, null);
-    MaxentModel model = trainer.train(createTrainingStream());
+    MaxentModel model = trainer.train(PrepAttachDataUtil.createTrainingStream());
 
-    testModel(model, 0.8086159940579352 );
+    PrepAttachDataUtil.testModel(model, 0.8086159940579352 );
+  }
+  
+  @Test
+  public void testMaxentOnPrepAttachDataWithParamsLLThreshold() throws IOException {
+    TrainingParameters trainParams = new TrainingParameters();
+    trainParams.put(AbstractTrainer.ALGORITHM_PARAM, GISTrainer.MAXENT_VALUE);
+    trainParams.put(GISTrainer.LOG_LIKELIHOOD_THRESHOLD_PARAM, 5.);
+
+    EventTrainer trainer = TrainerFactory.getEventTrainer(trainParams, null);
+    MaxentModel model = trainer.train(PrepAttachDataUtil.createTrainingStream());
+
+    PrepAttachDataUtil.testModel(model, 0.8103490963109681 );
   }
 }

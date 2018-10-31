@@ -14,6 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package opennlp.tools.cmdline.namefind;
 
 import java.io.File;
@@ -46,31 +47,32 @@ public final class TokenNameFinderTool extends BasicCmdLineTool {
     return "Usage: " + CLI.CMD + " " + getName() + " model1 model2 ... modelN < sentences";
   }
 
+  @Override
   public void run(String[] args) {
 
     if (args.length == 0) {
       System.out.println(getHelp());
     } else {
 
-      NameFinderME nameFinders[] = new NameFinderME[args.length];
+      NameFinderME[] nameFinders = new NameFinderME[args.length];
 
       for (int i = 0; i < nameFinders.length; i++) {
         TokenNameFinderModel model = new TokenNameFinderModelLoader().load(new File(args[i]));
         nameFinders[i] = new NameFinderME(model);
       }
 
-//      ObjectStream<String> untokenizedLineStream =
-//          new PlainTextByLineStream(new InputStreamReader(System.in));
+      // ObjectStream<String> untokenizedLineStream =
+      // new PlainTextByLineStream(new InputStreamReader(System.in));
       ObjectStream<String> untokenizedLineStream;
       PerformanceMonitor perfMon = new PerformanceMonitor(System.err, "sent");
       perfMon.start();
 
       try {
-        untokenizedLineStream =
-                new PlainTextByLineStream(new SystemInputStreamFactory(), SystemInputStreamFactory.encoding());
+        untokenizedLineStream = new PlainTextByLineStream(
+            new SystemInputStreamFactory(), SystemInputStreamFactory.encoding());
         String line;
         while ((line = untokenizedLineStream.read()) != null) {
-          String whitespaceTokenizerLine[] = WhitespaceTokenizer.INSTANCE.tokenize(line);
+          String[] whitespaceTokenizerLine = WhitespaceTokenizer.INSTANCE.tokenize(line);
 
           // A new line indicates a new document,
           // adaptive data must be cleared for a new document
@@ -81,7 +83,7 @@ public final class TokenNameFinderTool extends BasicCmdLineTool {
             }
           }
 
-          List<Span> names = new ArrayList<Span>();
+          List<Span> names = new ArrayList<>();
 
           for (TokenNameFinder nameFinder : nameFinders) {
             Collections.addAll(names, nameFinder.find(whitespaceTokenizerLine));
@@ -89,7 +91,7 @@ public final class TokenNameFinderTool extends BasicCmdLineTool {
 
           // Simple way to drop intersecting spans, otherwise the
           // NameSample is invalid
-          Span reducedNames[] = NameFinderME.dropOverlappingSpans(
+          Span[] reducedNames = NameFinderME.dropOverlappingSpans(
                   names.toArray(new Span[names.size()]));
 
           NameSample nameSample = new NameSample(whitespaceTokenizerLine,

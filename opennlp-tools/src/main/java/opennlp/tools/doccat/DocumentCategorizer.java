@@ -14,6 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package opennlp.tools.doccat;
 
 import java.util.Map;
@@ -26,21 +27,21 @@ import java.util.SortedMap;
 public interface DocumentCategorizer {
 
   /**
-   * Categorizes the given text, provided in separate tokens.
+   * Categorize the given text provided as tokens along with
+   * the provided extra information
    *
    * @param text the tokens of text to categorize
+   * @param extraInformation extra information
    * @return per category probabilities
    */
-  double[] categorize(String text[]);
+  double[] categorize(String[] text, Map<String, Object> extraInformation);
 
   /**
    * Categorizes the given text, provided in separate tokens.
-   *
-   * @param text             the tokens of text to categorize
-   * @param extraInformation optional extra information to pass for evaluation
+   * @param text the tokens of text to categorize
    * @return per category probabilities
    */
-  double[] categorize(String text[], Map<String, Object> extraInformation);
+  double[] categorize(String[] text);
 
   /**
    * get the best category from previously generated outcome probabilities
@@ -74,29 +75,12 @@ public interface DocumentCategorizer {
   int getNumberOfCategories();
 
   /**
-   * categorize a piece of text
-   *
-   * @param documentText the text to categorize
-   * @return the probabilities of each category (sum up to 1)
-   */
-  double[] categorize(String documentText);
-
-  /**
-   * categorize a piece of text, providing extra metadata.
-   *
-   * @param documentText     the text to categorize
-   * @param extraInformation extra metadata
-   * @return the probabilities of each category (sum up to 1)
-   */
-  double[] categorize(String documentText, Map<String, Object> extraInformation);
-
-  /**
    * get the name of the category associated with the given probabilties
    *
    * @param results the probabilities of each category
    * @return the name of the outcome
    */
-  String getAllResults(double results[]);
+  String getAllResults(double[] results);
 
   /**
    * Returns a map in which the key is the category name and the value is the score
@@ -104,7 +88,7 @@ public interface DocumentCategorizer {
    * @param text the input text to classify
    * @return a map with the score as a key. The value is a Set of categories with the score.
    */
-  Map<String, Double> scoreMap(String text);
+  Map<String, Double> scoreMap(String[] text);
 
   /**
    * Get a map of the scores sorted in ascending aorder together with their associated categories.
@@ -113,7 +97,7 @@ public interface DocumentCategorizer {
    * @param text the input text to classify
    * @return a map with the score as a key. The value is a Set of categories with the score.
    */
-  SortedMap<Double, Set<String>> sortedScoreMap(String text);
+  SortedMap<Double, Set<String>> sortedScoreMap(String[] text);
 
 }
 

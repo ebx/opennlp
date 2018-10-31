@@ -1,20 +1,18 @@
 /*
- * Licensed to the Apache Software Foundation (ASF) under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership.  The ASF licenses this file
- * to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
  *
- *   http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied.  See the License for the
- * specific language governing permissions and limitations
- * under the License.
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package opennlp.tools.ml.model;
@@ -25,6 +23,7 @@ import java.io.FileInputStream;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.Reader;
 import java.util.StringTokenizer;
 
 import opennlp.tools.util.ObjectStream;
@@ -35,7 +34,7 @@ import opennlp.tools.util.ObjectStream;
  */
 public class FileEventStream implements ObjectStream<Event> {
 
-  protected BufferedReader reader;
+  protected final BufferedReader reader;
 
   /**
    * Creates a new file event stream from the specified file name.
@@ -43,16 +42,16 @@ public class FileEventStream implements ObjectStream<Event> {
    * @throws IOException When the specified file can not be read.
    */
   public FileEventStream(String fileName, String encoding) throws IOException {
-    if (encoding == null) {
-      reader = new BufferedReader(new FileReader(fileName));
-    }
-    else {
-      reader = new BufferedReader(new InputStreamReader(new FileInputStream(fileName),encoding));
-    }
+    this(encoding == null ?
+      new FileReader(fileName) : new InputStreamReader(new FileInputStream(fileName), encoding));
   }
 
   public FileEventStream(String fileName) throws IOException {
     this(fileName,null);
+  }
+
+  public FileEventStream(Reader reader) throws IOException {
+    this.reader = new BufferedReader(reader);
   }
 
   /**
@@ -67,7 +66,7 @@ public class FileEventStream implements ObjectStream<Event> {
   @Override
   public Event read() throws IOException {
     String line;
-    if ((line =reader.readLine()) != null) {
+    if ((line = reader.readLine()) != null) {
       StringTokenizer st = new StringTokenizer(line);
       String outcome = st.nextToken();
       int count = st.countTokens();
@@ -96,7 +95,7 @@ public class FileEventStream implements ObjectStream<Event> {
     StringBuilder sb = new StringBuilder();
     sb.append(event.getOutcome());
     String[] context = event.getContext();
-    for (int ci=0,cl=context.length;ci<cl;ci++) {
+    for (int ci = 0,cl = context.length; ci < cl; ci++) {
       sb.append(" ").append(context[ci]);
     }
     sb.append(System.getProperty("line.separator"));

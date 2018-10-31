@@ -15,13 +15,13 @@
  * limitations under the License.
  */
 
-
 package opennlp.tools.util.model;
 
 import java.io.BufferedInputStream;
-import java.io.ByteArrayOutputStream;
+import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.ObjectInputStream;
@@ -29,8 +29,11 @@ import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.io.Serializable;
 import java.net.URL;
+import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.Properties;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
@@ -49,8 +52,6 @@ import opennlp.tools.util.ext.ExtensionLoader;
  * Provide sub classes access to serializers already in constructor
  */
 public abstract class BaseModel implements ArtifactProvider, Serializable {
-
-  private static int MODEL_BUFFER_SIZE_LIMIT = Integer.MAX_VALUE;
 
   protected static final String MANIFEST_ENTRY = "manifest.properties";
   protected static final String FACTORY_NAME = "factory";
@@ -83,10 +84,7 @@ public abstract class BaseModel implements ArtifactProvider, Serializable {
   private BaseModel(String componentName, boolean isLoadedFromSerialized) {
     this.isLoadedFromSerialized = isLoadedFromSerialized;
 
-    if (componentName == null)
-      throw new IllegalArgumentException("componentName must not be null!");
-
-    this.componentName = componentName;
+    this.componentName = Objects.requireNonNull(componentName, "componentName must not be null!");
   }
 
   /**
@@ -110,8 +108,7 @@ public abstract class BaseModel implements ArtifactProvider, Serializable {
 
     this(componentName, false);
 
-    if (languageCode == null)
-        throw new IllegalArgumentException("languageCode must not be null!");
+    Objects.requireNonNull(languageCode, "languageCode must not be null");
 
     createBaseArtifactSerializers(artifactSerializers);
 
@@ -119,8 +116,7 @@ public abstract class BaseModel implements ArtifactProvider, Serializable {
     manifest.setProperty(MANIFEST_VERSION_PROPERTY, "1.0");
     manifest.setProperty(LANGUAGE_PROPERTY, languageCode);
     manifest.setProperty(VERSION_PROPERTY, Version.currentVersion().toString());
-    manifest.setProperty(TIMESTAMP_PROPERTY,
-        Long.toString(System.currentTimeMillis()));
+    manifest.setProperty(TIMESTAMP_PROPERTY, Long.toString(System.currentTimeMillis()));
     manifest.setProperty(COMPONENT_NAME_PROPERTY, componentName);
 
     if (manifestInfoEntries != null) {
@@ -132,14 +128,14 @@ public abstract class BaseModel implements ArtifactProvider, Serializable {
     artifactMap.put(MANIFEST_ENTRY, manifest);
     finishedLoadingArtifacts = true;
 
-    if (factory!=null) {
+    if (factory != null) {
       setManifestProperty(FACTORY_NAME, factory.getClass().getCanonicalName());
       artifactMap.putAll(factory.createArtifactMap());
 
       // new manifest entries
       Map<String, String> entries = factory.createManifestEntries();
-      for (String key : entries.keySet()) {
-        setManifestProperty(key, entries.get(key));
+      for (Entry<String, String> entry : entries.entrySet()) {
+        setManifestProperty(entry.getKey(), entry.getValue());
       }
     }
 
@@ -173,15 +169,14 @@ public abstract class BaseModel implements ArtifactProvider, Serializable {
    * @param in the input stream containing the model
    *
    * @throws IOException
-   * @throws InvalidFormatException
    */
-  protected BaseModel(String componentName, InputStream in) throws IOException, InvalidFormatException {
+  protected BaseModel(String componentName, InputStream in) throws IOException {
     this(componentName, true);
 
     loadModel(in);
   }
 
-  protected BaseModel(String componentName, File modelFile) throws IOException, InvalidFormatException  {
+  protected BaseModel(String componentName, File modelFile) throws IOException  {
     this(componentName, true);
 
     try (InputStream in = new BufferedInputStream(new FileInputStream(modelFile))) {
@@ -189,7 +184,7 @@ public abstract class BaseModel implements ArtifactProvider, Serializable {
     }
   }
 
-  protected BaseModel(String componentName, URL modelURL) throws IOException, InvalidFormatException  {
+  protected BaseModel(String componentName, URL modelURL) throws IOException  {
     this(componentName, true);
 
     try (InputStream in = new BufferedInputStream(modelURL.openStream())) {
@@ -197,11 +192,9 @@ public abstract class BaseModel implements ArtifactProvider, Serializable {
     }
   }
 
-  private void loadModel(InputStream in) throws IOException, InvalidFormatException {
+  private void loadModel(InputStream in) throws IOException {
 
-    if (in == null) {
-      throw new IllegalArgumentException("in must not be null!");
-    }
+    Objects.requireNonNull(in, "in must not be null");
 
     createBaseArtifactSerializers(artifactSerializers);
 
@@ -210,6 +203,7 @@ public abstract class BaseModel implements ArtifactProvider, Serializable {
     }
 
     // TODO: Discuss this solution, the buffering should
+    int MODEL_BUFFER_SIZE_LIMIT = Integer.MAX_VALUE;
     in.mark(MODEL_BUFFER_SIZE_LIMIT);
 
     final ZipInputStream zip = new ZipInputStream(in);
@@ -225,7 +219,7 @@ public abstract class BaseModel implements ArtifactProvider, Serializable {
     boolean isSearchingForManifest = true;
 
     ZipEntry entry;
-    while((entry = zip.getNextEntry()) != null && isSearchingForManifest) {
+    while ((entry = zip.getNextEntry()) != null && isSearchingForManifest) {
 
       if ("manifest.properties".equals(entry.getName())) {
         // TODO: Probably better to use the serializer here directly!
@@ -255,7 +249,7 @@ public abstract class BaseModel implements ArtifactProvider, Serializable {
     if (factoryName == null) {
       // load the default factory
       Class<? extends BaseToolFactory> factoryClass = getDefaultFactory();
-      if(factoryClass != null) {
+      if (factoryClass != null) {
         this.toolFactory = BaseToolFactory.create(factoryClass, this);
       }
     } else {
@@ -290,14 +284,14 @@ public abstract class BaseModel implements ArtifactProvider, Serializable {
    * Finish loading the artifacts now that it knows all serializers.
    */
   private void finishLoadingArtifacts(InputStream in)
-      throws InvalidFormatException, IOException {
+      throws IOException {
 
     final ZipInputStream zip = new ZipInputStream(in);
 
-    Map<String, Object> artifactMap = new HashMap<String, Object>();
+    Map<String, Object> artifactMap = new HashMap<>();
 
     ZipEntry entry;
-    while((entry = zip.getNextEntry()) != null ) {
+    while ((entry = zip.getNextEntry()) != null ) {
 
       // Note: The manifest.properties file will be read here again,
       // there should be no need to prevent that.
@@ -311,9 +305,7 @@ public abstract class BaseModel implements ArtifactProvider, Serializable {
           getManifestProperty(SERIALIZER_CLASS_NAME_PREFIX + entryName);
 
       if (artifactSerializerClazzName != null) {
-        if (artifactSerializerClazzName != null) {
-          factory = ExtensionLoader.instantiateExtension(ArtifactSerializer.class, artifactSerializerClazzName);
-        }
+        factory = ExtensionLoader.instantiateExtension(ArtifactSerializer.class, artifactSerializerClazzName);
       }
 
       if (factory != null) {
@@ -349,22 +341,21 @@ public abstract class BaseModel implements ArtifactProvider, Serializable {
   }
 
   protected ArtifactSerializer getArtifactSerializer(String resourceName) {
-    String extension = null;
     try {
-      extension = getEntryExtension(resourceName);
+      return artifactSerializers.get(getEntryExtension(resourceName));
     } catch (InvalidFormatException e) {
       throw new IllegalStateException(e);
     }
-
-    return artifactSerializers.get(extension);
   }
 
   protected static Map<String, ArtifactSerializer> createArtifactSerializers() {
-    Map<String, ArtifactSerializer> serializers = new HashMap<String, ArtifactSerializer>();
+    Map<String, ArtifactSerializer> serializers = new HashMap<>();
 
     GenericModelSerializer.register(serializers);
     PropertiesSerializer.register(serializers);
     DictionarySerializer.register(serializers);
+    serializers.put("txt", new ByteArraySerializer());
+    serializers.put("html", new ByteArraySerializer());
 
     return serializers;
   }
@@ -387,7 +378,7 @@ public abstract class BaseModel implements ArtifactProvider, Serializable {
    */
   protected void createArtifactSerializers(
       Map<String, ArtifactSerializer> serializers) {
-    if(this.toolFactory != null)
+    if (this.toolFactory != null)
       serializers.putAll(this.toolFactory.createArtifactSerializersMap());
   }
 
@@ -426,19 +417,18 @@ public abstract class BaseModel implements ArtifactProvider, Serializable {
       // Version check is only performed if current version is not the dev/debug version
       if (!Version.currentVersion().equals(Version.DEV_VERSION)) {
         // Major and minor version must match, revision might be
+        // this check allows for the use of models of n minor release behind current minor release
         if (Version.currentVersion().getMajor() != version.getMajor() ||
-            Version.currentVersion().getMinor() != version.getMinor()) {
-          //this check allows for the use of models one minor release behind current minor release
-          if(Version.currentVersion().getMajor() == version.getMajor() && (Version.currentVersion().getMinor()-1) != version.getMinor()){
+            Version.currentVersion().getMinor() - 4 > version.getMinor()) {
           throw new InvalidFormatException("Model version " + version + " is not supported by this ("
-              + Version.currentVersion() +") version of OpenNLP!");
-          }
+              + Version.currentVersion() + ") version of OpenNLP!");
         }
 
         // Reject loading a snapshot model with a non-snapshot version
         if (!Version.currentVersion().isSnapshot() && version.isSnapshot()) {
-          throw new InvalidFormatException("Model version " + version + " is a snapshot - snapshot models are not " +
-          		"supported by this non-snapshot version (" + Version.currentVersion() + ") of OpenNLP!");
+          throw new InvalidFormatException("Model version " + version
+              + " is a snapshot - snapshot models are not supported by this non-snapshot version ("
+              + Version.currentVersion() + ") of OpenNLP!");
         }
       }
     }
@@ -457,7 +447,7 @@ public abstract class BaseModel implements ArtifactProvider, Serializable {
 
     if (getManifestProperty(LANGUAGE_PROPERTY) == null)
       throw new InvalidFormatException("Missing " + LANGUAGE_PROPERTY + " property in " +
-      		MANIFEST_ENTRY + "!");
+          MANIFEST_ENTRY + "!");
 
     // Validate the factory. We try to load it using the ExtensionLoader. It
     // will return the factory, null or raise an exception
@@ -478,7 +468,7 @@ public abstract class BaseModel implements ArtifactProvider, Serializable {
     }
 
     // validate artifacts declared by the factory
-    if(toolFactory != null) {
+    if (toolFactory != null) {
       toolFactory.validateArtifactMap();
     }
   }
@@ -564,8 +554,9 @@ public abstract class BaseModel implements ArtifactProvider, Serializable {
           "The method BaseModel.loadArtifactSerializers() was not called by BaseModel subclass constructor.");
     }
 
-    for (String name : artifactMap.keySet()) {
-      Object artifact = artifactMap.get(name);
+    for (Entry<String, Object> entry : artifactMap.entrySet()) {
+      final String name = entry.getKey();
+      final Object artifact = entry.getValue();
       if (artifact instanceof SerializableArtifact) {
 
         SerializableArtifact serializableArtifact = (SerializableArtifact) artifact;
@@ -580,10 +571,11 @@ public abstract class BaseModel implements ArtifactProvider, Serializable {
 
     ZipOutputStream zip = new ZipOutputStream(out);
 
-    for (String name : artifactMap.keySet()) {
+    for (Entry<String, Object> entry : artifactMap.entrySet()) {
+      String name = entry.getKey();
       zip.putNextEntry(new ZipEntry(name));
 
-      Object artifact = artifactMap.get(name);
+      Object artifact = entry.getValue();
 
       ArtifactSerializer serializer = getArtifactSerializer(name);
 
@@ -611,24 +603,22 @@ public abstract class BaseModel implements ArtifactProvider, Serializable {
     zip.flush();
   }
 
+  public final void serialize(File model) throws IOException {
+    try (OutputStream out = new BufferedOutputStream(new FileOutputStream(model))) {
+      serialize(out);
+    }
+  }
+
+  public final void serialize(Path model) throws IOException {
+    serialize(model.toFile());
+  }
+
   @SuppressWarnings("unchecked")
   public <T> T getArtifact(String key) {
     Object artifact = artifactMap.get(key);
-    if(artifact == null)
+    if (artifact == null)
       return null;
     return (T) artifact;
-  }
-
-  private static byte[] toByteArray(InputStream input) throws IOException {
-    ByteArrayOutputStream output = new ByteArrayOutputStream();
-    byte[] buffer = new byte[1024 * 4];
-    int count = 0;
-    int n = 0;
-    while (-1 != (n = input.read(buffer))) {
-      output.write(buffer, 0, n);
-      count += n;
-    }
-    return output.toByteArray();
   }
 
   public boolean isLoadedFromSerialized() {

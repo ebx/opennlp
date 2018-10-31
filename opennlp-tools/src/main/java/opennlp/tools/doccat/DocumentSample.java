@@ -14,45 +14,37 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package opennlp.tools.doccat;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-
-import opennlp.tools.tokenize.WhitespaceTokenizer;
+import java.util.Objects;
 
 /**
  * Class which holds a classified document and its category.
  */
-public class DocumentSample {
+public class DocumentSample implements Serializable {
 
   private final String category;
   private final List<String> text;
   private final Map<String, Object> extraInformation;
 
-  public DocumentSample(String category, String text) {
-    this(category, WhitespaceTokenizer.INSTANCE.tokenize(text));
-  }
-
-  public DocumentSample(String category, String text[]) {
+  public DocumentSample(String category, String[] text) {
     this(category, text, null);
   }
 
-  public DocumentSample(String category, String text[], Map<String, Object> extraInformation) {
-    if (category == null) {
-      throw new IllegalArgumentException("category must not be null");
-    }
-    if (text == null) {
-      throw new IllegalArgumentException("text must not be null");
-    }
+  public DocumentSample(String category, String[] text, Map<String, Object> extraInformation) {
+    Objects.requireNonNull(text, "text must not be null");
 
-    this.category = category;
-    this.text = Collections.unmodifiableList(new ArrayList<String>(Arrays.asList(text)));
+    this.category = Objects.requireNonNull(category, "category must not be null");
+    this.text = Collections.unmodifiableList(new ArrayList<>(Arrays.asList(text)));
 
-    if(extraInformation == null) {
+    if (extraInformation == null) {
       this.extraInformation = Collections.emptyMap();
     } else {
       this.extraInformation = extraInformation;
@@ -91,16 +83,23 @@ public class DocumentSample {
   }
 
   @Override
+  public int hashCode() {
+    return Objects.hash(getCategory(), Arrays.hashCode(getText()));
+  }
+
+  @Override
   public boolean equals(Object obj) {
     if (this == obj) {
       return true;
-    } else if (obj instanceof DocumentSample) {
+    }
+
+    if (obj instanceof DocumentSample) {
       DocumentSample a = (DocumentSample) obj;
 
       return getCategory().equals(a.getCategory())
           && Arrays.equals(getText(), a.getText());
-    } else {
-      return false;
     }
+
+    return false;
   }
 }

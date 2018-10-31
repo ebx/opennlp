@@ -35,7 +35,7 @@ public class OntoNotesParseSampleStream extends FilterObjectStream<String, Parse
 
     StringBuilder parseString = new StringBuilder();
 
-    while(true) {
+    while (true) {
       String parse = samples.read();
 
       if (parse != null) {
@@ -51,7 +51,7 @@ public class OntoNotesParseSampleStream extends FilterObjectStream<String, Parse
         }
       }
 
-      parseString.append(parse + " ");
+      parseString.append(parse).append(" ");
     }
   }
 }

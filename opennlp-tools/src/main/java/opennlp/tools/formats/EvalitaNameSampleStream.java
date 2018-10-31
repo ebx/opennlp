@@ -18,9 +18,9 @@
 package opennlp.tools.formats;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.PrintStream;
 import java.io.UnsupportedEncodingException;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -56,7 +56,7 @@ import opennlp.tools.util.StringUtil;
  * <p>
  * <b>Note:</b> Do not use this class, internal use only!
  */
-public class EvalitaNameSampleStream implements ObjectStream<NameSample>{
+public class EvalitaNameSampleStream implements ObjectStream<NameSample> {
 
   public enum LANGUAGE {
     IT
@@ -83,7 +83,7 @@ public class EvalitaNameSampleStream implements ObjectStream<NameSample>{
   public EvalitaNameSampleStream(LANGUAGE lang, InputStreamFactory in, int types) throws IOException {
     this.lang = lang;
     try {
-      this.lineStream = new PlainTextByLineStream(in, "UTF-8");
+      this.lineStream = new PlainTextByLineStream(in, StandardCharsets.UTF_8);
       System.setOut(new PrintStream(System.out, true, "UTF-8"));
     } catch (UnsupportedEncodingException e) {
       // UTF-8 is available on all JVMs, will never happen
@@ -92,26 +92,7 @@ public class EvalitaNameSampleStream implements ObjectStream<NameSample>{
     this.types = types;
   }
 
-  /**
-   * @param lang the language of the Evalita data file
-   * @param in an Input Stream to read data.
-   * @param types the types of the entities which are included in the Name Sample stream
-   */
-  @Deprecated
-  public EvalitaNameSampleStream(LANGUAGE lang, InputStream in, int types) {
-
-    this.lang = lang;
-    try {
-      this.lineStream = new PlainTextByLineStream(in, "UTF-8");
-      System.setOut(new PrintStream(System.out, true, "UTF-8"));
-    } catch (UnsupportedEncodingException e) {
-      // UTF-8 is available on all JVMs, will never happen
-      throw new IllegalStateException(e);
-    }
-    this.types = types;
-  }
-
-  static final Span extract(int begin, int end, String beginTag) throws InvalidFormatException {
+  private static Span extract(int begin, int end, String beginTag) throws InvalidFormatException {
 
     String type = beginTag.substring(2);
 
@@ -137,8 +118,8 @@ public class EvalitaNameSampleStream implements ObjectStream<NameSample>{
 
   public NameSample read() throws IOException {
 
-    List<String> sentence = new ArrayList<String>();
-    List<String> tags = new ArrayList<String>();
+    List<String> sentence = new ArrayList<>();
+    List<String> tags = new ArrayList<>();
 
     boolean isClearAdaptiveData = false;
 
@@ -152,15 +133,15 @@ public class EvalitaNameSampleStream implements ObjectStream<NameSample>{
         String emptyLine = lineStream.read();
 
         if (!StringUtil.isEmpty(emptyLine))
-          throw new IOException("Empty line after -DOCSTART- not empty: '" + emptyLine +"'!");
+          throw new IOException("Empty line after -DOCSTART- not empty: '" + emptyLine + "'!");
 
         continue;
       }
 
-      String fields[] = line.split(" ");
+      String[] fields = line.split(" ");
 
       // For Italian: WORD  POS-TAG SC-TAG NE-TAG
-      if (LANGUAGE.IT.equals(lang) && (fields.length == 4)) {
+      if (LANGUAGE.IT.equals(lang) && fields.length == 4) {
         sentence.add(fields[0]);
         tags.add(fields[3]); // 3 is NE-TAG
       }
@@ -176,7 +157,7 @@ public class EvalitaNameSampleStream implements ObjectStream<NameSample>{
     if (sentence.size() > 0) {
 
       // convert name tags into spans
-      List<Span> names = new ArrayList<Span>();
+      List<Span> names = new ArrayList<>();
 
       int beginIndex = -1;
       int endIndex = -1;
@@ -205,7 +186,7 @@ public class EvalitaNameSampleStream implements ObjectStream<NameSample>{
           }
 
           beginIndex = i;
-          endIndex = i +1;
+          endIndex = i + 1;
         }
         else if (tag.startsWith("I-")) {
           endIndex++;
@@ -226,7 +207,8 @@ public class EvalitaNameSampleStream implements ObjectStream<NameSample>{
       if (beginIndex != -1)
         names.add(extract(beginIndex, endIndex, tags.get(beginIndex)));
 
-      return new NameSample(sentence.toArray(new String[sentence.size()]), names.toArray(new Span[names.size()]), isClearAdaptiveData);
+      return new NameSample(sentence.toArray(new String[sentence.size()]),
+          names.toArray(new Span[names.size()]), isClearAdaptiveData);
     }
     else if (line != null) {
       // Just filter out empty events, if two lines in a row are empty

@@ -79,12 +79,10 @@ public class EntityLinkerTool extends BasicCmdLineTool {
       PerformanceMonitor perfMon = new PerformanceMonitor(System.err, "sent");
       perfMon.start();
 
-      try {
+      try (ObjectStream<String> untokenizedLineStream = new PlainTextByLineStream(
+          new SystemInputStreamFactory(), SystemInputStreamFactory.encoding())) {
 
-        ObjectStream<String> untokenizedLineStream = new PlainTextByLineStream(
-            new SystemInputStreamFactory(), SystemInputStreamFactory.encoding());
-
-        List<NameSample> document = new ArrayList<NameSample>();
+        List<NameSample> document = new ArrayList<>();
 
         String line;
         while ((line = untokenizedLineStream.read()) != null) {
@@ -93,7 +91,7 @@ public class EntityLinkerTool extends BasicCmdLineTool {
             // Run entity linker ... and output result ...
 
             StringBuilder text = new StringBuilder();
-            Span sentences[] = new Span[document.size()];
+            Span[] sentences = new Span[document.size()];
             Span[][] tokensBySentence = new Span[document.size()][];
             Span[][] namesBySentence = new Span[document.size()][];
 
@@ -121,7 +119,8 @@ public class EntityLinkerTool extends BasicCmdLineTool {
               text.append("\n");
             }
 
-            List<Span> linkedSpans = entityLinker.find(text.toString(), sentences, tokensBySentence, namesBySentence);
+            List<Span> linkedSpans =
+                entityLinker.find(text.toString(), sentences, tokensBySentence, namesBySentence);
 
             for (int i = 0; i < linkedSpans.size(); i++) {
               System.out.println(linkedSpans.get(i));

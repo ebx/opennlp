@@ -17,13 +17,6 @@
 
 package opennlp.uima.namefind;
 
-import opennlp.tools.namefind.NameFinderME;
-import opennlp.tools.namefind.TokenNameFinderModel;
-import opennlp.tools.util.Span;
-import opennlp.tools.util.eval.Mean;
-import opennlp.uima.util.AnnotatorUtil;
-import opennlp.uima.util.UimaUtil;
-
 import org.apache.uima.UimaContext;
 import org.apache.uima.analysis_engine.AnalysisEngineProcessException;
 import org.apache.uima.cas.CAS;
@@ -35,34 +28,41 @@ import org.apache.uima.cas.text.AnnotationFS;
 import org.apache.uima.resource.ResourceAccessException;
 import org.apache.uima.resource.ResourceInitializationException;
 
+import opennlp.tools.namefind.NameFinderME;
+import opennlp.tools.namefind.TokenNameFinderModel;
+import opennlp.tools.util.Span;
+import opennlp.tools.util.eval.Mean;
+import opennlp.uima.util.AnnotatorUtil;
+import opennlp.uima.util.UimaUtil;
+
 /**
  * OpenNLP Name annotator.
  * <p>
  * Mandatory parameters
  * <table border=1>
- *   <caption></caption>
- *   <tr><th>Type</th> <th>Name</th> <th>Description</th></tr>
- *   <tr><td>String</td> <td>opennlp.uima.ModelName</td> <td>The name of the model file</td></tr>
- *   <tr><td>String</td> <td>opennlp.uima.SentenceType</td> <td>The full name of the sentence type</td></tr>
- *   <tr><td>String</td> <td>opennlp.uima.TokenType</td> <td>The full name of the token type</td></tr>
- *   <tr><td>String</td> <td>opennlp.uima.NameType</td> <td>The full name of the name type</td></tr>
- *  </table>
+ * <caption></caption>
+ * <tr><th>Type</th> <th>Name</th> <th>Description</th></tr>
+ * <tr><td>String</td> <td>opennlp.uima.ModelName</td> <td>The name of the model file</td></tr>
+ * <tr><td>String</td> <td>opennlp.uima.SentenceType</td> <td>The full name of the sentence type</td></tr>
+ * <tr><td>String</td> <td>opennlp.uima.TokenType</td> <td>The full name of the token type</td></tr>
+ * <tr><td>String</td> <td>opennlp.uima.NameType</td> <td>The full name of the name type</td></tr>
+ * </table>
  * <p>
  * Optional parameters
  * <table border=1>
- *   <caption></caption>
- *   <tr><th>Type</th> <th>Name</th> <th>Description</th></tr>
- *   <tr><td>String</td> <td>opennlp.uima.ProbabilityFeature</td> <td>The name of the double
- *       probability feature (not set by default)</td></tr>
- *   <tr><td>Integer</td> <td>opennlp.uima.BeamSize</td></tr>
- *   <tr><td>String</td> <td>opennlp.uima.DocumentConfidenceType</td></tr>
- *   <tr><td>String</td> <td>opennlp.uima.DocumentConfidenceType</td></tr>
- *
+ * <caption></caption>
+ * <tr><th>Type</th> <th>Name</th> <th>Description</th></tr>
+ * <tr><td>String</td> <td>opennlp.uima.ProbabilityFeature</td> <td>The name of the double
+ * probability feature (not set by default)</td></tr>
+ * <tr><td>Integer</td> <td>opennlp.uima.BeamSize</td></tr>
+ * <tr><td>String</td> <td>opennlp.uima.DocumentConfidenceType</td></tr>
+ * <tr><td>String</td> <td>opennlp.uima.DocumentConfidenceType</td></tr>
  * </table>
  */
 public final class NameFinder extends AbstractNameFinder {
 
   public static final String NAME_TYPE_PARAMETER = "opennlp.uima.NameType";
+  public static final String NAME_TYPE_MAP_PARAMETER = "opennlp.uima.NameTypeMap";
 
   public static final String TOKEN_PATTERN_OPTIMIZATION =
       "opennlp.uima.TokenPatternOptimization";
@@ -99,7 +99,7 @@ public final class NameFinder extends AbstractNameFinder {
 
   /**
    * Initializes a new instance.
-   *
+   * <p>
    * Note: Use {@link #initialize(UimaContext) } to initialize
    * this instance. Not use the constructor.
    */
@@ -109,7 +109,7 @@ public final class NameFinder extends AbstractNameFinder {
 
   /**
    * Initializes the current instance with the given context.
-   *
+   * <p>
    * Note: Do all initialization in this method, do not use the constructor.
    */
   public void initialize()
@@ -121,12 +121,11 @@ public final class NameFinder extends AbstractNameFinder {
 
     try {
       TokenNameFinderModelResource modelResource =
-            (TokenNameFinderModelResource) context.getResourceObject(UimaUtil.MODEL_PARAMETER);
+          (TokenNameFinderModelResource) context.getResourceObject(UimaUtil.MODEL_PARAMETER);
 
-        model = modelResource.getModel();
-    }
-    catch (ResourceAccessException e) {
-        throw new ResourceInitializationException(e);
+      model = modelResource.getModel();
+    } catch (ResourceAccessException e) {
+      throw new ResourceInitializationException(e);
     }
 
     mNameFinder = new NameFinderME(model);
@@ -141,7 +140,7 @@ public final class NameFinder extends AbstractNameFinder {
     super.typeSystemInit(typeSystem);
 
     probabilityFeature = AnnotatorUtil.getOptionalFeatureParameter(context, mNameType,
-    		UimaUtil.PROBABILITY_FEATURE_PARAMETER, CAS.TYPE_NAME_DOUBLE);
+        UimaUtil.PROBABILITY_FEATURE_PARAMETER, CAS.TYPE_NAME_DOUBLE);
 
     documentConfidenceType = AnnotatorUtil.getOptionalTypeParameter(context, typeSystem,
         "opennlp.uima.DocumentConfidenceType");
@@ -155,9 +154,9 @@ public final class NameFinder extends AbstractNameFinder {
 
   protected Span[] find(CAS cas, String[] tokens) {
 
-    Span names[] = mNameFinder.find(tokens);
+    Span[] names = mNameFinder.find(tokens);
 
-    double probs[] = mNameFinder.probs();
+    double[] probs = mNameFinder.probs();
 
     for (double prob : probs) {
       documentConfidence.add(prob);
@@ -166,8 +165,8 @@ public final class NameFinder extends AbstractNameFinder {
     return names;
   }
 
-  protected void postProcessAnnotations(Span detectedNames[],
-      AnnotationFS[] nameAnnotations) {
+  protected void postProcessAnnotations(Span[] detectedNames,
+                                        AnnotationFS[] nameAnnotations) {
 
     if (probabilityFeature != null) {
       double[] probs = mNameFinder.probs(detectedNames);

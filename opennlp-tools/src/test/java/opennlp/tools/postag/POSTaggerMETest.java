@@ -15,21 +15,20 @@
  * limitations under the License.
  */
 
-
 package opennlp.tools.postag;
 
-import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.junit.Assert.assertEquals;
-
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 
-import opennlp.tools.util.TrainingParameters;
+import org.junit.Assert;
 import org.junit.Test;
 
 import opennlp.tools.formats.ResourceAsStreamFactory;
 import opennlp.tools.util.InputStreamFactory;
+import opennlp.tools.util.InsufficientTrainingDataException;
 import opennlp.tools.util.ObjectStream;
 import opennlp.tools.util.PlainTextByLineStream;
+import opennlp.tools.util.TrainingParameters;
 import opennlp.tools.util.model.ModelType;
 
 /**
@@ -38,25 +37,25 @@ import opennlp.tools.util.model.ModelType;
 public class POSTaggerMETest {
 
   private static ObjectStream<POSSample> createSampleStream() throws IOException {
-    InputStreamFactory in = new ResourceAsStreamFactory(POSTaggerMETest.class, 
+    InputStreamFactory in = new ResourceAsStreamFactory(POSTaggerMETest.class,
         "/opennlp/tools/postag/AnnotatedSentences.txt");
 
-    return new WordTagSampleStream(new PlainTextByLineStream(in, UTF_8));
+    return new WordTagSampleStream(new PlainTextByLineStream(in, StandardCharsets.UTF_8));
   }
 
   /**
    * Trains a POSModel from the annotated test data.
    *
-   * @return
-   * @throws IOException
+   * @return {@link POSModel}
    */
-  static POSModel trainPOSModel(ModelType type) throws IOException {
+  public static POSModel trainPOSModel(ModelType type) throws IOException {
     TrainingParameters params = new TrainingParameters();
     params.put(TrainingParameters.ALGORITHM_PARAM, type.toString());
-    params.put(TrainingParameters.ITERATIONS_PARAM, Integer.toString(100));
-    params.put(TrainingParameters.CUTOFF_PARAM, Integer.toString(5));
+    params.put(TrainingParameters.ITERATIONS_PARAM, 100);
+    params.put(TrainingParameters.CUTOFF_PARAM, 5);
 
-    return POSTaggerME.train("en", createSampleStream(), params, new POSTaggerFactory());
+    return POSTaggerME.train("eng", createSampleStream(), params,
+        new POSTaggerFactory());
   }
 
   @Test
@@ -65,28 +64,45 @@ public class POSTaggerMETest {
 
     POSTagger tagger = new POSTaggerME(posModel);
 
-    String tags[] = tagger.tag(new String[] {
+    String[] tags = tagger.tag(new String[] {
         "The",
-    	"driver",
-    	"got",
-    	"badly",
-    	"injured",
-    	"."});
+        "driver",
+        "got",
+        "badly",
+        "injured",
+        "."});
 
-    assertEquals(6, tags.length);
-
-    assertEquals("DT", tags[0]);
-    assertEquals("NN", tags[1]);
-    assertEquals("VBD", tags[2]);
-    assertEquals("RB", tags[3]);
-    assertEquals("VBN", tags[4]);
-    assertEquals(".", tags[5]);
+    Assert.assertEquals(6, tags.length);
+    Assert.assertEquals("DT", tags[0]);
+    Assert.assertEquals("NN", tags[1]);
+    Assert.assertEquals("VBD", tags[2]);
+    Assert.assertEquals("RB", tags[3]);
+    Assert.assertEquals("VBN", tags[4]);
+    Assert.assertEquals(".", tags[5]);
   }
 
   @Test
   public void testBuildNGramDictionary() throws IOException {
     ObjectStream<POSSample> samples = createSampleStream();
-
     POSTaggerME.buildNGramDictionary(samples, 0);
   }
+  
+  @Test(expected = InsufficientTrainingDataException.class)
+  public void insufficientTestData() throws IOException {
+
+    InputStreamFactory in = new ResourceAsStreamFactory(POSTaggerMETest.class,
+        "/opennlp/tools/postag/AnnotatedSentencesInsufficient.txt");
+
+    ObjectStream<POSSample> stream = new WordTagSampleStream(
+        new PlainTextByLineStream(in, StandardCharsets.UTF_8));
+ 
+    TrainingParameters params = new TrainingParameters();
+    params.put(TrainingParameters.ALGORITHM_PARAM, ModelType.MAXENT.name());
+    params.put(TrainingParameters.ITERATIONS_PARAM, 100);
+    params.put(TrainingParameters.CUTOFF_PARAM, 5);
+
+    POSTaggerME.train("eng", stream, params, new POSTaggerFactory());
+
+  }
+  
 }

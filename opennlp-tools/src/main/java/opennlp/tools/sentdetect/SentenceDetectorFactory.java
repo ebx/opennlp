@@ -77,11 +77,9 @@ public class SentenceDetectorFactory extends BaseToolFactory {
       throw new InvalidFormatException(TOKEN_END_PROPERTY
           + " is a mandatory property!");
 
-    Object abbreviationsEntry = this.artifactProvider
-        .getArtifact(ABBREVIATIONS_ENTRY_NAME);
+    Object abbreviationsEntry = this.artifactProvider.getArtifact(ABBREVIATIONS_ENTRY_NAME);
 
-    if (abbreviationsEntry != null
-        && !(abbreviationsEntry instanceof Dictionary)) {
+    if (abbreviationsEntry != null && !(abbreviationsEntry instanceof Dictionary)) {
       throw new InvalidFormatException(
           "Abbreviations dictionary '" + abbreviationsEntry +
               "' has wrong type, needs to be of type Dictionary!");
@@ -190,7 +188,7 @@ public class SentenceDetectorFactory extends BaseToolFactory {
   public SDContextGenerator getSDContextGenerator() {
     Factory f = new Factory();
     char[] eosChars = getEOSCharacters();
-    Set<String> abbs = null;
+    Set<String> abbs;
     Dictionary abbDict = getAbbreviationDictionary();
     if (abbDict != null) {
       abbs = abbDict.asStringSet();
@@ -205,9 +203,7 @@ public class SentenceDetectorFactory extends BaseToolFactory {
   }
 
   private String eosCharArrayToString(char[] eosCharacters) {
-    StringBuilder eosString = new StringBuilder();
-    eosString.append(eosCharacters);
-    return eosString.toString();
+    return String.valueOf(eosCharacters);
   }
 
   private char[] eosStringToCharArray(String eosCharacters) {

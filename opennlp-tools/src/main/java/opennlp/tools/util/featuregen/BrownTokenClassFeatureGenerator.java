@@ -22,11 +22,11 @@ import java.util.List;
 /**
  * Generates Brown cluster features for current token and token class.
  */
-public class BrownTokenClassFeatureGenerator extends FeatureGeneratorAdapter {
+public class BrownTokenClassFeatureGenerator implements AdaptiveFeatureGenerator {
 
   private BrownCluster brownLexicon;
 
-  public BrownTokenClassFeatureGenerator(BrownCluster dict){
+  public BrownTokenClassFeatureGenerator(BrownCluster dict) {
     this.brownLexicon = dict;
   }
 

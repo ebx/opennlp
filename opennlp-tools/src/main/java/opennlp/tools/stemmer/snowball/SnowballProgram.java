@@ -1,3 +1,4 @@
+// CHECKSTYLE:OFF
 /*
 
 Copyright (c) 2001, Dr Martin Porter
@@ -30,6 +31,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 package opennlp.tools.stemmer.snowball;
+
 import java.lang.reflect.InvocationTargetException;
 
 class SnowballProgram {
@@ -459,4 +461,4 @@ extern void debug(struct SN_env * z, int number, int line_count)
 }
 */
 
-};
+}

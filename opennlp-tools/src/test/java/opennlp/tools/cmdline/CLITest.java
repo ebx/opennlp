@@ -17,11 +17,10 @@
 
 package opennlp.tools.cmdline;
 
-import static org.junit.Assert.assertEquals;
-
 import java.security.Permission;
 
 import org.junit.After;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -53,7 +52,7 @@ public class CLITest {
     }
 
     @Override
-    public void checkExit(int status){
+    public void checkExit(int status) {
       super.checkExit(status);
 
       throw new ExitException(status);
@@ -62,7 +61,7 @@ public class CLITest {
 
   private final SecurityManager originalSecurityManager = System.getSecurityManager();
 
- @Before
+  @Before
   public void installNoExitSecurityManager() {
     System.setSecurityManager(new NoExitSecurityManager());
   }
@@ -76,7 +75,7 @@ public class CLITest {
     try {
       CLI.main(new String[]{});
     } catch (ExitException e) {
-      assertEquals(0, e.status());
+      Assert.assertEquals(0, e.status());
     }
   }
 
@@ -88,7 +87,7 @@ public class CLITest {
     try {
       CLI.main(new String[]{"unknown name"});
     } catch (ExitException e) {
-      assertEquals(1, e.status());
+      Assert.assertEquals(1, e.status());
     }
   }
 
@@ -100,7 +99,7 @@ public class CLITest {
     try {
       CLI.main(new String[]{"DoccatTrainer", "-param", "value"});
     } catch (ExitException e) {
-      assertEquals(1, e.status());
+      Assert.assertEquals(1, e.status());
     }
   }
 
@@ -112,7 +111,7 @@ public class CLITest {
     try {
       CLI.main(new String[]{"Doccat", "unknown.model"});
     } catch (ExitException e) {
-      assertEquals(-1, e.status());
+      Assert.assertEquals(-1, e.status());
     }
   }
 
@@ -124,11 +123,11 @@ public class CLITest {
   public void testHelpMessageOfTools() {
 
     for (String toolName : CLI.getToolNames()) {
-    	System.err.println("-> ToolName" + toolName);
+      System.err.println("-> ToolName" + toolName);
       try {
         CLI.main(new String[]{toolName, "help"});
       } catch (ExitException e) {
-        assertEquals(0, e.status());
+        Assert.assertEquals(0, e.status());
       }
     }
   }

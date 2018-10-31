@@ -17,15 +17,17 @@
 
 package opennlp.tools.lemmatizer;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-
 import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutput;
+import java.io.ObjectOutputStream;
 import java.io.StringReader;
 
+import org.junit.Assert;
 import org.junit.Test;
 
 public class LemmaSampleTest {
@@ -52,13 +54,37 @@ public class LemmaSampleTest {
   }
 
   @Test
-  public void testRetrievingContent() {
-    LemmaSample sample = new LemmaSample(createSentence(), createTags(),
-        createLemmas());
+  public void testLemmaSampleSerDe() throws IOException {
+    LemmaSample lemmaSample = createGoldSample();
+    ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+    ObjectOutput out = new ObjectOutputStream(byteArrayOutputStream);
+    out.writeObject(lemmaSample);
+    out.flush();
+    byte[] bytes = byteArrayOutputStream.toByteArray();
 
-    assertArrayEquals(createSentence(), sample.getTokens());
-    assertArrayEquals(createTags(), sample.getTags());
-    assertArrayEquals(createLemmas(), sample.getLemmas());
+    ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(bytes);
+    ObjectInput objectInput = new ObjectInputStream(byteArrayInputStream);
+
+    LemmaSample deSerializedLemmaSample = null;
+    try {
+      deSerializedLemmaSample = (LemmaSample) objectInput.readObject();
+    } catch (ClassNotFoundException e) {
+      // do nothing
+    }
+
+    Assert.assertNotNull(deSerializedLemmaSample);
+    Assert.assertArrayEquals(lemmaSample.getLemmas(), deSerializedLemmaSample.getLemmas());
+    Assert.assertArrayEquals(lemmaSample.getTokens(), deSerializedLemmaSample.getTokens());
+    Assert.assertArrayEquals(lemmaSample.getTags(), deSerializedLemmaSample.getTags());
+  }
+
+  @Test
+  public void testRetrievingContent() {
+    LemmaSample sample = new LemmaSample(createSentence(), createTags(), createLemmas());
+
+    Assert.assertArrayEquals(createSentence(), sample.getTokens());
+    Assert.assertArrayEquals(createTags(), sample.getTags());
+    Assert.assertArrayEquals(createLemmas(), sample.getLemmas());
   }
 
   @Test
@@ -75,19 +101,19 @@ public class LemmaSampleTest {
     for (int i = 0; i < sentence.length; i++) {
       String line = reader.readLine();
       String[] parts = line.split("\t");
-      assertEquals(3, parts.length);
-      assertEquals(sentence[i], parts[0]);
-      assertEquals(tags[i], parts[1]);
-      assertEquals(lemmas[i], parts[2]);
+      Assert.assertEquals(3, parts.length);
+      Assert.assertEquals(sentence[i], parts[0]);
+      Assert.assertEquals(tags[i], parts[1]);
+      Assert.assertEquals(lemmas[i], parts[2]);
     }
   }
 
   @Test
   public void testEquals() {
-    assertFalse(createGoldSample() == createGoldSample());
-    assertTrue(createGoldSample().equals(createGoldSample()));
-    assertFalse(createPredSample().equals(createGoldSample()));
-    assertFalse(createPredSample().equals(new Object()));
+    Assert.assertFalse(createGoldSample() == createGoldSample());
+    Assert.assertTrue(createGoldSample().equals(createGoldSample()));
+    Assert.assertFalse(createPredSample().equals(createGoldSample()));
+    Assert.assertFalse(createPredSample().equals(new Object()));
   }
 
   public static LemmaSample createGoldSample() {

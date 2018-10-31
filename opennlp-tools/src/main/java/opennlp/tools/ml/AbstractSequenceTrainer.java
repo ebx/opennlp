@@ -28,16 +28,13 @@ public abstract class AbstractSequenceTrainer extends AbstractTrainer implements
   public AbstractSequenceTrainer() {
   }
 
-  public abstract SequenceClassificationModel doTrain(SequenceStream events)
+  public abstract SequenceClassificationModel<String> doTrain(SequenceStream events)
       throws IOException;
 
-  public final SequenceClassificationModel train(SequenceStream events) throws IOException {
+  public final SequenceClassificationModel<String> train(SequenceStream events) throws IOException {
+    validate();
 
-    if (!isValid()) {
-      throw new IllegalArgumentException("trainParams are not valid!");
-    }
-
-    SequenceClassificationModel model = doTrain(events);
+    SequenceClassificationModel<String> model = doTrain(events);
     addToReport(AbstractTrainer.TRAINER_TYPE_PARAM, SequenceTrainer.SEQUENCE_VALUE);
     return model;
   }

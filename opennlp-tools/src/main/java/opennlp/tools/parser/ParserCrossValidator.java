@@ -38,8 +38,8 @@ public class ParserCrossValidator {
 
   private ParserEvaluationMonitor[] monitors;
 
-  public ParserCrossValidator(String languageCode, TrainingParameters params, HeadRules rules, ParserType parserType,
-      ParserEvaluationMonitor... monitors) {
+  public ParserCrossValidator(String languageCode, TrainingParameters params,
+      HeadRules rules, ParserType parserType, ParserEvaluationMonitor... monitors) {
     this.languageCode = languageCode;
     this.params = params;
     this.rules = rules;
@@ -48,12 +48,10 @@ public class ParserCrossValidator {
 
   public void evaluate(ObjectStream<Parse> samples, int nFolds) throws IOException {
 
-    CrossValidationPartitioner<Parse> partitioner = new CrossValidationPartitioner<Parse>(
-        samples, nFolds);
+    CrossValidationPartitioner<Parse> partitioner = new CrossValidationPartitioner<>(samples, nFolds);
 
     while (partitioner.hasNext()) {
-      CrossValidationPartitioner.TrainingSampleStream<Parse> trainingSampleStream = partitioner
-          .next();
+      CrossValidationPartitioner.TrainingSampleStream<Parse> trainingSampleStream = partitioner.next();
 
       ParserModel model;
 

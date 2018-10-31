@@ -1,23 +1,23 @@
 /*
- * Licensed to the Apache Software Foundation (ASF) under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership.  The ASF licenses this file
- * to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
  *
- *   http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied.  See the License for the
- * specific language governing permissions and limitations
- * under the License.
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
+
 package opennlp.tools.ml.maxent.quasinewton;
 
+import opennlp.tools.ml.ArrayMath;
 import opennlp.tools.ml.maxent.quasinewton.LineSearch.LineSearchResult;
 
 /**
@@ -165,6 +165,7 @@ public class QNMinimizer {
   public Evaluator getEvaluator() {
     return evaluator;
   }
+
   public void setEvaluator(Evaluator evaluator) {
     this.evaluator = evaluator;
   }
@@ -218,9 +219,9 @@ public class QNMinimizer {
     long startTime = System.currentTimeMillis();
 
     // Initial step size for the 1st iteration
-    double initialStepSize = l1Cost > 0?
+    double initialStepSize = l1Cost > 0 ?
         ArrayMath.invL2norm(lsr.getPseudoGradAtNext()) :
-        ArrayMath.invL2norm(lsr.getGradAtNext());
+          ArrayMath.invL2norm(lsr.getGradAtNext());
 
     for (int iter = 1; iter <= iterations; iter++) {
       // Find direction
@@ -260,12 +261,11 @@ public class QNMinimizer {
           display(iter + ":  ");
 
         if (evaluator != null) {
-          display("\t" + lsr.getValueAtNext()
-                + "\t" + lsr.getFuncChangeRate()
-                + "\t" + evaluator.evaluate(lsr.getNextPoint()) + "\n");
+          display("\t" + lsr.getValueAtNext() + "\t" + lsr.getFuncChangeRate()
+              + "\t" + evaluator.evaluate(lsr.getNextPoint()) + "\n");
         } else {
           display("\t " + lsr.getValueAtNext() +
-                  "\t" + lsr.getFuncChangeRate() + "\n");
+              "\t" + lsr.getFuncChangeRate() + "\n");
         }
       }
       if (isConverged(lsr))
@@ -370,13 +370,13 @@ public class QNMinimizer {
     if (lsr.getFuncChangeRate() < CONVERGE_TOLERANCE) {
       if (verbose)
         display("Function change rate is smaller than the threshold "
-                  + CONVERGE_TOLERANCE + ".\nTraining will stop.\n\n");
+            + CONVERGE_TOLERANCE + ".\nTraining will stop.\n\n");
       return true;
     }
 
     // Check gradient's norm using the criteria: ||g(x)|| / max(1, ||x||) < threshold
     double xNorm = Math.max(1, ArrayMath.l2norm(lsr.getNextPoint()));
-    double gradNorm = l1Cost > 0?
+    double gradNorm = l1Cost > 0 ?
         ArrayMath.l2norm(lsr.getPseudoGradAtNext()) : ArrayMath.l2norm(lsr.getGradAtNext());
     if (gradNorm / xNorm < REL_GRAD_NORM_TOL) {
       if (verbose)
@@ -522,7 +522,7 @@ public class QNMinimizer {
    * it can be used to report model's training accuracy when
    * we train a Maximum Entropy classifier.
    */
-  public static interface Evaluator {
+  public interface Evaluator {
     /**
      * Measure quality of the training parameters
      * @param parameters

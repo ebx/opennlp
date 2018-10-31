@@ -15,23 +15,20 @@
  * limitations under the License.
  */
 
-
 package opennlp.tools.namefind;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-
-import java.io.InputStream;
+import java.io.File;
 import java.util.Collections;
 
-import opennlp.tools.ml.model.MaxentModel;
+import org.junit.Assert;
+import org.junit.Test;
+
+import opennlp.tools.ml.model.SequenceClassificationModel;
 import opennlp.tools.util.MockInputStreamFactory;
 import opennlp.tools.util.ObjectStream;
 import opennlp.tools.util.PlainTextByLineStream;
 import opennlp.tools.util.Span;
 import opennlp.tools.util.TrainingParameters;
-
-import org.junit.Test;
 
 /**
  * This is the test class for {@link NameFinderME}.
@@ -53,48 +50,46 @@ import org.junit.Test;
  */
 public class NameFinderMETest {
 
-  private final String TYPE = "default";
+  private static final String TYPE_OVERRIDE = "aType";
+  private static final String DEFAULT = "default";
 
   @Test
   public void testNameFinder() throws Exception {
 
     // train the name finder
-
-    InputStream in = getClass().getClassLoader().getResourceAsStream(
-        "opennlp/tools/namefind/AnnotatedSentences.txt");
-
     String encoding = "ISO-8859-1";
 
     ObjectStream<NameSample> sampleStream =
-          new NameSampleDataStream(
-          new PlainTextByLineStream(new MockInputStreamFactory(in), encoding));
+        new NameSampleDataStream(
+            new PlainTextByLineStream(new MockInputStreamFactory(
+              new File("opennlp/tools/namefind/AnnotatedSentences.txt")), encoding));
 
     TrainingParameters params = new TrainingParameters();
-    params.put(TrainingParameters.ITERATIONS_PARAM, Integer.toString(70));
-    params.put(TrainingParameters.CUTOFF_PARAM, Integer.toString(1));
+    params.put(TrainingParameters.ITERATIONS_PARAM, 70);
+    params.put(TrainingParameters.CUTOFF_PARAM, 1);
 
-    TokenNameFinderModel nameFinderModel = NameFinderME.train("en", TYPE, sampleStream,
-        params, (byte[]) null, Collections.<String, Object>emptyMap());
+    TokenNameFinderModel nameFinderModel = NameFinderME.train("eng", null, sampleStream,
+        params, TokenNameFinderFactory.create(null, null, Collections.emptyMap(), new BioCodec()));
 
     TokenNameFinder nameFinder = new NameFinderME(nameFinderModel);
 
     // now test if it can detect the sample sentences
 
-    String sentence[] = {"Alisa",
-    		"appreciated",
-    		"the",
-    		"hint",
-    		"and",
-    		"enjoyed",
-    		"a",
-    		"delicious",
-    		"traditional",
-    		"meal."};
+    String[] sentence = {"Alisa",
+        "appreciated",
+        "the",
+        "hint",
+        "and",
+        "enjoyed",
+        "a",
+        "delicious",
+        "traditional",
+        "meal."};
 
-    Span names[] = nameFinder.find(sentence);
+    Span[] names = nameFinder.find(sentence);
 
-    assertEquals(1, names.length);
-    assertEquals(new Span(0, 1, TYPE), names[0]);
+    Assert.assertEquals(1, names.length);
+    Assert.assertEquals(new Span(0, 1, DEFAULT), names[0]);
 
     sentence = new String[] {
         "Hi",
@@ -108,36 +103,31 @@ public class NameFinderMETest {
 
     names = nameFinder.find(sentence);
 
-    assertEquals(2, names.length);
-    assertEquals(new Span(1, 2, TYPE), names[0]);
-    assertEquals(new Span(4, 6, TYPE), names[1]);
+    Assert.assertEquals(2, names.length);
+    Assert.assertEquals(new Span(1, 2, DEFAULT), names[0]);
+    Assert.assertEquals(new Span(4, 6, DEFAULT), names[1]);
   }
 
   /**
    * Train NamefinderME using AnnotatedSentencesWithTypes.txt with "person"
    * nameType and try the model in a sample text.
-   *
-   * @throws Exception
    */
   @Test
   public void testNameFinderWithTypes() throws Exception {
 
     // train the name finder
-
-    InputStream in = getClass().getClassLoader().getResourceAsStream(
-        "opennlp/tools/namefind/AnnotatedSentencesWithTypes.txt");
-
     String encoding = "ISO-8859-1";
 
     ObjectStream<NameSample> sampleStream = new NameSampleDataStream(
-       new PlainTextByLineStream(new MockInputStreamFactory(in), encoding));
+        new PlainTextByLineStream(new MockInputStreamFactory(
+          new File("opennlp/tools/namefind/AnnotatedSentencesWithTypes.txt")), encoding));
 
     TrainingParameters params = new TrainingParameters();
-    params.put(TrainingParameters.ITERATIONS_PARAM, Integer.toString(70));
-    params.put(TrainingParameters.CUTOFF_PARAM, Integer.toString(1));
+    params.put(TrainingParameters.ITERATIONS_PARAM, 70);
+    params.put(TrainingParameters.CUTOFF_PARAM, 1);
 
-    TokenNameFinderModel nameFinderModel = NameFinderME.train("en", TYPE, sampleStream,
-        params, (byte[]) null, Collections.<String, Object>emptyMap());
+    TokenNameFinderModel nameFinderModel = NameFinderME.train("eng", null, sampleStream,
+        params, TokenNameFinderFactory.create(null, null, Collections.emptyMap(), new BioCodec()));
 
     NameFinderME nameFinder = new NameFinderME(nameFinderModel);
 
@@ -148,182 +138,192 @@ public class NameFinderMETest {
 
     Span[] names2 = nameFinder.find(sentence2);
 
-    assertEquals(2, names2.length);
-    assertEquals(new Span(1, 2, "person"), names2[0]);
-    assertEquals(new Span(4, 6, "person"), names2[1]);
-    assertEquals("person", names2[0].getType());
-    assertEquals("person", names2[1].getType());
+    Assert.assertEquals(2, names2.length);
+    Assert.assertEquals(new Span(1, 2, "person"), names2[0]);
+    Assert.assertEquals(new Span(4, 6, "person"), names2[1]);
+    Assert.assertEquals("person", names2[0].getType());
+    Assert.assertEquals("person", names2[1].getType());
 
-    String sentence[] = { "Alisa", "appreciated", "the", "hint", "and",
+    String[] sentence = { "Alisa", "appreciated", "the", "hint", "and",
         "enjoyed", "a", "delicious", "traditional", "meal." };
 
-    Span names[] = nameFinder.find(sentence);
+    Span[] names = nameFinder.find(sentence);
 
-    assertEquals(1, names.length);
-    assertEquals(new Span(0, 1, "person"), names[0]);
-    assertTrue(hasOtherAsOutcome(nameFinderModel));
+    Assert.assertEquals(1, names.length);
+    Assert.assertEquals(new Span(0, 1, "person"), names[0]);
+    Assert.assertTrue(hasOtherAsOutcome(nameFinderModel));
   }
 
   /**
    * Train NamefinderME using OnlyWithNames.train. The goal is to check if the model validator accepts it.
    * This is related to the issue OPENNLP-9
-   *
-   * @throws Exception
    */
   @Test
   public void testOnlyWithNames() throws Exception {
 
     // train the name finder
-
-    InputStream in = getClass().getClassLoader().getResourceAsStream(
-        "opennlp/tools/namefind/OnlyWithNames.train");
-
     ObjectStream<NameSample> sampleStream = new NameSampleDataStream(
-       new PlainTextByLineStream(new MockInputStreamFactory(in), "UTF-8"));
+            new PlainTextByLineStream(new MockInputStreamFactory(
+              new File("opennlp/tools/namefind/OnlyWithNames.train")), "UTF-8"));
 
     TrainingParameters params = new TrainingParameters();
-    params.put(TrainingParameters.ITERATIONS_PARAM, Integer.toString(70));
-    params.put(TrainingParameters.CUTOFF_PARAM, Integer.toString(1));
+    params.put(TrainingParameters.ITERATIONS_PARAM, 70);
+    params.put(TrainingParameters.CUTOFF_PARAM, 1);
 
-    TokenNameFinderModel nameFinderModel = NameFinderME.train("en", TYPE, sampleStream,
-        params, (byte[]) null, Collections.<String, Object>emptyMap());
+    TokenNameFinderModel nameFinderModel = NameFinderME.train("eng", null, sampleStream,
+            params, TokenNameFinderFactory.create(null, null, Collections.emptyMap(), new BioCodec()));
 
     NameFinderME nameFinder = new NameFinderME(nameFinderModel);
 
     // now test if it can detect the sample sentences
 
     String[] sentence = ("Neil Abercrombie Anibal Acevedo-Vila Gary Ackerman " +
-    		"Robert Aderholt Daniel Akaka Todd Akin Lamar Alexander Rodney Alexander").split("\\s+");
+            "Robert Aderholt Daniel Akaka Todd Akin Lamar Alexander Rodney Alexander").split("\\s+");
 
     Span[] names1 = nameFinder.find(sentence);
 
-    assertEquals(new Span(0, 2, TYPE), names1[0]);
-    assertEquals(new Span(2, 4, TYPE), names1[1]);
-    assertEquals(new Span(4, 6, TYPE), names1[2]);
-    assertTrue(!hasOtherAsOutcome(nameFinderModel));
+    Assert.assertEquals(new Span(0, 2, DEFAULT), names1[0]);
+    Assert.assertEquals(new Span(2, 4, DEFAULT), names1[1]);
+    Assert.assertEquals(new Span(4, 6, DEFAULT), names1[2]);
+    Assert.assertTrue(!hasOtherAsOutcome(nameFinderModel));
+  }
+
+  @Test
+  public void testOnlyWithNamesTypeOverride() throws Exception {
+
+    // train the name finder
+    ObjectStream<NameSample> sampleStream = new NameSampleDataStream(
+        new PlainTextByLineStream(new MockInputStreamFactory(
+          new File("opennlp/tools/namefind/OnlyWithNames.train")), "UTF-8"));
+
+    TrainingParameters params = new TrainingParameters();
+    params.put(TrainingParameters.ITERATIONS_PARAM, 70);
+    params.put(TrainingParameters.CUTOFF_PARAM, 1);
+
+    TokenNameFinderModel nameFinderModel = NameFinderME.train("eng", TYPE_OVERRIDE, sampleStream,
+        params, TokenNameFinderFactory.create(null, null, Collections.emptyMap(), new BioCodec()));
+
+    NameFinderME nameFinder = new NameFinderME(nameFinderModel);
+
+    // now test if it can detect the sample sentences
+
+    String[] sentence = ("Neil Abercrombie Anibal Acevedo-Vila Gary Ackerman " +
+        "Robert Aderholt Daniel Akaka Todd Akin Lamar Alexander Rodney Alexander").split("\\s+");
+
+    Span[] names1 = nameFinder.find(sentence);
+
+    Assert.assertEquals(new Span(0, 2, TYPE_OVERRIDE), names1[0]);
+    Assert.assertEquals(new Span(2, 4, TYPE_OVERRIDE), names1[1]);
+    Assert.assertEquals(new Span(4, 6, TYPE_OVERRIDE), names1[2]);
+    Assert.assertTrue(!hasOtherAsOutcome(nameFinderModel));
   }
 
   /**
-   * Train NamefinderME using OnlyWithNamesWithTypes.train. The goal is to check if the model validator accepts it.
+   * Train NamefinderME using OnlyWithNamesWithTypes.train.
+   * The goal is to check if the model validator accepts it.
    * This is related to the issue OPENNLP-9
-   *
-   * @throws Exception
    */
   @Test
   public void testOnlyWithNamesWithTypes() throws Exception {
 
     // train the name finder
-
-    InputStream in = getClass().getClassLoader().getResourceAsStream(
-        "opennlp/tools/namefind/OnlyWithNamesWithTypes.train");
-
     ObjectStream<NameSample> sampleStream = new NameSampleDataStream(
-       new PlainTextByLineStream(new MockInputStreamFactory(in), "UTF-8"));
+        new PlainTextByLineStream(new MockInputStreamFactory(
+          new File("opennlp/tools/namefind/OnlyWithNamesWithTypes.train")), "UTF-8"));
 
     TrainingParameters params = new TrainingParameters();
-    params.put(TrainingParameters.ITERATIONS_PARAM, Integer.toString(70));
-    params.put(TrainingParameters.CUTOFF_PARAM, Integer.toString(1));
+    params.put(TrainingParameters.ITERATIONS_PARAM, 70);
+    params.put(TrainingParameters.CUTOFF_PARAM, 1);
 
-    TokenNameFinderModel nameFinderModel = NameFinderME.train("en", TYPE, sampleStream,
-        params, (byte[]) null, Collections.<String, Object>emptyMap());
+    TokenNameFinderModel nameFinderModel = NameFinderME.train("eng", null, sampleStream,
+        params, TokenNameFinderFactory.create(null, null, Collections.emptyMap(), new BioCodec()));
 
     NameFinderME nameFinder = new NameFinderME(nameFinderModel);
 
     // now test if it can detect the sample sentences
 
     String[] sentence = ("Neil Abercrombie Anibal Acevedo-Vila Gary Ackerman " +
-    		"Robert Aderholt Daniel Akaka Todd Akin Lamar Alexander Rodney Alexander").split("\\s+");
+        "Robert Aderholt Daniel Akaka Todd Akin Lamar Alexander Rodney Alexander").split("\\s+");
 
     Span[] names1 = nameFinder.find(sentence);
 
-    assertEquals(new Span(0, 2, "person"), names1[0]);
-    assertEquals(new Span(2, 4, "person"), names1[1]);
-    assertEquals(new Span(4, 6, "person"), names1[2]);
-    assertEquals("person", names1[2].getType());
-
-    assertTrue(!hasOtherAsOutcome(nameFinderModel));
+    Assert.assertEquals(new Span(0, 2, "person"), names1[0]);
+    Assert.assertEquals(new Span(2, 4, "person"), names1[1]);
+    Assert.assertEquals(new Span(4, 6, "person"), names1[2]);
+    Assert.assertEquals("person", names1[2].getType());
+    Assert.assertTrue(!hasOtherAsOutcome(nameFinderModel));
   }
 
   /**
    * Train NamefinderME using OnlyWithNames.train. The goal is to check if the model validator accepts it.
    * This is related to the issue OPENNLP-9
-   *
-   * @throws Exception
    */
   @Test
   public void testOnlyWithEntitiesWithTypes() throws Exception {
 
     // train the name finder
-
-    InputStream in = getClass().getClassLoader().getResourceAsStream(
-        "opennlp/tools/namefind/OnlyWithEntitiesWithTypes.train");
-
     ObjectStream<NameSample> sampleStream = new NameSampleDataStream(
-        new PlainTextByLineStream(new MockInputStreamFactory(in), "UTF-8"));
+        new PlainTextByLineStream(new MockInputStreamFactory(
+          new File("opennlp/tools/namefind/OnlyWithEntitiesWithTypes.train")), "UTF-8"));
 
     TrainingParameters params = new TrainingParameters();
-    params.put(TrainingParameters.ITERATIONS_PARAM, Integer.toString(70));
-    params.put(TrainingParameters.CUTOFF_PARAM, Integer.toString(1));
+    params.put(TrainingParameters.ALGORITHM_PARAM, "MAXENT");
+    params.put(TrainingParameters.ITERATIONS_PARAM, 70);
+    params.put(TrainingParameters.CUTOFF_PARAM, 1);
 
-    TokenNameFinderModel nameFinderModel = NameFinderME.train("en", TYPE, sampleStream,
-        params, (byte[]) null, Collections.<String, Object>emptyMap());
+    TokenNameFinderModel nameFinderModel = NameFinderME.train("eng", null, sampleStream,
+        params, TokenNameFinderFactory.create(null, null, Collections.emptyMap(), new BioCodec()));
 
     NameFinderME nameFinder = new NameFinderME(nameFinderModel);
 
     // now test if it can detect the sample sentences
 
-    String[] sentence = ("NATO United States Barack Obama").split("\\s+");
+    String[] sentence = "NATO United States Barack Obama".split("\\s+");
 
     Span[] names1 = nameFinder.find(sentence);
 
-    assertEquals(new Span(0, 1, "organization"), names1[0]); // NATO
-    assertEquals(new Span(1, 3, "location"), names1[1]); // United States
-    assertEquals("person", names1[2].getType());
-    assertTrue(!hasOtherAsOutcome(nameFinderModel));
+    Assert.assertEquals(new Span(0, 1, "organization"), names1[0]); // NATO
+    Assert.assertEquals(new Span(1, 3, "location"), names1[1]); // United States
+    Assert.assertEquals("person", names1[2].getType());
+    Assert.assertTrue(!hasOtherAsOutcome(nameFinderModel));
   }
 
   private boolean hasOtherAsOutcome(TokenNameFinderModel nameFinderModel) {
-	  MaxentModel model = nameFinderModel.getNameFinderModel();
-	  for (int i = 0; i < model.getNumOutcomes(); i++) {
-	      String outcome = model.getOutcome(i);
-	      if (outcome.equals(NameFinderME.OTHER)) {
-	        return true;
-	      }
-	    }
-	  return false;
+    SequenceClassificationModel<String> model = nameFinderModel.getNameFinderSequenceModel();
+    String[] outcomes = model.getOutcomes();
+    for (String outcome : outcomes) {
+      if (outcome.equals(NameFinderME.OTHER)) {
+        return true;
+      }
+    }
+    return false;
   }
 
   @Test
   public void testDropOverlappingSpans() {
-    Span spans[] = new Span[] {new Span(1, 10), new Span(1,11), new Span(1,11), new Span(5, 15)};
-    Span remainingSpan[] = NameFinderME.dropOverlappingSpans(spans);
-
-    assertEquals(new Span(1, 11), remainingSpan[0]);
+    Span[] spans = new Span[] {new Span(1, 10), new Span(1,11), new Span(1,11), new Span(5, 15)};
+    Span[] remainingSpan = NameFinderME.dropOverlappingSpans(spans);
+    Assert.assertEquals(new Span(1, 11), remainingSpan[0]);
   }
 
   /**
    * Train NamefinderME using voa1.train with several
    * nameTypes and try the model in a sample text.
-   *
-   * @throws Exception
    */
   @Test
   public void testNameFinderWithMultipleTypes() throws Exception {
 
     // train the name finder
-
-    InputStream in = getClass().getClassLoader().getResourceAsStream(
-        "opennlp/tools/namefind/voa1.train");
-
     ObjectStream<NameSample> sampleStream = new NameSampleDataStream(
-       new PlainTextByLineStream(new MockInputStreamFactory(in), "UTF-8"));
+        new PlainTextByLineStream(new MockInputStreamFactory(
+          new File("opennlp/tools/namefind/voa1.train")), "UTF-8"));
 
     TrainingParameters params = new TrainingParameters();
-    params.put(TrainingParameters.ITERATIONS_PARAM, Integer.toString(70));
-    params.put(TrainingParameters.CUTOFF_PARAM, Integer.toString(1));
+    params.put(TrainingParameters.ITERATIONS_PARAM, 70);
+    params.put(TrainingParameters.CUTOFF_PARAM, 1);
 
-    TokenNameFinderModel nameFinderModel = NameFinderME.train("en", TYPE, sampleStream,
-        params, (byte[]) null, Collections.<String, Object>emptyMap());
+    TokenNameFinderModel nameFinderModel = NameFinderME.train("eng", null, sampleStream,
+        params, TokenNameFinderFactory.create(null, null, Collections.emptyMap(), new BioCodec()));
 
     NameFinderME nameFinder = new NameFinderME(nameFinderModel);
 
@@ -338,25 +338,25 @@ public class NameFinderMETest {
 
     Span[] names1 = nameFinder.find(sentence);
 
-    assertEquals(new Span(0, 4, "location"), names1[0]);
-    assertEquals(new Span(5, 7, "person"), names1[1]);
-    assertEquals(new Span(10, 12, "location"), names1[2]);
-    assertEquals(new Span(28, 30, "location"), names1[3]);
-    assertEquals("location", names1[0].getType());
-    assertEquals("person", names1[1].getType());
-    assertEquals("location", names1[2].getType());
-    assertEquals("location", names1[3].getType());
+    Assert.assertEquals(new Span(0, 4, "location"), names1[0]);
+    Assert.assertEquals(new Span(5, 7, "person"), names1[1]);
+    Assert.assertEquals(new Span(10, 12, "location"), names1[2]);
+    Assert.assertEquals(new Span(28, 30, "location"), names1[3]);
+    Assert.assertEquals("location", names1[0].getType());
+    Assert.assertEquals("person", names1[1].getType());
+    Assert.assertEquals("location", names1[2].getType());
+    Assert.assertEquals("location", names1[3].getType());
 
     sentence = new String[] { "Scott", "Snyder", "is", "the", "director", "of",
         "the", "Center", "for", "U", ".", "S", ".", "Korea", "Policy", "." };
 
     Span[] names2 = nameFinder.find(sentence);
 
-    assertEquals(2, names2.length);
-    assertEquals(new Span(0, 2, "person"), names2[0]);
-    assertEquals(new Span(7, 15, "organization"), names2[1]);
-    assertEquals("person", names2[0].getType());
-    assertEquals("organization", names2[1].getType());
+    Assert.assertEquals(2, names2.length);
+    Assert.assertEquals(new Span(0, 2, "person"), names2[0]);
+    Assert.assertEquals(new Span(7, 15, "organization"), names2[1]);
+    Assert.assertEquals("person", names2[0].getType());
+    Assert.assertEquals("organization", names2[1].getType());
   }
 
 }

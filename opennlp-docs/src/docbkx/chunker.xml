@@ -67,7 +67,7 @@ Rockwell_NNP said_VBD the_DT agreement_NN calls_VBZ for_IN it_PRP to_TO supply_V
     [NP it_PRP ] [VP to_TO supply_VB ] [NP 200_CD additional_JJ so-called_JJ shipsets_NNS ]
     [PP for_IN ] [NP the_DT planes_NNS ] ._.]]>
 		</screen>
-		The tag set used by the english pos model is the <ulink url="http://www.cis.upenn.edu/~treebank/">Penn Treebank tag set</ulink>.
+		The tag set used by the english pos model is the <ulink url="https://www.ling.upenn.edu/courses/Fall_2003/ling001/penn_treebank_pos.html">Penn Treebank tag set</ulink>.
 		</para>
 		</section>
 		<section id="tools.parser.chunking.api">
@@ -81,19 +81,8 @@ Rockwell_NNP said_VBD the_DT agreement_NN calls_VBZ for_IN it_PRP to_TO supply_V
 InputStream modelIn = null;
 ChunkerModel model = null;
 
-try {
-  modelIn = new FileInputStream("en-chunker.bin");
+try (modelIn = new FileInputStream("en-chunker.bin")){
   model = new ChunkerModel(modelIn);
-} catch (IOException e) {
-  // Model loading failed, handle the error
-  e.printStackTrace();
-} finally {
-  if (modelIn != null) {
-    try {
-      modelIn.close();
-    } catch (IOException e) {
-    }
-  }
 }]]>
 			</programlisting>
 			After the model is loaded a Chunker can be instantiated.
@@ -163,7 +152,7 @@ Sequence topSequences[] = chunk.topKSequences(sent, pos);]]>
 		The training data can be converted to the OpenNLP chunker training format,
 		that is based on <ulink url="http://www.cnts.ua.ac.be/conll2000/chunking">CoNLL2000</ulink>.
         Other formats may also be available.
-		The train data consist of three columns separated by spaces. Each word has been put on a
+		The train data consist of three columns separated one single space. Each word has been put on a
 		separate line and there is an empty line after each sentence. The first column contains
 		the current word, the second its part-of-speech tag and the third its chunk tag. 
 		The chunk tags contain the name of the chunk type, for example I-NP for noun phrase words
@@ -192,6 +181,7 @@ in        IN   B-PP
 September NNP  B-NP
 .         .    O]]>
 		</screen>
+		Note that for improved visualization the example above uses tabs instead of a single space as column separator.
 		</para>
 		<section id="tools.chunker.training.tool">
 		<title>Training Tool</title>
@@ -241,28 +231,18 @@ $ opennlp ChunkerTrainerME -model en-chunker.bin -lang en -data en-chunker.train
                 illustrates how to do it:
                 <programlisting language="java">
                     <![CDATA[
-Charset charset = Charset.forName("UTF-8");
 ObjectStream<String> lineStream =
-    new PlainTextByLineStream(new FileInputStream("en-chunker.train"),charset);
-ObjectStream<ChunkSample> sampleStream = new ChunkSampleStream(lineStream);
+    new PlainTextByLineStream(new FileInputStream("en-chunker.train"), StandardCharsets.UTF_8);
 
 ChunkerModel model;
 
-try {
+try(ObjectStream<ChunkSample> sampleStream = new ChunkSampleStream(lineStream)) {
   model = ChunkerME.train("en", sampleStream,
       new DefaultChunkerContextGenerator(), TrainingParameters.defaultParams());
 }
-finally {
-  sampleStream.close();
-}
 
-OutputStream modelOut = null;
-try {
-  modelOut = new BufferedOutputStream(new FileOutputStream(modelFile));
+try (OutputStream modelOut = new BufferedOutputStream(new FileOutputStream(modelFile))) {
   model.serialize(modelOut);
-} finally {
-  if (modelOut != null)
-     modelOut.close();
 }]]>
                 </programlisting>
             </para>
@@ -289,7 +269,7 @@ Usage: opennlp ChunkerEvaluator[.ad] -model model [-misclassified true|false] \
 		and you trained a model called en-chunker.bin:
             <screen>
 				<![CDATA[
-$ opennlp ChunkerEvaluator -model en-chunker.bin -lang en -data en-chunker.eval -encoding UTF-8]]>
+$ opennlp ChunkerEvaluator -model en-chunker.bin -data en-chunker.eval -encoding UTF-8]]>
 		</screen>
 		and here is a sample output:  
 		<screen>

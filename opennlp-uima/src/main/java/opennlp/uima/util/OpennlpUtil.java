@@ -56,12 +56,12 @@ final public class OpennlpUtil {
     }
   }
 
-  public static final byte[] loadBytes(File inFile) throws IOException {
+  public static byte[] loadBytes(File inFile) throws IOException {
     ByteArrayOutputStream bytes = new ByteArrayOutputStream();
 
     try (InputStream in = new FileInputStream(inFile)) {
 
-      byte buffer[] = new byte[1024];
+      byte[] buffer = new byte[1024];
       int len;
       while ((len = in.read(buffer)) > 0) {
         bytes.write(buffer, 0, len);
@@ -71,7 +71,7 @@ final public class OpennlpUtil {
     return bytes.toByteArray();
   }
 
-  public static final TrainingParameters loadTrainingParams(String inFileValue,
+  public static TrainingParameters loadTrainingParams(String inFileValue,
       boolean isSequenceTrainingAllowed) throws ResourceInitializationException {
 
     TrainingParameters params;
@@ -82,11 +82,11 @@ final public class OpennlpUtil {
         throw new ResourceInitializationException(e);
       }
 
-      if (!TrainerFactory.isValid(params.getSettings())) {
+      if (!TrainerFactory.isValid(params)) {
         throw new ResourceInitializationException(new Exception("Training parameters file is invalid!"));
       }
 
-      TrainerFactory.TrainerType trainerType = TrainerFactory.getTrainerType(params.getSettings());
+      TrainerFactory.TrainerType trainerType = TrainerFactory.getTrainerType(params);
       if (!isSequenceTrainingAllowed && TrainerFactory.TrainerType.SEQUENCE_TRAINER.equals(trainerType)) {
         throw new ResourceInitializationException(new Exception("Sequence training is not supported!"));
       }

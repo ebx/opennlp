@@ -14,6 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package opennlp.tools.doccat;
 
 import java.util.Collection;
@@ -31,9 +32,9 @@ class DocumentCategorizerContextGenerator {
     mFeatureGenerators = featureGenerators;
   }
 
-  public String[] getContext(String text[], Map<String, Object> extraInformation) {
+  public String[] getContext(String[] text, Map<String, Object> extraInformation) {
 
-    Collection<String> context = new LinkedList<String>();
+    Collection<String> context = new LinkedList<>();
 
     for (FeatureGenerator mFeatureGenerator : mFeatureGenerators) {
       Collection<String> extractedFeatures =

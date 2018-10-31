@@ -88,7 +88,7 @@ public abstract class TypedCmdLineTool<T>
   }
 
   @Override
-  protected <A> String getBasicHelp(Class<A>... argProxyInterfaces) {
+  protected String getBasicHelp(Class<?>... argProxyInterfaces) {
     Map<String, ObjectStreamFactory<T>> factories = StreamFactoryRegistry.getFactories(type);
 
     String formatsHelp = " ";
@@ -99,7 +99,7 @@ public abstract class TypedCmdLineTool<T>
           formats.append(".").append(format).append("|");
         }
       }
-      formatsHelp = "[" + formats.substring(0, formats.length() - 1)+ "] ";
+      formatsHelp = "[" + formats.substring(0, formats.length() - 1) + "] ";
     }
 
     return "Usage: " + CLI.CMD + " " + getName() + formatsHelp +
@@ -116,7 +116,7 @@ public abstract class TypedCmdLineTool<T>
    * @param format format to work with
    * @param args command line arguments
    */
-  public abstract void run(String format, String args[]);
+  public abstract void run(String format, String[] args);
 
   /**
    * Retrieves a description on how to use the tool.

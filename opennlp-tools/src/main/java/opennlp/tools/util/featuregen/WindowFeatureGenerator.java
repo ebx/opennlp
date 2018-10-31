@@ -60,7 +60,8 @@ public class WindowFeatureGenerator implements AdaptiveFeatureGenerator {
    * @param nextWindowSize
    * @param generators
    */
-  public WindowFeatureGenerator(int prevWindowSize, int nextWindowSize, AdaptiveFeatureGenerator... generators) {
+  public WindowFeatureGenerator(int prevWindowSize, int nextWindowSize,
+      AdaptiveFeatureGenerator... generators) {
     this(new AggregatedFeatureGenerator(generators), prevWindowSize, nextWindowSize);
   }
 
@@ -89,11 +90,8 @@ public class WindowFeatureGenerator implements AdaptiveFeatureGenerator {
     // previous features
     for (int i = 1; i < prevWindowSize + 1; i++) {
       if (index - i >= 0) {
-
-        List<String> prevFeatures = new ArrayList<String>();
-
+        List<String> prevFeatures = new ArrayList<>();
         generator.createFeatures(prevFeatures, tokens, index - i, preds);
-
         for (String prevFeature : prevFeatures) {
           features.add(PREV_PREFIX + i + prevFeature);
         }
@@ -103,11 +101,8 @@ public class WindowFeatureGenerator implements AdaptiveFeatureGenerator {
     // next features
     for (int i = 1; i < nextWindowSize + 1; i++) {
       if (i + index < tokens.length) {
-
-        List<String> nextFeatures = new ArrayList<String>();
-
+        List<String> nextFeatures = new ArrayList<>();
         generator.createFeatures(nextFeatures, tokens, index + i, preds);
-
         for (String nextFeature : nextFeatures) {
           features.add(NEXT_PREFIX + i + nextFeature);
         }
@@ -120,11 +115,12 @@ public class WindowFeatureGenerator implements AdaptiveFeatureGenerator {
   }
 
   public void clearAdaptiveData() {
-      generator.clearAdaptiveData();
+    generator.clearAdaptiveData();
   }
 
   @Override
   public String toString() {
-    return super.toString()+": Prev window size: " + prevWindowSize +", Next window size: " + nextWindowSize;
+    return super.toString() + ": Prev window size: " + prevWindowSize
+        + ", Next window size: " + nextWindowSize;
   }
 }

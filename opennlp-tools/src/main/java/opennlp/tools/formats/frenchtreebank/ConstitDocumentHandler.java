@@ -21,14 +21,14 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Stack;
 
+import org.xml.sax.Attributes;
+import org.xml.sax.SAXException;
+import org.xml.sax.helpers.DefaultHandler;
+
 import opennlp.tools.parser.AbstractBottomUpParser;
 import opennlp.tools.parser.Constituent;
 import opennlp.tools.parser.Parse;
 import opennlp.tools.util.Span;
-
-import org.xml.sax.Attributes;
-import org.xml.sax.SAXException;
-import org.xml.sax.helpers.DefaultHandler;
 
 class ConstitDocumentHandler extends DefaultHandler {
 
@@ -50,8 +50,8 @@ class ConstitDocumentHandler extends DefaultHandler {
   private final StringBuilder text = new StringBuilder();
 
   private int offset;
-  private final Stack<Constituent> stack = new Stack<Constituent>();
-  private final List<Constituent> cons = new LinkedList<Constituent>();
+  private final Stack<Constituent> stack = new Stack<>();
+  private final List<Constituent> cons = new LinkedList<>();
 
   ConstitDocumentHandler(List<Parse> parses) {
     this.parses = parses;
@@ -111,7 +111,7 @@ class ConstitDocumentHandler extends DefaultHandler {
       else {
         String catint = attributes.getValue("catint");
         if (catint != null) {
-          type = cat + (catint != null ? catint : "");
+          type = cat + catint;
         }
         else {
           type = cat + subcat;
@@ -167,11 +167,11 @@ class ConstitDocumentHandler extends DefaultHandler {
         String txt = text.toString();
         int tokenIndex = -1;
         Parse p = new Parse(txt, new Span(0, txt.length()), AbstractBottomUpParser.TOP_NODE, 1,0);
-        for (int ci=0;ci < cons.size();ci++) {
+        for (int ci = 0; ci < cons.size(); ci++) {
           Constituent con = cons.get(ci);
           String type = con.getLabel();
           if (!type.equals(AbstractBottomUpParser.TOP_NODE)) {
-            if (type == AbstractBottomUpParser.TOK_NODE) {
+            if (AbstractBottomUpParser.TOK_NODE.equals(type)) {
               tokenIndex++;
             }
             Parse c = new Parse(txt, con.getSpan(), type, 1,tokenIndex);

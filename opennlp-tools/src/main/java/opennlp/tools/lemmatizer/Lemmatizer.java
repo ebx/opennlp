@@ -14,7 +14,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package opennlp.tools.lemmatizer;
+
+import java.util.List;
 
 /**
  * The interface for lemmatizers.
@@ -22,13 +25,23 @@ package opennlp.tools.lemmatizer;
 public interface Lemmatizer {
 
   /**
-   * Generates lemma tags for the word and postag returning the result in an array.
+   * Generates lemmas for the word and postag returning the result in an array.
    *
    * @param toks an array of the tokens
    * @param tags an array of the pos tags
    *
-   * @return an array of lemma classes for each token in the sequence.
+   * @return an array of possible lemmas for each token in the sequence.
    */
-  public String[] lemmatize(String[] toks, String tags[]);
+  String[] lemmatize(String[] toks, String[] tags);
+
+  /**
+   * Generates a lemma tags for the word and postag returning the result in a list
+   * of every possible lemma for each token and postag.
+   *
+   * @param toks an array of the tokens
+   * @param tags an array of the pos tags
+   * @return a list of every possible lemma for each token in the sequence.
+   */
+  List<List<String>> lemmatize(List<String> toks, List<String> tags);
 
 }

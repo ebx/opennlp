@@ -24,12 +24,12 @@ import java.util.regex.Pattern;
 /**
  * Simple feature generator for learning statistical lemmatizers.
  * Features based on Grzegorz Chrupała. 2008. Towards a Machine-Learning
- * Architecture for Lexical Functional Grammar Parsing. PhD dissertation, 
- * Dublin City University 
+ * Architecture for Lexical Functional Grammar Parsing. PhD dissertation,
+ * Dublin City University
  * @version 2016-02-15
  */
 public class DefaultLemmatizerContextGenerator implements LemmatizerContextGenerator {
-  
+
   private static final int PREFIX_LENGTH = 5;
   private static final int SUFFIX_LENGTH = 7;
 
@@ -41,7 +41,7 @@ public class DefaultLemmatizerContextGenerator implements LemmatizerContextGener
 
   protected static String[] getPrefixes(String lex) {
     String[] prefs = new String[PREFIX_LENGTH];
-    for (int li = 1, ll = PREFIX_LENGTH; li < ll; li++) {
+    for (int li = 1; li < PREFIX_LENGTH; li++) {
       prefs[li] = lex.substring(0, Math.min(li + 1, lex.length()));
     }
     return prefs;
@@ -49,13 +49,14 @@ public class DefaultLemmatizerContextGenerator implements LemmatizerContextGener
 
   protected static String[] getSuffixes(String lex) {
     String[] suffs = new String[SUFFIX_LENGTH];
-    for (int li = 1, ll = SUFFIX_LENGTH; li < ll; li++) {
+    for (int li = 1; li < SUFFIX_LENGTH; li++) {
       suffs[li] = lex.substring(Math.max(lex.length() - li - 1, 0));
     }
     return suffs;
   }
-  
-  public String[] getContext(int index, String[] sequence, String[] priorDecisions, Object[] additionalContext) {
+
+  public String[] getContext(int index, String[] sequence, String[] priorDecisions,
+      Object[] additionalContext) {
     return getContext(index, sequence, (String[]) additionalContext[0], priorDecisions);
   }
 
@@ -67,7 +68,7 @@ public class DefaultLemmatizerContextGenerator implements LemmatizerContextGener
     // Previous prediction
     String p_1;
 
-    String lex = toks[index].toString();
+    String lex = toks[index];
     if (index < 1) {
       p_1 = "p_1=bos";
     }
@@ -78,14 +79,14 @@ public class DefaultLemmatizerContextGenerator implements LemmatizerContextGener
     w0 = "w0=" + toks[index];
     t0 = "t0=" + tags[index];
 
-    List<String> features = new ArrayList<String>();
-    
+    List<String> features = new ArrayList<>();
+
     features.add(w0);
     features.add(t0);
     features.add(p_1);
     features.add(p_1 + t0);
     features.add(p_1 + w0);
-    
+
     // do some basic suffix analysis
     String[] suffs = getSuffixes(lex);
     for (int i = 0; i < suffs.length; i++) {
@@ -108,7 +109,7 @@ public class DefaultLemmatizerContextGenerator implements LemmatizerContextGener
     if (hasNum.matcher(lex).find()) {
       features.add("d");
     }
-    
+
     return features.toArray(new String[features.size()]);
   }
 }

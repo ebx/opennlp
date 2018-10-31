@@ -17,9 +17,17 @@
 
 package opennlp.tools.ml.maxent;
 
-import static java.nio.charset.StandardCharsets.UTF_8;
+import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
 
-import junit.framework.TestCase;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
+
+import opennlp.tools.ml.AbstractTrainer;
+import opennlp.tools.ml.EventTrainer;
+import opennlp.tools.ml.TrainerFactory;
+import opennlp.tools.ml.model.DataIndexer;
 import opennlp.tools.ml.model.Event;
 import opennlp.tools.ml.model.MaxentModel;
 import opennlp.tools.ml.model.OnePassRealValueDataIndexer;
@@ -27,17 +35,28 @@ import opennlp.tools.ml.model.RealValueFileEventStream;
 import opennlp.tools.util.MockInputStreamFactory;
 import opennlp.tools.util.ObjectStream;
 import opennlp.tools.util.PlainTextByLineStream;
+import opennlp.tools.util.TrainingParameters;
+import opennlp.tools.util.model.ModelUtil;
 
-public class ScaleDoesntMatterTest extends TestCase {
+public class ScaleDoesntMatterTest {
+
+  private DataIndexer testDataIndexer;
+
+  @Before
+  public void initIndexer() {
+    TrainingParameters trainingParameters = new TrainingParameters();
+    trainingParameters.put(AbstractTrainer.CUTOFF_PARAM, 0);
+    testDataIndexer = new OnePassRealValueDataIndexer();
+    testDataIndexer.init(trainingParameters, new HashMap<>());
+  }
 
   /**
    * This test sets out to prove that the scale you use on real valued
    * predicates doesn't matter when it comes the probability assigned to each
    * outcome. Strangely, if we use (1,2) and (10,20) there's no difference. If
    * we use (0.1,0.2) and (10,20) there is a difference.
-   *
-   * @throws Exception
    */
+  @Test
   public void testScaleResults() throws Exception {
     String smallValues = "predA=0.1 predB=0.2 A\n" + "predB=0.3 predA=0.1 B\n";
 
@@ -48,11 +67,14 @@ public class ScaleDoesntMatterTest extends TestCase {
     String largeTest = "predA=20 predB=20";
 
     ObjectStream<Event> smallEventStream = new RealBasicEventStream(
-        new PlainTextByLineStream(new MockInputStreamFactory(smallValues),
-            UTF_8));
+        new PlainTextByLineStream(new MockInputStreamFactory(smallValues), StandardCharsets.UTF_8));
 
-    MaxentModel smallModel = GIS.trainModel(100,
-        new OnePassRealValueDataIndexer(smallEventStream, 0), false);
+    testDataIndexer.index(smallEventStream);
+
+    EventTrainer smallModelTrainer = TrainerFactory.getEventTrainer(
+        ModelUtil.createDefaultTrainingParameters(), null);
+
+    MaxentModel smallModel = smallModelTrainer.train(testDataIndexer);
     String[] contexts = smallTest.split(" ");
     float[] values = RealValueFileEventStream.parseContexts(contexts);
     double[] smallResults = smallModel.eval(contexts, values);
@@ -61,19 +83,22 @@ public class ScaleDoesntMatterTest extends TestCase {
     System.out.println("smallResults: " + smallResultString);
 
     ObjectStream<Event> largeEventStream = new RealBasicEventStream(
-        new PlainTextByLineStream(new MockInputStreamFactory(largeValues),
-            UTF_8));
+        new PlainTextByLineStream(new MockInputStreamFactory(largeValues), StandardCharsets.UTF_8));
 
-    MaxentModel largeModel = GIS.trainModel(100,
-        new OnePassRealValueDataIndexer(largeEventStream, 0), false);
+    testDataIndexer.index(largeEventStream);
+
+    EventTrainer largeModelTrainer = TrainerFactory.getEventTrainer(
+        ModelUtil.createDefaultTrainingParameters(), null);
+
+    MaxentModel largeModel = largeModelTrainer.train(testDataIndexer);
     contexts = largeTest.split(" ");
     values = RealValueFileEventStream.parseContexts(contexts);
     double[] largeResults = largeModel.eval(contexts, values);
 
-    String largeResultString = smallModel.getAllOutcomes(largeResults);
+    String largeResultString = largeModel.getAllOutcomes(largeResults);
     System.out.println("largeResults: " + largeResultString);
 
-    assertEquals(smallResults.length, largeResults.length);
+    Assert.assertEquals(smallResults.length, largeResults.length);
     for (int i = 0; i < smallResults.length; i++) {
       System.out.println(String.format(
           "classifiy with smallModel: %1$s = %2$f", smallModel.getOutcome(i),
@@ -81,7 +106,7 @@ public class ScaleDoesntMatterTest extends TestCase {
       System.out.println(String.format(
           "classifiy with largeModel: %1$s = %2$f", largeModel.getOutcome(i),
           largeResults[i]));
-      assertEquals(smallResults[i], largeResults[i], 0.01f);
+      Assert.assertEquals(smallResults[i], largeResults[i], 0.01f);
     }
   }
 }

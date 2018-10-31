@@ -22,13 +22,16 @@ import java.util.Map;
 
 import opennlp.tools.ml.model.MaxentModel;
 import opennlp.tools.ml.model.SequenceStream;
+import opennlp.tools.util.TrainingParameters;
 
 public interface EventModelSequenceTrainer {
 
-  public static final String SEQUENCE_VALUE = "EventModelSequence";
+  String SEQUENCE_VALUE = "EventModelSequence";
 
-  public void init(Map<String, String> trainParams, Map<String, String> reportMap);
+  @Deprecated
+  void init(Map<String, String> trainParams, Map<String, String> reportMap);
+  void init(TrainingParameters trainParams, Map<String, String> reportMap);
 
-  public MaxentModel train(SequenceStream events) throws IOException;
+  MaxentModel train(SequenceStream events) throws IOException;
 
 }

@@ -14,6 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package opennlp.tools.lemmatizer;
 
 import java.util.ArrayList;
@@ -41,16 +42,17 @@ public class LemmaSampleEventStream extends AbstractEventStream<LemmaSample> {
     super(d);
     this.contextGenerator = cg;
   }
-  
+
   protected Iterator<Event> createEvents(LemmaSample sample) {
 
     if (sample != null) {
-      List<Event> events = new ArrayList<Event>();
+      List<Event> events = new ArrayList<>();
       String[] toksArray = sample.getTokens();
       String[] tagsArray = sample.getTags();
-      String[] lemmasArray = sample.getLemmas();
+      String[] lemmasArray = LemmatizerME.encodeLemmas(toksArray,sample.getLemmas());
       for (int ei = 0, el = sample.getTokens().length; ei < el; ei++) {
-        events.add(new Event(lemmasArray[ei], contextGenerator.getContext(ei,toksArray,tagsArray,lemmasArray)));
+        events.add(new Event(lemmasArray[ei],
+            contextGenerator.getContext(ei,toksArray,tagsArray,lemmasArray)));
       }
       return events.iterator();
     }

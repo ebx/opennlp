@@ -71,7 +71,8 @@ public class ADNameSampleStream implements ObjectStream<NameSample> {
 
   private static final Pattern whitespacePattern = Pattern.compile("\\s+");
   private static final Pattern underlinePattern = Pattern.compile("[_]+");
-  private static final Pattern hyphenPattern = Pattern.compile("((\\p{L}+)-$)|(^-(\\p{L}+)(.*))|((\\p{L}+)-(\\p{L}+)(.*))");
+  private static final Pattern hyphenPattern =
+      Pattern.compile("((\\p{L}+)-$)|(^-(\\p{L}+)(.*))|((\\p{L}+)-(\\p{L}+)(.*))");
   private static final Pattern alphanumericPattern = Pattern.compile("^[\\p{L}\\p{Nd}]+$");
 
   /**
@@ -80,7 +81,7 @@ public class ADNameSampleStream implements ObjectStream<NameSample> {
   private static final Map<String, String> HAREM;
 
   static {
-    Map<String, String> harem = new HashMap<String, String>();
+    Map<String, String> harem = new HashMap<>();
 
     final String person = "person";
     harem.put("hum", person);
@@ -201,32 +202,7 @@ public class ADNameSampleStream implements ObjectStream<NameSample> {
     }
   }
 
-  /**
-   * Creates a new {@link NameSample} stream from a {@link InputStream}
-   *
-   * @param in
-   *          the Corpus {@link InputStream}
-   * @param charsetName
-   *          the charset of the Arvores Deitadas Corpus
-   * @param splitHyphenatedTokens
-   *          if true hyphenated tokens will be separated: "carros-monstro" &gt;
-   *          "carros" "-" "monstro"
-   */
-  @Deprecated
-  public ADNameSampleStream(InputStream in, String charsetName,
-      boolean splitHyphenatedTokens) {
-
-    try {
-      this.adSentenceStream = new ADSentenceStream(new PlainTextByLineStream(
-          in, charsetName));
-      this.splitHyphenatedTokens = splitHyphenatedTokens;
-    } catch (UnsupportedEncodingException e) {
-      // UTF-8 is available on all JVMs, will never happen
-      throw new IllegalStateException(e);
-    }
-  }
-
-  int textID = -1;
+  private int textID = -1;
 
   public NameSample read() throws IOException {
 
@@ -236,14 +212,14 @@ public class ADNameSampleStream implements ObjectStream<NameSample> {
 
       int currentTextID = getTextID(paragraph);
       boolean clearData = false;
-      if(currentTextID != textID) {
+      if (currentTextID != textID) {
         clearData = true;
         textID = currentTextID;
       }
 
       Node root = paragraph.getRoot();
-      List<String> sentence = new ArrayList<String>();
-      List<Span> names = new ArrayList<Span>();
+      List<String> sentence = new ArrayList<>();
+      List<Span> names = new ArrayList<>();
       process(root, sentence, names);
 
       return new NameSample(sentence.toArray(new String[sentence.size()]),
@@ -307,73 +283,62 @@ public class ADNameSampleStream implements ObjectStream<NameSample> {
       leftContractionPart = null;
     }
 
-      String namedEntityTag = null;
-      int startOfNamedEntity = -1;
+    String namedEntityTag = null;
+    int startOfNamedEntity = -1;
 
-      String leafTag = leaf.getSecondaryTag();
-      boolean expandLastNER = false; // used when we find a <NER2> tag
+    String leafTag = leaf.getSecondaryTag();
+    boolean expandLastNER = false; // used when we find a <NER2> tag
 
-      if (leafTag != null) {
-        if (leafTag.contains("<sam->") && !alreadyAdded) {
-          String[] lexemes = underlinePattern.split(leaf.getLexeme());
-          if(lexemes.length > 1) {
-             sentence.addAll(Arrays.asList(lexemes).subList(0, lexemes.length - 1));
-          }
-          leftContractionPart = lexemes[lexemes.length - 1];
-          return;
+    if (leafTag != null) {
+      if (leafTag.contains("<sam->") && !alreadyAdded) {
+        String[] lexemes = underlinePattern.split(leaf.getLexeme());
+        if (lexemes.length > 1) {
+          sentence.addAll(Arrays.asList(lexemes).subList(0, lexemes.length - 1));
         }
-        if (leafTag.contains("<NER2>")) {
-          // this one an be part of the last name
-          expandLastNER = true;
-        }
-        namedEntityTag = getNER(leafTag);
+        leftContractionPart = lexemes[lexemes.length - 1];
+        return;
       }
-
-      if (namedEntityTag != null) {
-        startOfNamedEntity = sentence.size();
+      if (leafTag.contains("<NER2>")) {
+        // this one an be part of the last name
+        expandLastNER = true;
       }
-
-      if(!alreadyAdded) {
-        sentence.addAll(processLexeme(leaf.getLexeme()));
-      }
-
-      if (namedEntityTag != null) {
-        names
-            .add(new Span(startOfNamedEntity, sentence.size(), namedEntityTag));
-      }
-
-      if (expandLastNER) {
-        // if the current leaf has the tag <NER2>, it can be the continuation of
-        // a NER.
-        // we check if it is true, and expand the last NER
-        int lastIndex = names.size() - 1;
-        Span last = null;
-        boolean error = false;
-        if (names.size() > 0) {
-          last = names.get(lastIndex);
-          if (last.getEnd() == sentence.size() - 1) {
-            names.set(lastIndex, new Span(last.getStart(), sentence.size(),
-                last.getType()));
-          } else {
-            error = true;
-          }
-        } else {
-          error = true;
-        }
-        if (error) {
-//           Maybe it is not the same NER, skip it.
-//           System.err.println("Missing NER start for sentence [" + sentence
-//           + "] node [" + leaf + "]");
-        }
-      }
-
+      namedEntityTag = getNER(leafTag);
     }
 
+    if (namedEntityTag != null) {
+      startOfNamedEntity = sentence.size();
+    }
+
+    if (!alreadyAdded) {
+      sentence.addAll(processLexeme(leaf.getLexeme()));
+    }
+
+    if (namedEntityTag != null) {
+      names
+      .add(new Span(startOfNamedEntity, sentence.size(), namedEntityTag));
+    }
+
+    if (expandLastNER) {
+      // if the current leaf has the tag <NER2>, it can be the continuation of
+      // a NER.
+      // we check if it is true, and expand the last NER
+      int lastIndex = names.size() - 1;
+      if (names.size() > 0) {
+        Span last = names.get(lastIndex);
+        if (last.getEnd() == sentence.size() - 1) {
+          names.set(lastIndex, new Span(last.getStart(), sentence.size(),
+              last.getType()));
+        }
+      }
+    }
+
+  }
+
   private List<String> processLexeme(String lexemeStr) {
-    List<String> out = new ArrayList<String>();
+    List<String> out = new ArrayList<>();
     String[] parts = underlinePattern.split(lexemeStr);
     for (String tok : parts) {
-      if(tok.length() > 1 && !alphanumericPattern.matcher(tok).matches()) {
+      if (tok.length() > 1 && !alphanumericPattern.matcher(tok).matches()) {
         out.addAll(processTok(tok));
       } else {
         out.add(tok);
@@ -385,8 +350,8 @@ public class ADNameSampleStream implements ObjectStream<NameSample> {
   private List<String> processTok(String tok) {
     boolean tokAdded = false;
     String original = tok;
-    List<String> out = new ArrayList<String>();
-    LinkedList<String> suffix = new LinkedList<String>();
+    List<String> out = new ArrayList<>();
+    LinkedList<String> suffix = new LinkedList<>();
     char first = tok.charAt(0);
     if (first == '«') {
       out.add(Character.toString(first));
@@ -452,7 +417,7 @@ public class ADNameSampleStream implements ObjectStream<NameSample> {
    * @return the NER tag, or null if not a NER tag in Arvores Deitadas format
    */
   private static String getNER(String tags) {
-    if(tags.contains("<NER2>")) {
+    if (tags.contains("<NER2>")) {
       return null;
     }
     String[] tag = tags.split("\\s+");
@@ -485,12 +450,12 @@ public class ADNameSampleStream implements ObjectStream<NameSample> {
   private Pattern metaPattern;
 
   // works for Amazonia
-//  private static final Pattern meta1 = Pattern
-//      .compile("^(?:[a-zA-Z\\-]*(\\d+)).*?p=(\\d+).*");
-//
-//  // works for selva cie
-//  private static final Pattern meta2 = Pattern
-//    .compile("^(?:[a-zA-Z\\-]*(\\d+)).*?p=(\\d+).*");
+  //  private static final Pattern meta1 = Pattern
+  //      .compile("^(?:[a-zA-Z\\-]*(\\d+)).*?p=(\\d+).*");
+  //
+  //  // works for selva cie
+  //  private static final Pattern meta2 = Pattern
+  //    .compile("^(?:[a-zA-Z\\-]*(\\d+)).*?p=(\\d+).*");
 
   private int textIdMeta2 = -1;
   private String textMeta2 = "";

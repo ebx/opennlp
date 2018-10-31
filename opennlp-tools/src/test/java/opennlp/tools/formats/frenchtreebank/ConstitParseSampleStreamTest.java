@@ -21,16 +21,16 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 
+import org.junit.Assert;
+import org.junit.Test;
+
 import opennlp.tools.parser.Parse;
 import opennlp.tools.util.ObjectStream;
 import opennlp.tools.util.ObjectStreamUtils;
 
-import org.junit.Assert;
-import org.junit.Test;
-
 public class ConstitParseSampleStreamTest {
 
-  private String sample1Tokens[] = new String[]{
+  private String[] sample1Tokens = new String[]{
       "L'",
       "autonomie",
       "de",
@@ -85,10 +85,10 @@ public class ConstitParseSampleStreamTest {
    *
    * @return byte array containing sample1.xml.
    */
-  static byte[] getSample1() throws IOException {
+  private static byte[] getSample1() throws IOException {
     ByteArrayOutputStream out = new ByteArrayOutputStream();
 
-    byte buffer[] = new byte[1024];
+    byte[] buffer = new byte[1024];
     int length;
     try (InputStream sampleIn =
         ConstitParseSampleStreamTest.class.getResourceAsStream("sample1.xml")) {
@@ -102,28 +102,28 @@ public class ConstitParseSampleStreamTest {
 
   @Test
   public void testThereIsExactlyOneSent() throws IOException {
-    ObjectStream<Parse> samples =
-        new ConstitParseSampleStream(ObjectStreamUtils.createObjectStream(getSample1()));
-
-    Assert.assertNotNull(samples.read());
-    Assert.assertNull(samples.read());
-    Assert.assertNull(samples.read());
+    try (ObjectStream<Parse> samples =
+        new ConstitParseSampleStream(ObjectStreamUtils.createObjectStream(getSample1()))) {
+      Assert.assertNotNull(samples.read());
+      Assert.assertNull(samples.read());
+      Assert.assertNull(samples.read());
+    }
   }
 
   @Test
   public void testTokensAreCorrect() throws IOException {
 
-    ObjectStream<Parse> samples =
-        new ConstitParseSampleStream(ObjectStreamUtils.createObjectStream(getSample1()));
+    try (ObjectStream<Parse> samples =
+        new ConstitParseSampleStream(ObjectStreamUtils.createObjectStream(getSample1()))) {
+      Parse p = samples.read();
 
-    Parse p = samples.read();
+      Parse[] tagNodes = p.getTagNodes();
+      String[] tokens = new String[tagNodes.length];
+      for (int ti = 0; ti < tagNodes.length; ti++) {
+        tokens[ti] = tagNodes[ti].getCoveredText();
+      }
 
-    Parse[] tagNodes = p.getTagNodes();
-    String[] tokens = new String[tagNodes.length];
-    for (int ti=0;ti<tagNodes.length;ti++){
-      tokens[ti] = tagNodes[ti].getCoveredText();
+      Assert.assertArrayEquals(sample1Tokens, tokens);
     }
-
-    Assert.assertArrayEquals(sample1Tokens, tokens);
   }
 }

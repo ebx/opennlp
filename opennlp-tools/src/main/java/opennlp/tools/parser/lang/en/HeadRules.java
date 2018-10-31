@@ -15,7 +15,6 @@
  * limitations under the License.
  */
 
-
 package opennlp.tools.parser.lang.en;
 
 import java.io.BufferedReader;
@@ -27,10 +26,13 @@ import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.Reader;
 import java.io.Writer;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.Set;
 import java.util.Stack;
 import java.util.StringTokenizer;
@@ -39,7 +41,6 @@ import opennlp.tools.parser.Constituent;
 import opennlp.tools.parser.GapLabeler;
 import opennlp.tools.parser.Parse;
 import opennlp.tools.parser.chunking.Parser;
-import opennlp.tools.util.InvalidFormatException;
 import opennlp.tools.util.model.ArtifactSerializer;
 import opennlp.tools.util.model.SerializableArtifact;
 
@@ -48,31 +49,35 @@ import opennlp.tools.util.model.SerializableArtifact;
  */
 public class HeadRules implements opennlp.tools.parser.HeadRules, GapLabeler, SerializableArtifact {
 
-  public static class HeadRulesSerializer implements ArtifactSerializer<opennlp.tools.parser.lang.en.HeadRules> {
+  public static class HeadRulesSerializer implements ArtifactSerializer<HeadRules> {
 
-    public opennlp.tools.parser.lang.en.HeadRules create(InputStream in) throws IOException,
-        InvalidFormatException {
-      return new opennlp.tools.parser.lang.en.HeadRules(new BufferedReader(new InputStreamReader(in, "UTF-8")));
+    public HeadRules create(InputStream in) throws IOException {
+      return new HeadRules(new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8)));
     }
 
     public void serialize(opennlp.tools.parser.lang.en.HeadRules artifact, OutputStream out)
         throws IOException {
-      artifact.serialize(new OutputStreamWriter(out, "UTF-8"));
+      artifact.serialize(new OutputStreamWriter(out, StandardCharsets.UTF_8));
     }
   }
 
   private static class HeadRule {
     public boolean leftToRight;
     public String[] tags;
+
     public HeadRule(boolean l2r, String[] tags) {
       leftToRight = l2r;
 
       for (String tag : tags) {
-        if (tag == null)
-            throw new IllegalArgumentException("tags must not contain null values!");
+        Objects.requireNonNull(tag, "tags must not contain null values");
       }
 
       this.tags = tags;
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hash(leftToRight, Arrays.hashCode(tags));
     }
 
     @Override
@@ -80,15 +85,15 @@ public class HeadRules implements opennlp.tools.parser.HeadRules, GapLabeler, Se
       if (obj == this) {
         return true;
       }
-      else if (obj instanceof HeadRule) {
+
+      if (obj instanceof HeadRule) {
         HeadRule rule = (HeadRule) obj;
 
-        return (rule.leftToRight == leftToRight) &&
+        return rule.leftToRight == leftToRight &&
             Arrays.equals(rule.tags, tags);
       }
-      else {
-        return false;
-      }
+
+      return false;
     }
   }
 
@@ -118,7 +123,7 @@ public class HeadRules implements opennlp.tools.parser.HeadRules, GapLabeler, Se
     BufferedReader in = new BufferedReader(rulesReader);
     readHeadRules(in);
 
-    punctSet = new HashSet<String>();
+    punctSet = new HashSet<>();
     punctSet.add(".");
     punctSet.add(",");
     punctSet.add("``");
@@ -131,7 +136,7 @@ public class HeadRules implements opennlp.tools.parser.HeadRules, GapLabeler, Se
   }
 
   public Parse getHead(Parse[] constituents, String type) {
-    if (constituents[0].getType() == Parser.TOK_NODE) {
+    if (Parser.TOK_NODE.equals(constituents[0].getType())) {
       return null;
     }
     HeadRule hr;
@@ -197,7 +202,7 @@ public class HeadRules implements opennlp.tools.parser.HeadRules, GapLabeler, Se
 
   private void readHeadRules(BufferedReader str) throws IOException {
     String line;
-    headRules = new HashMap<String, HeadRule>(30);
+    headRules = new HashMap<>(30);
     while ((line = str.readLine()) != null) {
       StringTokenizer st = new StringTokenizer(line);
       String num = st.nextToken();
@@ -216,23 +221,25 @@ public class HeadRules implements opennlp.tools.parser.HeadRules, GapLabeler, Se
   public void labelGaps(Stack<Constituent> stack) {
     if (stack.size() > 4) {
       //Constituent con0 = (Constituent) stack.get(stack.size()-1);
-      Constituent con1 = stack.get(stack.size()-2);
-      Constituent con2 = stack.get(stack.size()-3);
-      Constituent con3 = stack.get(stack.size()-4);
-      Constituent con4 = stack.get(stack.size()-5);
-      //System.err.println("con0="+con0.label+" con1="+con1.label+" con2="+con2.label+" con3="+con3.label+" con4="+con4.label);
+      Constituent con1 = stack.get(stack.size() - 2);
+      Constituent con2 = stack.get(stack.size() - 3);
+      Constituent con3 = stack.get(stack.size() - 4);
+      Constituent con4 = stack.get(stack.size() - 5);
+      // System.err.println("con0="+con0.label+" con1="+con1.label+" con2="
+      // +con2.label+" con3="+con3.label+" con4="+con4.label);
       //subject extraction
       if (con1.getLabel().equals("NP") && con2.getLabel().equals("S") && con3.getLabel().equals("SBAR")) {
-        con1.setLabel(con1.getLabel()+"-G");
-        con2.setLabel(con2.getLabel()+"-G");
-        con3.setLabel(con3.getLabel()+"-G");
+        con1.setLabel(con1.getLabel() + "-G");
+        con2.setLabel(con2.getLabel() + "-G");
+        con3.setLabel(con3.getLabel() + "-G");
       }
       //object extraction
-      else if (con1.getLabel().equals("NP") && con2.getLabel().equals("VP") && con3.getLabel().equals("S") && con4.getLabel().equals("SBAR")) {
-        con1.setLabel(con1.getLabel()+"-G");
-        con2.setLabel(con2.getLabel()+"-G");
-        con3.setLabel(con3.getLabel()+"-G");
-        con4.setLabel(con4.getLabel()+"-G");
+      else if (con1.getLabel().equals("NP") && con2.getLabel().equals("VP")
+          && con3.getLabel().equals("S") && con4.getLabel().equals("SBAR")) {
+        con1.setLabel(con1.getLabel() + "-G");
+        con2.setLabel(con2.getLabel() + "-G");
+        con3.setLabel(con3.getLabel() + "-G");
+        con4.setLabel(con4.getLabel() + "-G");
       }
     }
   }
@@ -250,9 +257,9 @@ public class HeadRules implements opennlp.tools.parser.HeadRules, GapLabeler, Se
    */
   public void serialize(Writer writer) throws IOException {
 
-    for (String type : headRules.keySet()) {
-
-      HeadRule headRule = headRules.get(type);
+    for (Entry<String, HeadRule> entry : headRules.entrySet()) {
+      String type = entry.getKey();
+      HeadRule headRule = entry.getValue();
 
       // write num of tags
       writer.write(Integer.toString(headRule.tags.length + 2));
@@ -281,19 +288,24 @@ public class HeadRules implements opennlp.tools.parser.HeadRules, GapLabeler, Se
   }
 
   @Override
+  public int hashCode() {
+    return Objects.hash(headRules, punctSet);
+  }
+
+  @Override
   public boolean equals(Object obj) {
     if (obj == this) {
       return true;
     }
-    else if (obj instanceof HeadRules) {
+
+    if (obj instanceof HeadRules) {
       HeadRules rules = (HeadRules) obj;
 
-      return rules.headRules.equals(headRules) &&
-          rules.punctSet.equals(punctSet);
+      return rules.headRules.equals(headRules)
+          && rules.punctSet.equals(punctSet);
     }
-    else {
-      return false;
-    }
+
+    return false;
   }
 
   @Override

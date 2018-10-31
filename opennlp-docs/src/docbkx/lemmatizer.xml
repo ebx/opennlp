@@ -88,22 +88,11 @@ signed VBD sign
 				In the example below it is loaded from disk:
 				<programlisting language="java">
 		<![CDATA[
-InputStream modelIn = null;
 LemmatizerModel model = null;
-try {
-  modelIn = new FileInputStream("en-lemmatizer.bin");
+try (InputStream modelIn = new FileInputStream("en-lemmatizer.bin"))) {
   model = new LemmatizerModel(modelIn);
-} catch (IOException e) {
-  // Model loading failed, handle the error
-  e.printStackTrace();
-} finally {
-  if (modelIn != null) {
-    try {
-    modelIn.close();
-    } catch (IOException e) {
-      }
-  }
-}]]>
+}
+]]>
 			</programlisting>
 				After the model is loaded a LemmatizerME can be instantiated.
 				<programlisting language="java">
@@ -132,10 +121,9 @@ String[] postags = new String[] { "NNP", "NNP", "NNP", "POS", "NNP", "NN",
     "NNP", "NNP", "TO", "VB", "JJ", "NNS", "IN", "NNP", "POS", "CD", "NNS",
     "." };
 
-String[] lemmas = lemmatizer.lemmatize(tokens, postags);
-String[] decodedLemmas = lemmatizer.decodeLemmas(tokens, lemmas);]]>
+String[] lemmas = lemmatizer.lemmatize(tokens, postags);]]>
 		</programlisting>
-				The decodedLemmas array contains one lemma for each token in the
+				The lemmas array contains one lemma for each token in the
 				input array. The corresponding
 				tag and lemma can be found at the same index as the token has in the
 				input array.
@@ -144,29 +132,37 @@ String[] decodedLemmas = lemmatizer.decodeLemmas(tokens, lemmas);]]>
 			<para>
 				The DictionaryLemmatizer is constructed
 				by passing the InputStream of a lemmatizer dictionary. Such dictionary
-				consists of a
-				text file containing, for each row, a word, its postag and the
-				corresponding lemma:
+				consists of a text file containing, for each row, a word, its postag and the
+				corresponding lemma, each column separated by a tab character.
 				<screen>
 		<![CDATA[
-show    NN      show
-showcase        NN      showcase
-showcases       NNS     showcase
-showdown        NN      showdown
-showdowns       NNS     showdown
-shower  NN      shower
-showers NNS     shower
-showman NN      showman
-showmanship     NN      showmanship
-showmen NNS     showman
-showroom        NN      showroom
-showrooms       NNS     showroom
-shows   NNS     show
-showstopper     NN      showstopper
-showstoppers    NNS     showstopper
-shrapnel        NN      shrapnel
+show		NN	show
+showcase	NN	showcase
+showcases	NNS	showcase
+showdown	NN	showdown
+showdowns	NNS	showdown
+shower		NN	shower
+showers		NNS	shower
+showman		NN	showman
+showmanship	NN	showmanship
+showmen		NNS	showman
+showroom	NN	showroom
+showrooms	NNS	showroom
+shows		NNS	show
+shrapnel	NN	shrapnel
 		]]>
 		</screen>
+				Alternatively, if a (word,postag) pair can output multiple lemmas, the
+				the lemmatizer dictionary would consists of a text file containing, for 
+				each row, a word, its postag and the corresponding lemmas separated by "#":
+				<screen>
+		<![CDATA[
+muestras	NN	muestra
+cantaba		V	cantar
+fue		V	ir#ser
+entramos	V	entrar
+		]]>
+					</screen>
 				First the dictionary must be loaded into memory from disk or another
 				source.
 				In the sample below it is loaded from disk.
@@ -174,22 +170,10 @@ shrapnel        NN      shrapnel
 				<![CDATA[
 InputStream dictLemmatizer = null;
 
-try {
-  dictLemmatizer = new FileInputStream("english-lemmatizer.txt");
+try (dictLemmatizer = new FileInputStream("english-lemmatizer.txt")) {
+
 }
-catch (IOException e) {
-  // dictionary loading failed, handle the error
-  e.printStackTrace();
-}
-finally {
-  if (dictLemmatizer != null) {
-    try {
-      dictLemmatizer.close();
-    }
-    catch (IOException e) {
-    }
-  }
-}]]>
+]]>
 			</programlisting>
 				After the dictionary is loaded the DictionaryLemmatizer can be
 				instantiated.
@@ -203,8 +187,7 @@ DictionaryLemmatizer lemmatizer = new DictionaryLemmatizer(dictLemmatizer);]]>
 			</para>
 			<para>
 				The following code shows how to find a lemma using a
-				DictionaryLemmatizer. There is no need to decode the
-				lemmas when using the DictionaryLemmatizer.
+				DictionaryLemmatizer.
 				<programlisting language="java">
 		  <![CDATA[
 String[] tokens = new String[]{"Most", "large", "cities", "in", "the", "US", "had",
@@ -303,8 +286,7 @@ $ opennlp LemmatizerTrainerME -model en-lemmatizer.bin -params PerceptronTrainer
  TrainingParameters mlParams = CmdLineUtil.loadTrainingParameters(params.getParams(), false);
  if (mlParams == null) {
    mlParams = ModelUtil.createDefaultTrainingParameters();
- }
-]]>
+ }]]>
                 </programlisting>
 					Then we read the training data:
 					<programlisting language="java">
@@ -320,7 +302,7 @@ InputStreamFactory inputStreamFactory = null;
     LemmaSampleStream lemmaStream = null;
     try {
       lineStream = new PlainTextByLineStream(
-      (inputStreamFactory), "UTF-8");
+      (inputStreamFactory), StandardCharsets.UTF_8);
       lemmaStream = new LemmaSampleStream(lineStream);
     } catch (IOException e) {
       CmdLineUtil.handleCreateObjectStreamError(e);
@@ -363,7 +345,7 @@ InputStreamFactory inputStreamFactory = null;
 					The following command shows how the tool can be run:
 					<screen>
 				<![CDATA[
-$ opennlp LemmatizerEvaluator -model en-lemmatizer.bin -lang en -data en-lemmatizer.test -encoding utf-8]]>
+$ opennlp LemmatizerEvaluator -model en-lemmatizer.bin -data en-lemmatizer.test -encoding utf-8]]>
 			 </screen>
 					This will display the resulting accuracy score, e.g.:
 					<screen>

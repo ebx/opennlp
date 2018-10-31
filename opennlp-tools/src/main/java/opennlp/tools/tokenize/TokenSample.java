@@ -15,13 +15,14 @@
  * limitations under the License.
  */
 
-
 package opennlp.tools.tokenize;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 
 import opennlp.tools.tokenize.Detokenizer.DetokenizationOperation;
 import opennlp.tools.util.Span;
@@ -29,11 +30,11 @@ import opennlp.tools.util.Span;
 /**
  * A {@link TokenSample} is text with token spans.
  */
-public class TokenSample {
+public class TokenSample implements Serializable {
 
   public static final String DEFAULT_SEPARATOR_CHARS = "<SPLIT>";
 
-  private final String separatorChars = DEFAULT_SEPARATOR_CHARS;
+  private static final String separatorChars = DEFAULT_SEPARATOR_CHARS;
 
   private final String text;
 
@@ -45,16 +46,11 @@ public class TokenSample {
    * @param text the text which contains the tokens.
    * @param tokenSpans the spans which mark the begin and end of the tokens.
    */
-  public TokenSample(String text, Span tokenSpans[]) {
+  public TokenSample(String text, Span[] tokenSpans) {
+    Objects.requireNonNull(tokenSpans, "tokenSpans must not be null");
 
-    if (text == null)
-      throw new IllegalArgumentException("text must not be null!");
-
-    if (tokenSpans == null)
-      throw new IllegalArgumentException("tokenSpans must not be null! ");
-
-    this.text = text;
-    this.tokenSpans = Collections.unmodifiableList(new ArrayList<Span>(Arrays.asList(tokenSpans)));
+    this.text = Objects.requireNonNull(text, "text must not be null");
+    this.tokenSpans = Collections.unmodifiableList(new ArrayList<>(Arrays.asList(tokenSpans)));
 
     for (Span tokenSpan : tokenSpans) {
       if (tokenSpan.getStart() < 0 || tokenSpan.getStart() > text.length() ||
@@ -65,13 +61,13 @@ public class TokenSample {
     }
   }
 
-  public TokenSample(Detokenizer detokenizer, String tokens[]) {
+  public TokenSample(Detokenizer detokenizer, String[] tokens) {
 
     StringBuilder sentence = new StringBuilder();
 
     DetokenizationOperation[] operations = detokenizer.detokenize(tokens);
 
-    List<Span> mergedTokenSpans = new ArrayList<Span>();
+    List<Span> mergedTokenSpans = new ArrayList<>();
 
     for (int i = 0; i < operations.length; i++) {
 
@@ -130,7 +126,7 @@ public class TokenSample {
         // and this token insert the separator chars
         // otherwise insert a space
 
-        String separator = "";
+        String separator;
         if (lastEndIndex == token.getStart())
           separator = separatorChars;
         else
@@ -147,7 +143,8 @@ public class TokenSample {
     return sentence.toString();
   }
 
-  private static void addToken(StringBuilder sample, List<Span> tokenSpans, String token, boolean isNextMerged) {
+  private static void addToken(StringBuilder sample, List<Span> tokenSpans,
+      String token, boolean isNextMerged) {
 
     int tokenSpanStart = sample.length();
     sample.append(token);
@@ -160,18 +157,13 @@ public class TokenSample {
   }
 
   public static TokenSample parse(String sampleString, String separatorChars) {
+    Objects.requireNonNull(sampleString, "sampleString must not be null");
+    Objects.requireNonNull(separatorChars, "separatorChars must not be null");
 
-    if (sampleString == null) {
-        throw new IllegalArgumentException("sampleString must not be null!");
-    }
-    if (separatorChars == null) {
-        throw new IllegalArgumentException("separatorChars must not be null!");
-    }
-
-    Span whitespaceTokenSpans[] = WhitespaceTokenizer.INSTANCE.tokenizePos(sampleString);
+    Span[] whitespaceTokenSpans = WhitespaceTokenizer.INSTANCE.tokenizePos(sampleString);
 
     // Pre-allocate 20% for newly created tokens
-    List<Span> realTokenSpans = new ArrayList<Span>((int) (whitespaceTokenSpans.length * 1.2d));
+    List<Span> realTokenSpans = new ArrayList<>((int) (whitespaceTokenSpans.length * 1.2d));
 
     StringBuilder untaggedSampleString = new StringBuilder();
 
@@ -181,7 +173,7 @@ public class TokenSample {
       boolean wasTokenReplaced = false;
 
       int tokStart = 0;
-      int tokEnd = -1;
+      int tokEnd;
       while ((tokEnd = whitespaceToken.indexOf(separatorChars, tokStart)) > -1) {
 
         String token = whitespaceToken.substring(tokStart, tokEnd);
@@ -212,16 +204,23 @@ public class TokenSample {
   }
 
   @Override
+  public int hashCode() {
+    return Objects.hash(getText(), Arrays.hashCode(getTokenSpans()));
+  }
+
+  @Override
   public boolean equals(Object obj) {
     if (this == obj) {
       return true;
-    } else if (obj instanceof TokenSample) {
+    }
+
+    if (obj instanceof TokenSample) {
       TokenSample a = (TokenSample) obj;
 
       return getText().equals(a.getText())
           && Arrays.equals(getTokenSpans(), a.getTokenSpans());
-    } else {
-      return false;
     }
+
+    return false;
   }
 }

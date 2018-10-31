@@ -19,13 +19,14 @@ package opennlp.tools.cmdline.postag;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Map;
 
 import opennlp.tools.cmdline.AbstractTrainerTool;
 import opennlp.tools.cmdline.CmdLineUtil;
 import opennlp.tools.cmdline.TerminateToolException;
+import opennlp.tools.cmdline.namefind.TokenNameFinderTrainerTool;
 import opennlp.tools.cmdline.params.TrainingToolParams;
 import opennlp.tools.cmdline.postag.POSTaggerTrainerTool.TrainerToolParams;
-import opennlp.tools.dictionary.Dictionary;
 import opennlp.tools.ml.TrainerFactory;
 import opennlp.tools.postag.MutableTagDictionary;
 import opennlp.tools.postag.POSModel;
@@ -34,8 +35,6 @@ import opennlp.tools.postag.POSTaggerFactory;
 import opennlp.tools.postag.POSTaggerME;
 import opennlp.tools.postag.TagDictionary;
 import opennlp.tools.util.InvalidFormatException;
-import opennlp.tools.util.TrainingParameters;
-import opennlp.tools.util.model.ModelType;
 import opennlp.tools.util.model.ModelUtil;
 
 public final class POSTaggerTrainerTool
@@ -56,38 +55,35 @@ public final class POSTaggerTrainerTool
     super.run(format, args);
 
     mlParams = CmdLineUtil.loadTrainingParameters(params.getParams(), true);
-    if (mlParams != null && !TrainerFactory.isValid(mlParams.getSettings())) {
+    if (mlParams != null && !TrainerFactory.isValid(mlParams)) {
       throw new TerminateToolException(1, "Training parameters file '" + params.getParams() +
           "' is invalid!");
     }
 
-    if(mlParams == null) {
+    if (mlParams == null) {
       mlParams = ModelUtil.createDefaultTrainingParameters();
-      mlParams.put(TrainingParameters.ALGORITHM_PARAM, getModelType(params.getType()).toString());
     }
 
     File modelOutFile = params.getModel();
     CmdLineUtil.checkOutputFile("pos tagger model", modelOutFile);
 
-    Dictionary ngramDict = null;
+    Map<String, Object> resources;
 
-    Integer ngramCutoff = params.getNgram();
-
-    if (ngramCutoff != null) {
-      System.err.print("Building ngram dictionary ... ");
-      try {
-        ngramDict = POSTaggerME.buildNGramDictionary(sampleStream, ngramCutoff);
-        sampleStream.reset();
-      } catch (IOException e) {
-        throw new TerminateToolException(-1,
-            "IO error while building NGram Dictionary: " + e.getMessage(), e);
-      }
-      System.err.println("done");
+    try {
+      resources = TokenNameFinderTrainerTool.loadResources(
+          params.getResources(), params.getFeaturegen());
+    }
+    catch (IOException e) {
+      throw new TerminateToolException(-1,"IO error while loading resources", e);
     }
 
-    POSTaggerFactory postaggerFactory = null;
+    byte[] featureGeneratorBytes =
+        TokenNameFinderTrainerTool.openFeatureGeneratorBytes(params.getFeaturegen());
+
+    POSTaggerFactory postaggerFactory;
     try {
-      postaggerFactory = POSTaggerFactory.create(params.getFactory(), ngramDict, null);
+      postaggerFactory = POSTaggerFactory.create(params.getFactory(), featureGeneratorBytes,
+          resources, null);
     } catch (InvalidFormatException e) {
       throw new TerminateToolException(-1, e.getMessage(), e);
     }
@@ -98,7 +94,7 @@ public final class POSTaggerTrainerTool
             .createTagDictionary(params.getDict()));
       } catch (IOException e) {
         throw new TerminateToolException(-1,
-            "IO error while loading POS Dictionary: " + e.getMessage(), e);
+            "IO error while loading POS Dictionary", e);
       }
     }
 
@@ -130,8 +126,7 @@ public final class POSTaggerTrainerTool
           sampleStream, mlParams, postaggerFactory);
     }
     catch (IOException e) {
-      throw new TerminateToolException(-1, "IO error while reading training data or indexing data: "
-          + e.getMessage(), e);
+      throw createTerminationIOException(e);
     }
     finally {
       try {
@@ -142,25 +137,5 @@ public final class POSTaggerTrainerTool
     }
 
     CmdLineUtil.writeModel("pos tagger", modelOutFile, model);
-  }
-
-  static ModelType getModelType(String modelString) {
-    ModelType model;
-    if (modelString == null)
-      modelString = "maxent";
-
-    if (modelString.equals("maxent")) {
-      model = ModelType.MAXENT;
-    }
-    else if (modelString.equals("perceptron")) {
-      model = ModelType.PERCEPTRON;
-    }
-    else if (modelString.equals("perceptron_sequence")) {
-      model = ModelType.PERCEPTRON_SEQUENCE;
-    }
-    else {
-      model = null;
-    }
-    return model;
   }
 }

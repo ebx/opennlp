@@ -20,6 +20,7 @@ package opennlp.tools.util;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 
 /** Represents a weighted sequence of outcomes. */
 public class Sequence implements Comparable<Sequence> {
@@ -30,27 +31,27 @@ public class Sequence implements Comparable<Sequence> {
 
   /** Creates a new sequence of outcomes. */
   public Sequence() {
-    outcomes = new ArrayList<String>(1);
-    probs = new ArrayList<Double>(1);
+    outcomes = new ArrayList<>(1);
+    probs = new ArrayList<>(1);
     score = 0d;
   }
 
   public Sequence(Sequence s) {
-    outcomes = new ArrayList<String>(s.outcomes.size()+1);
+    outcomes = new ArrayList<>(s.outcomes.size() + 1);
     outcomes.addAll(s.outcomes);
-    probs = new ArrayList<Double>(s.probs.size()+1);
+    probs = new ArrayList<>(s.probs.size() + 1);
     probs.addAll(s.probs);
     score = s.score;
   }
 
   public Sequence(Sequence s,String outcome, double p) {
-    outcomes = new ArrayList<String>(s.outcomes.size()+1);
+    outcomes = new ArrayList<>(s.outcomes.size() + 1);
     outcomes.addAll(s.outcomes);
     outcomes.add(outcome);
-    probs = new ArrayList<Double>(s.probs.size()+1);
+    probs = new ArrayList<>(s.probs.size() + 1);
     probs.addAll(s.probs);
     probs.add(p);
-    score = s.score+Math.log(p);
+    score = s.score + Math.log(p);
   }
 
   public Sequence(List<String> outcomes) {
@@ -59,14 +60,31 @@ public class Sequence implements Comparable<Sequence> {
   }
 
   public int compareTo(Sequence s) {
-    if (score < s.score)
-      return 1;
-    if (score > s.score)
-      return -1;
-    return 0;
+    return Double.compare(s.score, score);
   }
 
-  /** Adds an outcome and probability to this sequence.
+  @Override
+  public int hashCode() {
+    return Objects.hash(outcomes, probs, score);
+  }
+
+  @Override
+  public boolean equals(Object obj) {
+    if (this == obj)
+      return true;
+
+    if (obj instanceof Sequence) {
+      Sequence other = (Sequence) obj;
+      double epsilon = 0.0000001;
+      return Objects.equals(outcomes, other.outcomes) &&
+          Objects.equals(probs, other.probs) &&
+          Math.abs(score - other.score) < epsilon;
+    }
+
+    return false;
+  }
+
+/** Adds an outcome and probability to this sequence.
    * @param outcome the outcome to be added.
    * @param p the probability associated with this outcome.
    */
@@ -101,16 +119,17 @@ public class Sequence implements Comparable<Sequence> {
   }
 
   /** Populates  an array with the probabilities associated with the outcomes of this sequence.
-   * @param ps a pre-allocated array to use to hold the values of the probabilities of the outcomes for this sequence.
+   * @param ps a pre-allocated array to use to hold the values of the
+   *           probabilities of the outcomes for this sequence.
    */
   public void getProbs(double[] ps) {
-    for (int pi=0,pl=probs.size();pi<pl;pi++) {
+    for (int pi = 0, pl = probs.size(); pi < pl; pi++) {
       ps[pi] = probs.get(pi);
     }
   }
 
   @Override
   public String toString() {
-    return score + " "+outcomes;
+    return score + " " + outcomes;
   }
 }

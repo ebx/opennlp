@@ -14,6 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package opennlp.tools.cmdline.chunker;
 
 import java.io.File;
@@ -50,11 +51,12 @@ public class ChunkerMETool extends BasicCmdLineTool {
 
       ChunkerME chunker = new ChunkerME(model);
 
-      ObjectStream<String> lineStream = null;
+      ObjectStream<String> lineStream;
       PerformanceMonitor perfMon = null;
 
       try {
-        lineStream = new PlainTextByLineStream(new SystemInputStreamFactory(), SystemInputStreamFactory.encoding());
+        lineStream = new PlainTextByLineStream(new SystemInputStreamFactory(),
+            SystemInputStreamFactory.encoding());
         perfMon = new PerformanceMonitor(System.err, "sent");
         perfMon.start();
         String line;
@@ -69,11 +71,10 @@ public class ChunkerMETool extends BasicCmdLineTool {
             continue;
           }
 
-          String[] chunks = chunker.chunk(posSample.getSentence(),
-                  posSample.getTags());
+          String[] chunks = chunker.chunk(posSample.getSentence(), posSample.getTags());
 
           System.out.println(new ChunkSample(posSample.getSentence(),
-                  posSample.getTags(), chunks).nicePrint());
+              posSample.getTags(), chunks).nicePrint());
 
           perfMon.incrementCounter();
         }

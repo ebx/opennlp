@@ -47,7 +47,7 @@ public class SDEventStream extends AbstractEventStream<SentenceSample> {
   @Override
   protected Iterator<Event> createEvents(SentenceSample sample) {
 
-    Collection<Event> events = new ArrayList<Event>();
+    Collection<Event> events = new ArrayList<>();
 
     for (Span sentenceSpan : sample.getSentences()) {
       String sentenceString = sentenceSpan.getCoveredText(sample.getDocument()).toString();

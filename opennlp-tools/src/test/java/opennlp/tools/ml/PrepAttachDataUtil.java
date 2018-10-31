@@ -17,14 +17,14 @@
 
 package opennlp.tools.ml;
 
-import static org.junit.Assert.assertEquals;
-
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
+
+import org.junit.Assert;
 
 import opennlp.tools.ml.model.Event;
 import opennlp.tools.ml.model.MaxentModel;
@@ -36,7 +36,7 @@ public class PrepAttachDataUtil {
 
   private static List<Event> readPpaFile(String filename) throws IOException {
 
-    List<Event> events = new ArrayList<Event>();
+    List<Event> events = new ArrayList<>();
 
     try (InputStream in = PerceptronPrepAttachTest.class.getResourceAsStream("/data/ppa/" +
             filename)) {
@@ -46,7 +46,7 @@ public class PrepAttachDataUtil {
         String[] items = line.split("\\s+");
         String label = items[5];
         String[] context = {"verb=" + items[1], "noun=" + items[2],
-                "prep=" + items[3], "prep_obj=" + items[4]};
+            "prep=" + items[3], "prep_obj=" + items[4]};
         events.add(new Event(label, context));
       }
     }
@@ -70,9 +70,11 @@ public class PrepAttachDataUtil {
       double[] ocs = model.eval(ev.getContext());
 
       int best = 0;
-      for (int i=1; i<ocs.length; i++)
-        if (ocs[i] > ocs[best])
+      for (int i = 1; i < ocs.length; i++) {
+        if (ocs[i] > ocs[best]) {
           best = i;
+        }
+      }
 
       String predictedLabel = model.getOutcome(best);
 
@@ -81,9 +83,9 @@ public class PrepAttachDataUtil {
       total++;
     }
 
-    double accuracy = correct/(double)total;
+    double accuracy = correct / (double) total;
     System.out.println("Accuracy on PPA devset: (" + correct + "/" + total + ") " + accuracy);
 
-    assertEquals(expecedAccuracy, accuracy, .00001);
+    Assert.assertEquals(expecedAccuracy, accuracy, .00001);
   }
 }

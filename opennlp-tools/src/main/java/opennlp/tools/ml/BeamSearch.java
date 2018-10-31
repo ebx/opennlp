@@ -47,7 +47,7 @@ public class BeamSearch<T> implements SequenceClassificationModel<T> {
   protected MaxentModel model;
 
   private double[] probs;
-  private Cache contextsCache;
+  private Cache<String[], double[]> contextsCache;
   private static final int zeroLog = -100000;
 
   /**
@@ -66,7 +66,7 @@ public class BeamSearch<T> implements SequenceClassificationModel<T> {
     this.model = model;
 
     if (cacheSize > 0) {
-      contextsCache = new Cache(cacheSize);
+      contextsCache = new Cache<>(cacheSize);
     }
 
     this.probs = new double[model.getNumOutcomes()];
@@ -76,12 +76,15 @@ public class BeamSearch<T> implements SequenceClassificationModel<T> {
    * Returns the best sequence of outcomes based on model for this object.
    *
    * @param sequence The input sequence.
-   * @param additionalContext An Object[] of additional context.  This is passed to the context generator blindly with the assumption that the context are appropiate.
+   * @param additionalContext An Object[] of additional context.
+   *     This is passed to the context generator blindly with the
+   *     assumption that the context are appropiate.
    *
    * @return The top ranked sequence of outcomes or null if no sequence could be found
    */
   public Sequence[] bestSequences(int numSequences, T[] sequence,
-      Object[] additionalContext, double minSequenceScore, BeamSearchContextGenerator<T> cg, SequenceValidator<T> validator) {
+      Object[] additionalContext, double minSequenceScore,
+      BeamSearchContextGenerator<T> cg, SequenceValidator<T> validator) {
 
     Queue<Sequence> prev = new PriorityQueue<>(size);
     Queue<Sequence> next = new PriorityQueue<>(size);
@@ -102,38 +105,31 @@ public class BeamSearch<T> implements SequenceClassificationModel<T> {
         String[] contexts = cg.getContext(i, sequence, outcomes, additionalContext);
         double[] scores;
         if (contextsCache != null) {
-          scores = (double[]) contextsCache.get(contexts);
-          if (scores == null) {
-            scores = model.eval(contexts, probs);
-            contextsCache.put(contexts,scores);
-          }
-        }
-        else {
+          scores = contextsCache.computeIfAbsent(contexts, c -> model.eval(c, probs));
+        } else {
           scores = model.eval(contexts, probs);
         }
 
         double[] temp_scores = new double[scores.length];
-        for (int c = 0; c < scores.length; c++) {
-          temp_scores[c] = scores[c];
-        }
+        System.arraycopy(scores, 0, temp_scores, 0, scores.length);
 
         Arrays.sort(temp_scores);
 
-        double min = temp_scores[Math.max(0,scores.length-size)];
+        double min = temp_scores[Math.max(0,scores.length - size)];
 
         for (int p = 0; p < scores.length; p++) {
-          if (scores[p] < min)
-            continue; //only advance first "size" outcomes
-          String out = model.getOutcome(p);
-           if (validator.validSequence(i, sequence, outcomes, out)) {
-            Sequence ns = new Sequence(top, out, scores[p]);
-            if (ns.getScore() > minSequenceScore) {
-              next.add(ns);
+          if (scores[p] >= min) {
+            String out = model.getOutcome(p);
+            if (validator.validSequence(i, sequence, outcomes, out)) {
+              Sequence ns = new Sequence(top, out, scores[p]);
+              if (ns.getScore() > minSequenceScore) {
+                next.add(ns);
+              }
             }
-           }
+          }
         }
 
-        if (next.size() == 0) {//if no advanced sequences, advance all valid
+        if (next.size() == 0) { //if no advanced sequences, advance all valid
           for (int p = 0; p < scores.length; p++) {
             String out = model.getOutcome(p);
             if (validator.validSequence(i, sequence, outcomes, out)) {
@@ -170,7 +166,7 @@ public class BeamSearch<T> implements SequenceClassificationModel<T> {
 
   public Sequence bestSequence(T[] sequence, Object[] additionalContext,
       BeamSearchContextGenerator<T> cg, SequenceValidator<T> validator) {
-    Sequence sequences[] =  bestSequences(1, sequence, additionalContext, cg, validator);
+    Sequence[] sequences =  bestSequences(1, sequence, additionalContext, cg, validator);
 
     if (sequences.length > 0)
       return sequences[0];
@@ -180,7 +176,7 @@ public class BeamSearch<T> implements SequenceClassificationModel<T> {
 
   @Override
   public String[] getOutcomes() {
-    String outcomes[] = new String[model.getNumOutcomes()];
+    String[] outcomes = new String[model.getNumOutcomes()];
 
     for (int i = 0; i < model.getNumOutcomes(); i++) {
       outcomes[i] = model.getOutcome(i);

@@ -39,7 +39,8 @@ public class ADPOSSampleStreamFactory extends
     LanguageSampleStreamFactory<POSSample> {
 
   interface Parameters {
-    @ParameterDescription(valueName = "charsetName", description = "encoding for reading and writing text, if absent the system default is used.")
+    @ParameterDescription(valueName = "charsetName",
+        description = "encoding for reading and writing text, if absent the system default is used.")
     Charset getEncoding();
 
     @ParameterDescription(valueName = "sampleData", description = "data to be used, usually a file name.")
@@ -52,7 +53,8 @@ public class ADPOSSampleStreamFactory extends
     @OptionalParameter(defaultValue = "false")
     Boolean getExpandME();
 
-    @ParameterDescription(valueName = "includeFeatures", description = "combine POS Tags with word features, like number and gender.")
+    @ParameterDescription(valueName = "includeFeatures",
+        description = "combine POS Tags with word features, like number and gender.")
     @OptionalParameter(defaultValue = "false")
     Boolean getIncludeFeatures();
   }
@@ -74,17 +76,15 @@ public class ADPOSSampleStreamFactory extends
 
     InputStreamFactory sampleDataIn = CmdLineUtil.createInputStreamFactory(params.getData());
 
-    ObjectStream<String> lineStream=null;
+    ObjectStream<String> lineStream = null;
     try {
       lineStream = new PlainTextByLineStream(sampleDataIn, params.getEncoding());
     } catch (IOException ex) {
       CmdLineUtil.handleCreateObjectStreamError(ex);
     }
 
-    ADPOSSampleStream sentenceStream = new ADPOSSampleStream(lineStream,
+    return new ADPOSSampleStream(lineStream,
         params.getExpandME(), params.getIncludeFeatures());
-
-    return sentenceStream;
   }
 
 }

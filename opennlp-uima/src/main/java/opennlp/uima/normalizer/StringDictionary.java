@@ -25,16 +25,14 @@ import java.util.Iterator;
 import java.util.Map;
 
 import opennlp.tools.dictionary.serializer.Attributes;
-import opennlp.tools.dictionary.serializer.DictionarySerializer;
+import opennlp.tools.dictionary.serializer.DictionaryEntryPersistor;
 import opennlp.tools.dictionary.serializer.Entry;
-import opennlp.tools.dictionary.serializer.EntryInserter;
-import opennlp.tools.util.InvalidFormatException;
 import opennlp.tools.util.StringList;
 
 // lookup a string for given token list
 public class StringDictionary {
 
-  private Map<StringList, String> entries = new HashMap<StringList, String>();
+  private Map<StringList, String> entries = new HashMap<>();
 
   public StringDictionary() {
   }
@@ -44,20 +42,16 @@ public class StringDictionary {
    *
    * @param in
    * @throws IOException
-   * @throws InvalidFormatException
    */
-  public StringDictionary(InputStream in) throws IOException,
-      InvalidFormatException {
-    DictionarySerializer.create(in, new EntryInserter() {
-      public void insert(Entry entry) throws InvalidFormatException {
-        String valueString = entry.getAttributes().getValue("value");
-        put(entry.getTokens(), valueString);
-      }
+  public StringDictionary(InputStream in) throws IOException {
+    DictionaryEntryPersistor.create(in, entry -> {
+      String valueString = entry.getAttributes().getValue("value");
+      put(entry.getTokens(), valueString);
     });
   }
 
   public String get(StringList key) {
-    return (String) entries.get(key);
+    return entries.get(key);
   }
 
   public void put(StringList key, String value) {
@@ -99,6 +93,6 @@ public class StringDictionary {
       }
     };
 
-    DictionarySerializer.serialize(out, entryIterator, true);
+    DictionaryEntryPersistor.serialize(out, entryIterator, true);
   }
 }

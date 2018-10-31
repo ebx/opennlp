@@ -29,24 +29,25 @@ import opennlp.tools.cmdline.params.BasicTrainingParams;
  * Note: Do not use this class, internal use only!
  */
 interface TrainingParams extends BasicTrainingParams {
+  @ParameterDescription(valueName = "featuregenFile", description = "The feature generator descriptor file")
+  @OptionalParameter
+  File getFeaturegen();
 
-  @ParameterDescription(valueName = "maxent|perceptron|perceptron_sequence", description = "The type of the token name finder model. One of maxent|perceptron|perceptron_sequence.")
-  @OptionalParameter(defaultValue = "maxent")
-  String getType();
+  @ParameterDescription(valueName = "resourcesDir", description = "The resources directory")
+  @OptionalParameter
+  File getResources();
 
   @ParameterDescription(valueName = "dictionaryPath", description = "The XML tag dictionary file")
   @OptionalParameter
   File getDict();
 
-  @ParameterDescription(valueName = "cutoff", description = "NGram cutoff. If not specified will not create ngram dictionary.")
-  @OptionalParameter
-  Integer getNgram();
-
-  @ParameterDescription(valueName = "tagDictCutoff", description = "TagDictionary cutoff. If specified will create/expand a mutable TagDictionary")
+  @ParameterDescription(valueName = "tagDictCutoff",
+      description = "TagDictionary cutoff. If specified will create/expand a mutable TagDictionary")
   @OptionalParameter
   Integer getTagDictCutoff();
 
-  @ParameterDescription(valueName = "factoryName", description = "A sub-class of POSTaggerFactory where to get implementation and resources.")
+  @ParameterDescription(valueName = "factoryName",
+      description = "A sub-class of POSTaggerFactory where to get implementation and resources.")
   @OptionalParameter
   String getFactory();
 }

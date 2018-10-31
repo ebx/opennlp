@@ -48,7 +48,8 @@ public class ADSentenceSampleStreamFactory extends
     @ParameterDescription(valueName = "language", description = "language which is being processed.")
     String getLang();
 
-    @ParameterDescription(valueName = "includeTitles", description = "if true will include sentences marked as headlines.")
+    @ParameterDescription(valueName = "includeTitles",
+        description = "if true will include sentences marked as headlines.")
     @OptionalParameter(defaultValue = "false")
     Boolean getIncludeTitles();
   }
@@ -72,16 +73,13 @@ public class ADSentenceSampleStreamFactory extends
 
     InputStreamFactory sampleDataIn = CmdLineUtil.createInputStreamFactory(params.getData());
 
-    ObjectStream<String> lineStream=null;
+    ObjectStream<String> lineStream = null;
     try {
       lineStream = new PlainTextByLineStream(sampleDataIn, params.getEncoding());
     } catch (IOException ex) {
       CmdLineUtil.handleCreateObjectStreamError(ex);
     }
 
-    ADSentenceSampleStream sentenceStream = new ADSentenceSampleStream(
-        lineStream, includeTitle);
-
-    return sentenceStream;
+    return new ADSentenceSampleStream(lineStream, includeTitle);
   }
 }

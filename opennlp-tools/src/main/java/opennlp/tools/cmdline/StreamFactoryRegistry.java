@@ -29,12 +29,13 @@ import opennlp.tools.formats.ConllXSentenceSampleStreamFactory;
 import opennlp.tools.formats.ConllXTokenSampleStreamFactory;
 import opennlp.tools.formats.DocumentSampleStreamFactory;
 import opennlp.tools.formats.EvalitaNameSampleStreamFactory;
-import opennlp.tools.formats.LeipzigDocumentSampleStreamFactory;
+import opennlp.tools.formats.LanguageDetectorSampleStreamFactory;
 import opennlp.tools.formats.LemmatizerSampleStreamFactory;
 import opennlp.tools.formats.NameSampleDataStreamFactory;
 import opennlp.tools.formats.ParseSampleStreamFactory;
 import opennlp.tools.formats.SentenceSampleStreamFactory;
 import opennlp.tools.formats.TokenSampleStreamFactory;
+import opennlp.tools.formats.TwentyNewsgroupSampleStreamFactory;
 import opennlp.tools.formats.WordTagSampleStreamFactory;
 import opennlp.tools.formats.ad.ADChunkSampleStreamFactory;
 import opennlp.tools.formats.ad.ADNameSampleStreamFactory;
@@ -42,6 +43,10 @@ import opennlp.tools.formats.ad.ADPOSSampleStreamFactory;
 import opennlp.tools.formats.ad.ADSentenceSampleStreamFactory;
 import opennlp.tools.formats.ad.ADTokenSampleStreamFactory;
 import opennlp.tools.formats.brat.BratNameSampleStreamFactory;
+import opennlp.tools.formats.conllu.ConlluLemmaSampleStreamFactory;
+import opennlp.tools.formats.conllu.ConlluPOSSampleStreamFactory;
+import opennlp.tools.formats.conllu.ConlluSentenceSampleStreamFactory;
+import opennlp.tools.formats.conllu.ConlluTokenSampleStreamFactory;
 import opennlp.tools.formats.convert.NameToSentenceSampleStreamFactory;
 import opennlp.tools.formats.convert.NameToTokenSampleStreamFactory;
 import opennlp.tools.formats.convert.POSToSentenceSampleStreamFactory;
@@ -50,7 +55,13 @@ import opennlp.tools.formats.convert.ParseToPOSSampleStreamFactory;
 import opennlp.tools.formats.convert.ParseToSentenceSampleStreamFactory;
 import opennlp.tools.formats.convert.ParseToTokenSampleStreamFactory;
 import opennlp.tools.formats.frenchtreebank.ConstitParseSampleStreamFactory;
+import opennlp.tools.formats.irishsentencebank.IrishSentenceBankSentenceStreamFactory;
+import opennlp.tools.formats.irishsentencebank.IrishSentenceBankTokenSampleStreamFactory;
+import opennlp.tools.formats.leipzig.LeipzigLanguageSampleStreamFactory;
+import opennlp.tools.formats.letsmt.LetsmtSentenceStreamFactory;
+import opennlp.tools.formats.moses.MosesSentenceSampleStreamFactory;
 import opennlp.tools.formats.muc.Muc6NameSampleStreamFactory;
+import opennlp.tools.formats.nkjp.NKJPSentenceSampleStreamFactory;
 import opennlp.tools.formats.ontonotes.OntoNotesNameSampleStreamFactory;
 import opennlp.tools.formats.ontonotes.OntoNotesPOSSampleStreamFactory;
 import opennlp.tools.formats.ontonotes.OntoNotesParseSampleStreamFactory;
@@ -60,8 +71,7 @@ import opennlp.tools.formats.ontonotes.OntoNotesParseSampleStreamFactory;
  */
 public final class StreamFactoryRegistry {
 
-  private static final Map<Class, Map<String, ObjectStreamFactory>> registry =
-      new HashMap<Class, Map<String, ObjectStreamFactory>>();
+  private static final Map<Class, Map<String, ObjectStreamFactory>> registry = new HashMap<>();
 
   static {
     ChunkerSampleStreamFactory.registerFactory();
@@ -72,6 +82,7 @@ public final class StreamFactoryRegistry {
     TokenSampleStreamFactory.registerFactory();
     WordTagSampleStreamFactory.registerFactory();
     LemmatizerSampleStreamFactory.registerFactory();
+    LanguageDetectorSampleStreamFactory.registerFactory();
 
     NameToSentenceSampleStreamFactory.registerFactory();
     NameToTokenSampleStreamFactory.registerFactory();
@@ -94,18 +105,31 @@ public final class StreamFactoryRegistry {
     ConllXPOSSampleStreamFactory.registerFactory();
     ConllXSentenceSampleStreamFactory.registerFactory();
     ConllXTokenSampleStreamFactory.registerFactory();
-    LeipzigDocumentSampleStreamFactory.registerFactory();
     ADChunkSampleStreamFactory.registerFactory();
     ADNameSampleStreamFactory.registerFactory();
     ADSentenceSampleStreamFactory.registerFactory();
     ADPOSSampleStreamFactory.registerFactory();
     ADTokenSampleStreamFactory.registerFactory();
+    TwentyNewsgroupSampleStreamFactory.registerFactory();
 
     Muc6NameSampleStreamFactory.registerFactory();
 
     ConstitParseSampleStreamFactory.registerFactory();
 
     BratNameSampleStreamFactory.registerFactory();
+
+    LetsmtSentenceStreamFactory.registerFactory();
+    MosesSentenceSampleStreamFactory.registerFactory();
+
+    ConlluTokenSampleStreamFactory.registerFactory();
+    ConlluSentenceSampleStreamFactory.registerFactory();
+    ConlluPOSSampleStreamFactory.registerFactory();
+    ConlluLemmaSampleStreamFactory.registerFactory();
+
+    IrishSentenceBankSentenceStreamFactory.registerFactory();
+    IrishSentenceBankTokenSampleStreamFactory.registerFactory();
+    LeipzigLanguageSampleStreamFactory.registerFactory();
+    NKJPSentenceSampleStreamFactory.registerFactory();
   }
 
   public static final String DEFAULT_FORMAT = "opennlp";
@@ -129,7 +153,7 @@ public final class StreamFactoryRegistry {
     boolean result;
     Map<String, ObjectStreamFactory> formats = registry.get(sampleClass);
     if (null == formats) {
-      formats = new HashMap<String, ObjectStreamFactory>();
+      formats = new HashMap<>();
     }
     if (!formats.containsKey(formatName)) {
       formats.put(formatName, factory);
@@ -198,9 +222,7 @@ public final class StreamFactoryRegistry {
 
         try {
           return (ObjectStreamFactory<T>) factoryClazz.newInstance();
-        } catch (InstantiationException e) {
-        	return null;
-        } catch (IllegalAccessException e) {
+        } catch (InstantiationException | IllegalAccessException e) {
           return null;
         }
 

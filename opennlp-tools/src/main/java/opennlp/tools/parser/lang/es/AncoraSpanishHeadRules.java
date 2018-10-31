@@ -15,7 +15,6 @@
  * limitations under the License.
  */
 
-
 package opennlp.tools.parser.lang.es;
 
 import java.io.BufferedReader;
@@ -26,19 +25,22 @@ import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.Reader;
 import java.io.Writer;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.Set;
 import java.util.Stack;
 import java.util.StringTokenizer;
 
 import opennlp.tools.parser.Constituent;
 import opennlp.tools.parser.GapLabeler;
+import opennlp.tools.parser.HeadRules;
 import opennlp.tools.parser.Parse;
 import opennlp.tools.parser.chunking.Parser;
-import opennlp.tools.util.InvalidFormatException;
 import opennlp.tools.util.model.ArtifactSerializer;
 import opennlp.tools.util.model.SerializableArtifact;
 
@@ -58,32 +60,38 @@ import opennlp.tools.util.model.SerializableArtifact;
  * Other changes include removal of deprecated methods.
  *
  */
-public class AncoraSpanishHeadRules implements opennlp.tools.parser.HeadRules, GapLabeler, SerializableArtifact {
+public class AncoraSpanishHeadRules implements HeadRules, GapLabeler, SerializableArtifact {
 
-  public static class HeadRulesSerializer implements ArtifactSerializer<opennlp.tools.parser.lang.es.AncoraSpanishHeadRules> {
+  public static class HeadRulesSerializer implements ArtifactSerializer<AncoraSpanishHeadRules> {
 
-    public opennlp.tools.parser.lang.es.AncoraSpanishHeadRules create(InputStream in) throws IOException,
-        InvalidFormatException {
-      return new opennlp.tools.parser.lang.es.AncoraSpanishHeadRules(new BufferedReader(new InputStreamReader(in, "UTF-8")));
+    public AncoraSpanishHeadRules create(InputStream in) throws IOException {
+      return new AncoraSpanishHeadRules(new BufferedReader(
+          new InputStreamReader(in, StandardCharsets.UTF_8)));
     }
 
     public void serialize(opennlp.tools.parser.lang.es.AncoraSpanishHeadRules artifact, OutputStream out)
         throws IOException {
-      artifact.serialize(new OutputStreamWriter(out, "UTF-8"));
+      artifact.serialize(new OutputStreamWriter(out, StandardCharsets.UTF_8));
     }
   }
+
   private static class HeadRule {
     public boolean leftToRight;
     public String[] tags;
+
     public HeadRule(boolean l2r, String[] tags) {
       leftToRight = l2r;
 
       for (String tag : tags) {
-        if (tag == null)
-            throw new IllegalArgumentException("tags must not contain null values!");
+        Objects.requireNonNull(tag, "tags must not contain null values!");
       }
 
       this.tags = tags;
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hash(leftToRight, Arrays.hashCode(tags));
     }
 
     @Override
@@ -91,15 +99,15 @@ public class AncoraSpanishHeadRules implements opennlp.tools.parser.HeadRules, G
       if (obj == this) {
         return true;
       }
-      else if (obj instanceof HeadRule) {
+
+      if (obj instanceof HeadRule) {
         HeadRule rule = (HeadRule) obj;
 
         return (rule.leftToRight == leftToRight) &&
             Arrays.equals(rule.tags, tags);
       }
-      else {
-        return false;
-      }
+
+      return false;
     }
   }
 
@@ -119,7 +127,7 @@ public class AncoraSpanishHeadRules implements opennlp.tools.parser.HeadRules, G
     BufferedReader in = new BufferedReader(rulesReader);
     readHeadRules(in);
 
-    punctSet = new HashSet<String>();
+    punctSet = new HashSet<>();
     punctSet.add(".");
     punctSet.add(",");
     punctSet.add("``");
@@ -132,11 +140,11 @@ public class AncoraSpanishHeadRules implements opennlp.tools.parser.HeadRules, G
   }
 
   public Parse getHead(Parse[] constituents, String type) {
-    if (constituents[0].getType() == Parser.TOK_NODE) {
+    if (Parser.TOK_NODE.equals(constituents[0].getType())) {
       return null;
     }
     HeadRule hr;
-      if (type.equals("SN") || type.equals("GRUP.NOM")) {
+    if (type.equals("SN") || type.equals("GRUP.NOM")) {
       String[] tags1 = {"AQA.*","AQC.*","GRUP\\.A","S\\.A","NC.*S.*", "NP.*","NC.*P.*", "GRUP\\.NOM"};
 
       for (int i = 0; i < constituents.length; i++) {
@@ -176,7 +184,7 @@ public class AncoraSpanishHeadRules implements opennlp.tools.parser.HeadRules, G
       if (hr.leftToRight) {
         for (int ti = 0; ti < tl; ti++) {
           for (int ci = 0; ci < cl; ci++) {
-        	 if (constituents[ci].getType().matches(tags[ti])) {
+            if (constituents[ci].getType().matches(tags[ti])) {
               return constituents[ci];
             }
           }
@@ -199,7 +207,7 @@ public class AncoraSpanishHeadRules implements opennlp.tools.parser.HeadRules, G
 
   private void readHeadRules(BufferedReader str) throws IOException {
     String line;
-    headRules = new HashMap<String, HeadRule>(60);
+    headRules = new HashMap<>(60);
     while ((line = str.readLine()) != null) {
       StringTokenizer st = new StringTokenizer(line);
       String num = st.nextToken();
@@ -218,23 +226,25 @@ public class AncoraSpanishHeadRules implements opennlp.tools.parser.HeadRules, G
   public void labelGaps(Stack<Constituent> stack) {
     if (stack.size() > 4) {
       //Constituent con0 = (Constituent) stack.get(stack.size()-1);
-      Constituent con1 = stack.get(stack.size()-2);
-      Constituent con2 = stack.get(stack.size()-3);
-      Constituent con3 = stack.get(stack.size()-4);
-      Constituent con4 = stack.get(stack.size()-5);
-      //System.err.println("con0="+con0.label+" con1="+con1.label+" con2="+con2.label+" con3="+con3.label+" con4="+con4.label);
+      Constituent con1 = stack.get(stack.size() - 2);
+      Constituent con2 = stack.get(stack.size() - 3);
+      Constituent con3 = stack.get(stack.size() - 4);
+      Constituent con4 = stack.get(stack.size() - 5);
+
       //subject extraction
-      if (con1.getLabel().equals("SN") && con2.getLabel().equals("S") && con3.getLabel().equals("GRUP.NOM")) {
-        con1.setLabel(con1.getLabel()+"-G");
-        con2.setLabel(con2.getLabel()+"-G");
-        con3.setLabel(con3.getLabel()+"-G");
+      if (con1.getLabel().equals("SN")
+          && con2.getLabel().equals("S") && con3.getLabel().equals("GRUP.NOM")) {
+        con1.setLabel(con1.getLabel() + "-G");
+        con2.setLabel(con2.getLabel() + "-G");
+        con3.setLabel(con3.getLabel() + "-G");
       }
       //object extraction
-      else if (con1.getLabel().equals("SN") && con2.getLabel().equals("GRUP.VERB") && con3.getLabel().equals("S") && con4.getLabel().equals("GRUP.NOM")) {
-        con1.setLabel(con1.getLabel()+"-G");
-        con2.setLabel(con2.getLabel()+"-G");
-        con3.setLabel(con3.getLabel()+"-G");
-        con4.setLabel(con4.getLabel()+"-G");
+      else if (con1.getLabel().equals("SN") && con2.getLabel().equals("GRUP.VERB")
+          && con3.getLabel().equals("S") && con4.getLabel().equals("GRUP.NOM")) {
+        con1.setLabel(con1.getLabel() + "-G");
+        con2.setLabel(con2.getLabel() + "-G");
+        con3.setLabel(con3.getLabel() + "-G");
+        con4.setLabel(con4.getLabel() + "-G");
       }
     }
   }
@@ -252,9 +262,9 @@ public class AncoraSpanishHeadRules implements opennlp.tools.parser.HeadRules, G
    */
   public void serialize(Writer writer) throws IOException {
 
-    for (String type : headRules.keySet()) {
-
-      HeadRule headRule = headRules.get(type);
+    for (Entry<String, HeadRule> entry : headRules.entrySet()) {
+      String type = entry.getKey();
+      HeadRule headRule = entry.getValue();
 
       // write num of tags
       writer.write(Integer.toString(headRule.tags.length + 2));
@@ -283,19 +293,24 @@ public class AncoraSpanishHeadRules implements opennlp.tools.parser.HeadRules, G
   }
 
   @Override
+  public int hashCode() {
+    return Objects.hash(headRules, punctSet);
+  }
+
+  @Override
   public boolean equals(Object obj) {
     if (obj == this) {
       return true;
     }
-    else if (obj instanceof AncoraSpanishHeadRules) {
+
+    if (obj instanceof AncoraSpanishHeadRules) {
       AncoraSpanishHeadRules rules = (AncoraSpanishHeadRules) obj;
 
-      return rules.headRules.equals(headRules) &&
-          rules.punctSet.equals(punctSet);
+      return rules.headRules.equals(headRules)
+          && rules.punctSet.equals(punctSet);
     }
-    else {
-      return false;
-    }
+
+    return false;
   }
 
   @Override

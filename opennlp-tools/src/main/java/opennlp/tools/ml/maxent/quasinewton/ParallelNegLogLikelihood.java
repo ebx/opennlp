@@ -1,21 +1,20 @@
 /*
- * Licensed to the Apache Software Foundation (ASF) under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership.  The ASF licenses this file
- * to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
  *
- *   http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied.  See the License for the
- * specific language governing permissions and limitations
- * under the License.
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
+
 package opennlp.tools.ml.maxent.quasinewton;
 
 import java.lang.reflect.Constructor;
@@ -28,6 +27,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.ThreadFactory;
 
+import opennlp.tools.ml.ArrayMath;
 import opennlp.tools.ml.model.DataIndexer;
 
 /**
@@ -36,7 +36,7 @@ import opennlp.tools.ml.model.DataIndexer;
 public class ParallelNegLogLikelihood extends NegLogLikelihood {
 
   // Number of threads
-  int threads;
+  private int threads;
 
   // Partial value of negative log-likelihood to be computed by each thread
   private double[] negLogLikelihoodThread;
@@ -125,14 +125,14 @@ public class ParallelNegLogLikelihood extends NegLogLikelihood {
           ParallelNegLogLikelihood.class,
           int.class, int.class, int.class, double[].class);
 
-      List<Future<?>> futures = new ArrayList<Future<?>>();
+      List<Future<?>> futures = new ArrayList<>();
       for (int i = 0; i < threads; i++) {
         if (i != threads - 1)
           futures.add(executor.submit(
-              cons.newInstance(this, i, i*taskSize, taskSize, x)));
+              cons.newInstance(this, i, i * taskSize, taskSize, x)));
         else
           futures.add(executor.submit(
-              cons.newInstance(this, i, i*taskSize, taskSize + leftOver, x)));
+              cons.newInstance(this, i, i * taskSize, taskSize + leftOver, x)));
       }
 
       for (Future<?> future: futures)
@@ -191,7 +191,7 @@ public class ParallelNegLogLikelihood extends NegLogLikelihood {
           tempSums[oi] = 0;
           for (ai = 0; ai < contexts[ci].length; ai++) {
             vectorIndex = indexOf(oi, contexts[ci][ai]);
-            predValue = values != null? values[ci][ai] : 1.0;
+            predValue = values != null ? values[ci][ai] : 1.0;
             tempSums[oi] += predValue * x[vectorIndex];
           }
         }
@@ -233,7 +233,7 @@ public class ParallelNegLogLikelihood extends NegLogLikelihood {
           expectation[oi] = 0;
           for (ai = 0; ai < contexts[ci].length; ai++) {
             vectorIndex = indexOf(oi, contexts[ci][ai]);
-            predValue = values != null? values[ci][ai] : 1.0;
+            predValue = values != null ? values[ci][ai] : 1.0;
             expectation[oi] += predValue * x[vectorIndex];
           }
         }
@@ -245,10 +245,10 @@ public class ParallelNegLogLikelihood extends NegLogLikelihood {
         }
 
         for (oi = 0; oi < numOutcomes; oi++) {
-          empirical = outcomeList[ci] == oi? 1 : 0;
+          empirical = outcomeList[ci] == oi ? 1 : 0;
           for (ai = 0; ai < contexts[ci].length; ai++) {
             vectorIndex = indexOf(oi, contexts[ci][ai]);
-            predValue = values != null? values[ci][ai] : 1.0;
+            predValue = values != null ? values[ci][ai] : 1.0;
             gradientThread[threadIndex][vectorIndex] +=
                 predValue * (expectation[oi] - empirical) * numTimesEventsSeen[ci];
           }

@@ -22,12 +22,15 @@ import java.util.Map;
 
 import opennlp.tools.ml.model.SequenceClassificationModel;
 import opennlp.tools.ml.model.SequenceStream;
+import opennlp.tools.util.TrainingParameters;
 
 public interface SequenceTrainer {
 
-  public static final String SEQUENCE_VALUE = "Sequence";
+  String SEQUENCE_VALUE = "Sequence";
 
-  public void init(Map<String, String> trainParams, Map<String, String> reportMap);
+  @Deprecated
+  void init(Map<String, String> trainParams, Map<String, String> reportMap);
+  void init(TrainingParameters trainParams, Map<String, String> reportMap);
 
-  public SequenceClassificationModel<String> train(SequenceStream events) throws IOException;
+  SequenceClassificationModel<String> train(SequenceStream events) throws IOException;
 }

@@ -19,11 +19,11 @@ package opennlp.tools.formats.muc;
 
 import java.io.IOException;
 
-import junit.framework.Assert;
+import org.junit.Assert;
+import org.junit.Test;
+
 import opennlp.tools.util.ObjectStream;
 import opennlp.tools.util.ObjectStreamUtils;
-
-import org.junit.Test;
 
 public class DocumentSplitterStreamTest {
 
@@ -34,7 +34,7 @@ public class DocumentSplitterStreamTest {
 
     for (int i = 0; i < 2; i++) {
       docsString.append("<DOC>\n");
-      docsString.append("test document #"+ i + "\n");
+      docsString.append("test document #").append(i).append("\n");
       docsString.append("</DOC>\n");
     }
 
@@ -43,11 +43,11 @@ public class DocumentSplitterStreamTest {
       String doc1 = docs.read();
       Assert.assertEquals(docsString.length() / 2, doc1.length() + 1);
       Assert.assertTrue(doc1.contains("#0"));
-  
+
       String doc2 = docs.read();
       Assert.assertEquals(docsString.length() / 2, doc2.length() + 1);
       Assert.assertTrue(doc2.contains("#1"));
-  
+
       Assert.assertNull(docs.read());
       Assert.assertNull(docs.read());
     }

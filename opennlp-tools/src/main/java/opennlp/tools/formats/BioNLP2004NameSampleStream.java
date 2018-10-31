@@ -18,10 +18,9 @@
 package opennlp.tools.formats;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.PrintStream;
 import java.io.UnsupportedEncodingException;
-import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -56,7 +55,7 @@ public class BioNLP2004NameSampleStream implements ObjectStream<NameSample> {
 
   public BioNLP2004NameSampleStream(InputStreamFactory in, int types) throws IOException {
     try {
-      this.lineStream = new PlainTextByLineStream(in, Charset.forName("UTF-8"));
+      this.lineStream = new PlainTextByLineStream(in, StandardCharsets.UTF_8);
       System.setOut(new PrintStream(System.out, true, "UTF-8"));
     } catch (UnsupportedEncodingException e) {
       // UTF-8 is available on all JVMs, will never happen
@@ -65,25 +64,12 @@ public class BioNLP2004NameSampleStream implements ObjectStream<NameSample> {
 
     this.types = types;
 
-  }
-
-  @Deprecated
-  public BioNLP2004NameSampleStream(InputStream in, int types) {
-    try {
-      this.lineStream = new PlainTextByLineStream(in, "UTF-8");
-      System.setOut(new PrintStream(System.out, true, "UTF-8"));
-    } catch (UnsupportedEncodingException e) {
-      // UTF-8 is available on all JVMs, will never happen
-      throw new IllegalStateException(e);
-    }
-
-    this.types = types;
   }
 
   public NameSample read() throws IOException {
 
-    List<String> sentence = new ArrayList<String>();
-    List<String> tags = new ArrayList<String>();
+    List<String> sentence = new ArrayList<>();
+    List<String> tags = new ArrayList<>();
 
     boolean isClearAdaptiveData = false;
 
@@ -101,7 +87,7 @@ public class BioNLP2004NameSampleStream implements ObjectStream<NameSample> {
       if (line.contains("ABSTRACT TRUNCATED"))
         continue;
 
-      String fields[] = line.split("\t");
+      String[] fields = line.split("\t");
 
       if (fields.length == 2) {
         sentence.add(fields[0]);
@@ -116,7 +102,7 @@ public class BioNLP2004NameSampleStream implements ObjectStream<NameSample> {
     if (sentence.size() > 0) {
 
       // convert name tags into spans
-      List<Span> names = new ArrayList<Span>();
+      List<Span> names = new ArrayList<>();
 
       int beginIndex = -1;
       int endIndex = -1;
@@ -147,7 +133,7 @@ public class BioNLP2004NameSampleStream implements ObjectStream<NameSample> {
           }
 
           beginIndex = i;
-          endIndex = i +1;
+          endIndex = i + 1;
         }
         else if (tag.startsWith("I-")) {
           endIndex++;
@@ -168,7 +154,8 @@ public class BioNLP2004NameSampleStream implements ObjectStream<NameSample> {
       if (beginIndex != -1)
         names.add(new Span(beginIndex, endIndex, tags.get(beginIndex).substring(2)));
 
-      return new NameSample(sentence.toArray(new String[sentence.size()]), names.toArray(new Span[names.size()]), isClearAdaptiveData);
+      return new NameSample(sentence.toArray(new String[sentence.size()]),
+          names.toArray(new Span[names.size()]), isClearAdaptiveData);
     }
     else if (line != null) {
       // Just filter out empty events, if two lines in a row are empty

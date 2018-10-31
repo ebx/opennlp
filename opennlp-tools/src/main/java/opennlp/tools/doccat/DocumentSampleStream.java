@@ -24,11 +24,13 @@ import opennlp.tools.util.FilterObjectStream;
 import opennlp.tools.util.ObjectStream;
 
 /**
- * This class reads in string encoded training samples, parses them and outputs {@link DocumentSample} objects.
+ * This class reads in string encoded training samples, parses them and
+ * outputs {@link DocumentSample} objects.
  * <p>
  * Format:<br>
  * Each line contains one sample document.<br>
- * The category is the first string in the line followed by a tab and whitespace separated document tokens.<br>
+ * The category is the first string in the line followed by a tab and whitespace
+ * separated document tokens.<br>
  * Sample line: category-string tab-char whitespace-separated-tokens line-break-char(s)<br>
  */
 public class DocumentSampleStream extends FilterObjectStream<String, DocumentSample> {
@@ -43,14 +45,14 @@ public class DocumentSampleStream extends FilterObjectStream<String, DocumentSam
     if (sampleString != null) {
 
       // Whitespace tokenize entire string
-      String tokens[] = WhitespaceTokenizer.INSTANCE.tokenize(sampleString);
+      String[] tokens = WhitespaceTokenizer.INSTANCE.tokenize(sampleString);
 
       DocumentSample sample;
 
       if (tokens.length > 1) {
         String category = tokens[0];
-        String docTokens[] = new String[tokens.length - 1];
-        System.arraycopy(tokens, 1, docTokens, 0, tokens.length -1);
+        String[] docTokens = new String[tokens.length - 1];
+        System.arraycopy(tokens, 1, docTokens, 0, tokens.length - 1);
 
         sample = new DocumentSample(category, docTokens);
       }
@@ -60,8 +62,7 @@ public class DocumentSampleStream extends FilterObjectStream<String, DocumentSam
 
       return sample;
     }
-    else {
-      return null;
-    }
+
+    return null;
   }
 }

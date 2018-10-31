@@ -1,26 +1,26 @@
 /*
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
  *
- *       http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- *  under the License.
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package opennlp.tools.formats;
 
-import static opennlp.tools.formats.Conll02NameSampleStream.extract;
-
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.PrintStream;
 import java.io.UnsupportedEncodingException;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -34,7 +34,7 @@ import opennlp.tools.util.StringUtil;
 /**
  * An import stream which can parse the CONLL03 data.
  */
-public class Conll03NameSampleStream implements ObjectStream<NameSample>{
+public class Conll03NameSampleStream implements ObjectStream<NameSample> {
 
   public enum LANGUAGE {
     EN,
@@ -62,27 +62,7 @@ public class Conll03NameSampleStream implements ObjectStream<NameSample>{
 
     this.lang = lang;
     try {
-      this.lineStream = new PlainTextByLineStream(in, "UTF-8");
-      System.setOut(new PrintStream(System.out, true, "UTF-8"));
-    } catch (UnsupportedEncodingException e) {
-      // UTF-8 is available on all JVMs, will never happen
-      throw new IllegalStateException(e);
-    }
-    this.types = types;
-  }
-
-  /**
-   *
-   * @param lang the language of the CONLL 03 data
-   * @param in the Input Stream to read the data file
-   * @param types the entity types to include in the Name Sample object stream
-   */
-  @Deprecated
-  public Conll03NameSampleStream(LANGUAGE lang, InputStream in, int types) {
-
-    this.lang = lang;
-    try {
-      this.lineStream = new PlainTextByLineStream(in, "UTF-8");
+      this.lineStream = new PlainTextByLineStream(in, StandardCharsets.UTF_8);
       System.setOut(new PrintStream(System.out, true, "UTF-8"));
     } catch (UnsupportedEncodingException e) {
       // UTF-8 is available on all JVMs, will never happen
@@ -93,8 +73,8 @@ public class Conll03NameSampleStream implements ObjectStream<NameSample>{
 
   public NameSample read() throws IOException {
 
-    List<String> sentence = new ArrayList<String>();
-    List<String> tags = new ArrayList<String>();
+    List<String> sentence = new ArrayList<>();
+    List<String> tags = new ArrayList<>();
 
     boolean isClearAdaptiveData = false;
 
@@ -108,20 +88,20 @@ public class Conll03NameSampleStream implements ObjectStream<NameSample>{
         String emptyLine = lineStream.read();
 
         if (!StringUtil.isEmpty(emptyLine))
-          throw new IOException("Empty line after -DOCSTART- not empty: '" + emptyLine +"'!");
+          throw new IOException("Empty line after -DOCSTART- not empty: '" + emptyLine + "'!");
 
         continue;
       }
 
-      String fields[] = line.split(" ");
+      String[] fields = line.split(" ");
 
       // For English: WORD  POS-TAG SC-TAG NE-TAG
-      if (LANGUAGE.EN.equals(lang) && (fields.length == 4)) {
+      if (LANGUAGE.EN.equals(lang) && fields.length == 4) {
         sentence.add(fields[0]);
         tags.add(fields[3]); // 3 is NE-TAG
       }
       // For German: WORD  LEMA-TAG POS-TAG SC-TAG NE-TAG
-      else if (LANGUAGE.DE.equals(lang) && (fields.length == 5)) {
+      else if (LANGUAGE.DE.equals(lang) && fields.length == 5) {
         sentence.add(fields[0]);
         tags.add(fields[4]); // 4 is NE-TAG
       }
@@ -133,7 +113,7 @@ public class Conll03NameSampleStream implements ObjectStream<NameSample>{
     if (sentence.size() > 0) {
 
       // convert name tags into spans
-      List<Span> names = new ArrayList<Span>();
+      List<Span> names = new ArrayList<>();
 
       int beginIndex = -1;
       int endIndex = -1;
@@ -142,25 +122,25 @@ public class Conll03NameSampleStream implements ObjectStream<NameSample>{
         String tag = tags.get(i);
 
         if (tag.endsWith("PER") &&
-        		(types & Conll02NameSampleStream.GENERATE_PERSON_ENTITIES) == 0)
+            (types & Conll02NameSampleStream.GENERATE_PERSON_ENTITIES) == 0)
           tag = "O";
 
         if (tag.endsWith("ORG") &&
-        		(types & Conll02NameSampleStream.GENERATE_ORGANIZATION_ENTITIES) == 0)
+            (types & Conll02NameSampleStream.GENERATE_ORGANIZATION_ENTITIES) == 0)
           tag = "O";
 
         if (tag.endsWith("LOC") &&
-        		(types & Conll02NameSampleStream.GENERATE_LOCATION_ENTITIES) == 0)
+            (types & Conll02NameSampleStream.GENERATE_LOCATION_ENTITIES) == 0)
           tag = "O";
 
         if (tag.endsWith("MISC") &&
-        		(types & Conll02NameSampleStream.GENERATE_MISC_ENTITIES) == 0)
+            (types & Conll02NameSampleStream.GENERATE_MISC_ENTITIES) == 0)
           tag = "O";
 
         if (tag.equals("O")) {
           // O means we don't have anything this round.
           if (beginIndex != -1) {
-            names.add(extract(beginIndex, endIndex, tags.get(beginIndex)));
+            names.add(Conll02NameSampleStream.extract(beginIndex, endIndex, tags.get(beginIndex)));
             beginIndex = -1;
             endIndex = -1;
           }
@@ -168,7 +148,7 @@ public class Conll03NameSampleStream implements ObjectStream<NameSample>{
         else if (tag.startsWith("B-")) {
           // B- prefix means we have two same entities next to each other
           if (beginIndex != -1) {
-            names.add(extract(beginIndex, endIndex, tags.get(beginIndex)));
+            names.add(Conll02NameSampleStream.extract(beginIndex, endIndex, tags.get(beginIndex)));
           }
           beginIndex = i;
           endIndex = i + 1;
@@ -182,7 +162,7 @@ public class Conll03NameSampleStream implements ObjectStream<NameSample>{
           else if (!tag.endsWith(tags.get(beginIndex).substring(1))) {
             // we have a new tag type following a tagged word series
             // also may not have the same I- starting the previous!
-            names.add(extract(beginIndex, endIndex, tags.get(beginIndex)));
+            names.add(Conll02NameSampleStream.extract(beginIndex, endIndex, tags.get(beginIndex)));
             beginIndex = i;
             endIndex = i + 1;
           }
@@ -197,9 +177,10 @@ public class Conll03NameSampleStream implements ObjectStream<NameSample>{
 
       // if one span remains, create it here
       if (beginIndex != -1)
-        names.add(extract(beginIndex, endIndex, tags.get(beginIndex)));
+        names.add(Conll02NameSampleStream.extract(beginIndex, endIndex, tags.get(beginIndex)));
 
-      return new NameSample(sentence.toArray(new String[sentence.size()]), names.toArray(new Span[names.size()]), isClearAdaptiveData);
+      return new NameSample(sentence.toArray(new String[sentence.size()]),
+          names.toArray(new Span[names.size()]), isClearAdaptiveData);
     }
     else if (line != null) {
       // Just filter out empty events, if two lines in a row are empty

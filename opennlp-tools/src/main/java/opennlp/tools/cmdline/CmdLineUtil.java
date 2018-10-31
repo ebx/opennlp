@@ -43,7 +43,7 @@ import opennlp.tools.util.model.BaseModel;
  */
 public final class CmdLineUtil {
 
- static final int IO_BUFFER_SIZE = 1024 * 1024;
+  static final int IO_BUFFER_SIZE = 1024 * 1024;
 
   private CmdLineUtil() {
     // not intended to be instantiated
@@ -58,12 +58,12 @@ public final class CmdLineUtil {
    * - accessibly<br>
    *
    * @param name the name which is used to refer to the file in an error message, it
-   * should start with a capital letter.
+   *     should start with a capital letter.
    *
    * @param inFile the particular file to check to qualify an input file
    *
    * @throws TerminateToolException  if test does not pass this exception is
-   * thrown and an error message is printed to the console.
+   *     thrown and an error message is printed to the console.
    */
   public static void checkInputFile(String name, File inFile) {
 
@@ -135,7 +135,7 @@ public final class CmdLineUtil {
       }
       else {
         isFailure = "The parent directory of the " + name + " file does not exist, " +
-        		"please create it first!";
+            "please create it first!";
       }
 
     }
@@ -204,7 +204,7 @@ public final class CmdLineUtil {
    * @param args arguments
    * @return the index of the parameter in the arguments, or -1 if the parameter is not found
    */
-  public static int getParameterIndex(String param, String args[]) {
+  public static int getParameterIndex(String param, String[] args) {
     for (int i = 0; i < args.length; i++) {
       if (args[i].startsWith("-") && args[i].equals(param)) {
         return i;
@@ -221,33 +221,13 @@ public final class CmdLineUtil {
    * @param args arguments
    * @return parameter value
    */
-  public static String getParameter(String param, String args[]) {
+  public static String getParameter(String param, String[] args) {
     int i = getParameterIndex(param, args);
-      if (-1 < i) {
-        i++;
-        if (i < args.length) {
-          return args[i];
-        }
+    if (-1 < i) {
+      i++;
+      if (i < args.length) {
+        return args[i];
       }
-
-    return null;
-  }
-
-  /**
-   * Retrieves the specified parameter from the specified arguments.
-   *
-   * @param param parameter name
-   * @param args arguments
-   * @return parameter value
-   */
-  public static Integer getIntParameter(String param, String args[]) {
-    String value = getParameter(param, args);
-
-    try {
-      if (value != null)
-          return Integer.parseInt(value);
-    }
-    catch (NumberFormatException e) {
     }
 
     return null;
@@ -260,21 +240,43 @@ public final class CmdLineUtil {
    * @param args arguments
    * @return parameter value
    */
-  public static Double getDoubleParameter(String param, String args[]) {
+  public static Integer getIntParameter(String param, String[] args) {
     String value = getParameter(param, args);
 
     try {
       if (value != null)
-          return Double.parseDouble(value);
+        return Integer.parseInt(value);
     }
-    catch (NumberFormatException e) {
+    catch (NumberFormatException ignored) {
+      // in this case return null
+    }
+
+    return null;
+  }
+
+  /**
+   * Retrieves the specified parameter from the specified arguments.
+   *
+   * @param param parameter name
+   * @param args arguments
+   * @return parameter value
+   */
+  public static Double getDoubleParameter(String param, String[] args) {
+    String value = getParameter(param, args);
+
+    try {
+      if (value != null)
+        return Double.parseDouble(value);
+    }
+    catch (NumberFormatException ignored) {
+      // in this case return null
     }
 
     return null;
   }
 
   public static void checkLanguageCode(String code) {
-    List<String> languageCodes  = new ArrayList<String>();
+    List<String> languageCodes  = new ArrayList<>();
     languageCodes.addAll(Arrays.asList(Locale.getISOLanguages()));
     languageCodes.add("x-unspecified");
 
@@ -284,7 +286,7 @@ public final class CmdLineUtil {
     }
   }
 
-  public static boolean containsParam(String param, String args[]) {
+  public static boolean containsParam(String param, String[] args) {
     for (String arg : args) {
       if (arg.equals(param)) {
         return true;
@@ -322,13 +324,14 @@ public final class CmdLineUtil {
         throw new TerminateToolException(-1, "Error during parameters loading: " + e.getMessage(), e);
       }
 
-      if (!TrainerFactory.isValid(params.getSettings())) {
+      if (!TrainerFactory.isValid(params)) {
         throw new TerminateToolException(1, "Training parameters file '" + paramFile + "' is invalid!");
       }
 
-      TrainerFactory.TrainerType trainerType = TrainerFactory.getTrainerType(params.getSettings());
+      TrainerFactory.TrainerType trainerType = TrainerFactory.getTrainerType(params);
 
-      if (!supportSequenceTraining && trainerType.equals(TrainerFactory.TrainerType.EVENT_MODEL_SEQUENCE_TRAINER)) {
+      if (!supportSequenceTraining
+          && trainerType.equals(TrainerFactory.TrainerType.EVENT_MODEL_SEQUENCE_TRAINER)) {
         throw new TerminateToolException(1, "Sequence training is not supported!");
       }
     }

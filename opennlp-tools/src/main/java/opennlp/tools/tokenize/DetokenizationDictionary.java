@@ -17,6 +17,9 @@
 
 package opennlp.tools.tokenize;
 
+import java.io.BufferedInputStream;
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -25,15 +28,14 @@ import java.util.Iterator;
 import java.util.Map;
 
 import opennlp.tools.dictionary.serializer.Attributes;
-import opennlp.tools.dictionary.serializer.DictionarySerializer;
+import opennlp.tools.dictionary.serializer.DictionaryEntryPersistor;
 import opennlp.tools.dictionary.serializer.Entry;
-import opennlp.tools.dictionary.serializer.EntryInserter;
 import opennlp.tools.util.InvalidFormatException;
 import opennlp.tools.util.StringList;
 
 public class DetokenizationDictionary {
 
-  public static enum Operation {
+  public enum Operation {
 
     /**
      * Attaches the token to the token on the right side.
@@ -76,8 +78,7 @@ public class DetokenizationDictionary {
     }
   }
 
-  private final Map<String, DetokenizationDictionary.Operation> operationTable =
-      new HashMap<String, DetokenizationDictionary.Operation>();
+  private final Map<String, DetokenizationDictionary.Operation> operationTable = new HashMap<>();
 
   /**
    * Initializes the current instance.
@@ -86,8 +87,8 @@ public class DetokenizationDictionary {
    * @param operations an array of operations which specifies which operation
    *        should be used for the provided tokens
    */
-  public DetokenizationDictionary(String tokens[],
-      DetokenizationDictionary.Operation operations[]) {
+  public DetokenizationDictionary(String[] tokens,
+      DetokenizationDictionary.Operation[] operations) {
     if (tokens.length != operations.length)
       throw new IllegalArgumentException("tokens and ops must have the same length: tokens=" +
           tokens.length + ", operations=" + operations.length + "!");
@@ -106,26 +107,34 @@ public class DetokenizationDictionary {
     }
   }
 
-  public DetokenizationDictionary(InputStream in) throws IOException, InvalidFormatException{
+  public DetokenizationDictionary(InputStream in) throws IOException {
+    init(in);
+  }
 
-    DictionarySerializer.create(in, new EntryInserter() {
-      public void insert(Entry entry) throws InvalidFormatException {
+  public DetokenizationDictionary(File file) throws IOException {
+    try (InputStream in = new BufferedInputStream(new FileInputStream(file))) {
+      init(in);
+    }
+  }
 
-        String operationString = entry.getAttributes().getValue("operation");
+  private void init(InputStream in) throws IOException {
+    DictionaryEntryPersistor.create(in, entry -> {
 
-        StringList word = entry.getTokens();
+      String operationString = entry.getAttributes().getValue("operation");
 
-        if (word.size() != 1)
-          throw new InvalidFormatException("Each entry must have exactly one token! "+word);
+      StringList word = entry.getTokens();
 
-        // parse operation
-        Operation operation = Operation.parse(operationString);
+      if (word.size() != 1)
+        throw new InvalidFormatException("Each entry must have exactly one token! " + word);
 
-        if (operation == null)
-            throw new InvalidFormatException("Unknown operation type: " + operationString);
+      // parse operation
+      Operation operation = Operation.parse(operationString);
 
-        operationTable.put(word.getToken(0), operation);
-      }});
+      if (operation == null)
+        throw new InvalidFormatException("Unknown operation type: " + operationString);
+
+      operationTable.put(word.getToken(0), operation);
+    });
   }
 
   DetokenizationDictionary.Operation getOperation(String token) {
@@ -157,6 +166,6 @@ public class DetokenizationDictionary {
       }
     };
 
-    DictionarySerializer.serialize(out, entries, false);
+    DictionaryEntryPersistor.serialize(out, entries, false);
   }
 }

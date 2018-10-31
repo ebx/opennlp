@@ -22,49 +22,39 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.parsers.SAXParser;
-import javax.xml.parsers.SAXParserFactory;
+
+import org.xml.sax.SAXException;
 
 import opennlp.tools.parser.Parse;
 import opennlp.tools.util.FilterObjectStream;
 import opennlp.tools.util.ObjectStream;
-
-import org.xml.sax.SAXException;
+import opennlp.tools.util.XmlUtil;
 
 public class ConstitParseSampleStream extends FilterObjectStream<byte[], Parse> {
 
   private SAXParser saxParser;
 
-  private List<Parse> parses = new ArrayList<Parse>();
+  private List<Parse> parses = new ArrayList<>();
 
   protected ConstitParseSampleStream(ObjectStream<byte[]> samples) {
     super(samples);
-
-    SAXParserFactory factory = SAXParserFactory.newInstance();
-    try {
-      saxParser = factory.newSAXParser();
-    } catch (ParserConfigurationException e) {
-      throw new IllegalStateException(e);
-    } catch (SAXException e) {
-      throw new IllegalStateException(e);
-    }
+    saxParser = XmlUtil.createSaxParser();
   }
 
   public Parse read() throws IOException {
-
-
     if (parses.isEmpty()) {
       byte[] xmlbytes = samples.read();
 
       if (xmlbytes != null) {
 
-        List<Parse> producedParses = new ArrayList<Parse>();
+        List<Parse> producedParses = new ArrayList<>();
         try {
-          saxParser.parse(new ByteArrayInputStream(xmlbytes), new ConstitDocumentHandler(producedParses));
+          saxParser.parse(new ByteArrayInputStream(xmlbytes),
+              new ConstitDocumentHandler(producedParses));
         } catch (SAXException e) {
           //TODO update after Java6 upgrade
-          throw (IOException) new IOException(e.getMessage()).initCause(e);
+          throw new IOException(e.getMessage(), e);
         }
 
         parses.addAll(producedParses);
@@ -74,8 +64,6 @@ public class ConstitParseSampleStream extends FilterObjectStream<byte[], Parse> 
     if (parses.size() > 0) {
       return parses.remove(0);
     }
-    else {
-      return null;
-    }
+    return null;
   }
 }

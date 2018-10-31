@@ -17,17 +17,19 @@
 
 package opennlp.tools.chunker;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 
 import opennlp.tools.util.Span;
 
 /**
  * Class for holding chunks for a single unit of text.
  */
-public class ChunkSample {
+public class ChunkSample implements Serializable {
 
   private final List<String> sentence;
   private final List<String> tags;
@@ -47,9 +49,9 @@ public class ChunkSample {
 
     validateArguments(sentence.length, tags.length, preds.length);
 
-    this.sentence = Collections.unmodifiableList(new ArrayList<String>(Arrays.asList(sentence)));
-    this.tags = Collections.unmodifiableList(new ArrayList<String>(Arrays.asList(tags)));
-    this.preds = Collections.unmodifiableList(new ArrayList<String>(Arrays.asList(preds)));
+    this.sentence = Collections.unmodifiableList(new ArrayList<>(Arrays.asList(sentence)));
+    this.tags = Collections.unmodifiableList(new ArrayList<>(Arrays.asList(tags)));
+    this.preds = Collections.unmodifiableList(new ArrayList<>(Arrays.asList(preds)));
   }
 
   /**
@@ -66,9 +68,9 @@ public class ChunkSample {
 
     validateArguments(sentence.size(), tags.size(), preds.size());
 
-    this.sentence = Collections.unmodifiableList(new ArrayList<String>((sentence)));
-    this.tags = Collections.unmodifiableList(new ArrayList<String>((tags)));
-    this.preds = Collections.unmodifiableList(new ArrayList<String>((preds)));
+    this.sentence = Collections.unmodifiableList(new ArrayList<>(sentence));
+    this.tags = Collections.unmodifiableList(new ArrayList<>(tags));
+    this.preds = Collections.unmodifiableList(new ArrayList<>(preds));
   }
 
   /** Gets the training sentence */
@@ -109,7 +111,7 @@ public class ChunkSample {
     validateArguments(aSentence.length, aTags.length, aPreds.length);
 
     // initialize with the list maximum size
-    List<Span> phrases = new ArrayList<Span>(aSentence.length);
+    List<Span> phrases = new ArrayList<>(aSentence.length);
     String startTag = "";
     int startIndex = 0;
     boolean foundPhrase = false;
@@ -117,7 +119,7 @@ public class ChunkSample {
     for (int ci = 0, cn = aPreds.length; ci < cn; ci++) {
       String pred = aPreds[ci];
       if (pred.startsWith("B-")
-          || (!pred.equals("I-" + startTag) && !pred.equals("O"))) { // start
+          || !pred.equals("I-" + startTag) && !pred.equals("O")) { // start
         if (foundPhrase) { // handle the last
           phrases.add(new Span(startIndex, ci, startTag));
         }
@@ -126,7 +128,7 @@ public class ChunkSample {
         foundPhrase = true;
       } else if (pred.equals("I-" + startTag)) { // middle
         // do nothing
-      } else if (foundPhrase) {// end
+      } else if (foundPhrase) { // end
         phrases.add(new Span(startIndex, ci, startTag));
         foundPhrase = false;
         startTag = "";
@@ -139,7 +141,8 @@ public class ChunkSample {
     return phrases.toArray(new Span[phrases.size()]);
   }
 
-  private static void validateArguments(int sentenceSize, int tagsSize, int predsSize) throws IllegalArgumentException {
+  private static void validateArguments(int sentenceSize, int tagsSize, int predsSize)
+      throws IllegalArgumentException {
     if (sentenceSize != tagsSize || tagsSize != predsSize)
       throw new IllegalArgumentException(
           "All arrays must have the same length: " +
@@ -151,24 +154,26 @@ public class ChunkSample {
   /**
    * Creates a nice to read string for the phrases formatted as following: <br>
    * <code>
-   * [NP Rockwell_NNP ] [VP said_VBD ] [NP the_DT agreement_NN ] [VP calls_VBZ ] [SBAR for_IN ] [NP it_PRP ] [VP to_TO supply_VB ] [NP 200_CD additional_JJ so-called_JJ shipsets_NNS ] [PP for_IN ] [NP the_DT planes_NNS ] ._.
+   * [NP Rockwell_NNP ] [VP said_VBD ] [NP the_DT agreement_NN ] [VP calls_VBZ ] [SBAR for_IN ]
+   * [NP it_PRP ] [VP to_TO supply_VB ] [NP 200_CD additional_JJ so-called_JJ shipsets_NNS ]
+   * [PP for_IN ] [NP the_DT planes_NNS ] ._.
    * </code>
    *
    * @return a nice to read string representation of the chunk phases
    */
   public String nicePrint() {
 
-  	Span[] spans = getPhrasesAsSpanList();
+    Span[] spans = getPhrasesAsSpanList();
 
-  	StringBuilder result = new StringBuilder(" ");
+    StringBuilder result = new StringBuilder(" ");
 
     for (int tokenIndex = 0; tokenIndex < sentence.size(); tokenIndex++) {
-      for (int nameIndex = 0; nameIndex < spans.length; nameIndex++) {
-        if (spans[nameIndex].getStart() == tokenIndex) {
-          result.append("[").append(spans[nameIndex].getType()).append(" ");
+      for (Span span : spans) {
+        if (span.getStart() == tokenIndex) {
+          result.append("[").append(span.getType()).append(" ");
         }
 
-        if (spans[nameIndex].getEnd() == tokenIndex) {
+        if (span.getEnd() == tokenIndex) {
           result.append("]").append(' ');
         }
       }
@@ -179,8 +184,8 @@ public class ChunkSample {
     if (sentence.size() > 1)
       result.setLength(result.length() - 1);
 
-    for (int nameIndex = 0; nameIndex < spans.length; nameIndex++) {
-      if (spans[nameIndex].getEnd() == sentence.size()) {
+    for (Span span : spans) {
+      if (span.getEnd() == sentence.size()) {
         result.append(']');
       }
     }
@@ -191,27 +196,35 @@ public class ChunkSample {
   @Override
   public String toString() {
 
-	    StringBuilder chunkString = new StringBuilder();
+    StringBuilder chunkString = new StringBuilder();
 
-	    for (int ci=0; ci < preds.size(); ci++) {
-        chunkString.append(sentence.get(ci)).append(" ").append(tags.get(ci)).append(" ").append(preds.get(ci)).append("\n");
-	    }
-	    return chunkString.toString();
-	  }
+    for (int ci = 0; ci < preds.size(); ci++) {
+      chunkString.append(sentence.get(ci)).append(" ").append(tags.get(ci))
+          .append(" ").append(preds.get(ci)).append("\n");
+    }
+    return chunkString.toString();
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(Arrays.hashCode(getSentence()),
+        Arrays.hashCode(getTags()), Arrays.hashCode(getPreds()));
+  }
 
   @Override
   public boolean equals(Object obj) {
     if (this == obj) {
       return true;
-    } else if (obj instanceof ChunkSample) {
+    }
+
+    if (obj instanceof ChunkSample) {
       ChunkSample a = (ChunkSample) obj;
 
       return Arrays.equals(getSentence(), a.getSentence())
           && Arrays.equals(getTags(), a.getTags())
           && Arrays.equals(getPreds(), a.getPreds());
-    } else {
-      return false;
     }
-  }
 
+    return false;
+  }
 }

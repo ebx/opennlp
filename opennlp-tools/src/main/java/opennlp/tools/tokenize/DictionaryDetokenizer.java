@@ -37,14 +37,12 @@ public class DictionaryDetokenizer implements Detokenizer {
 
   public DetokenizationOperation[] detokenize(String[] tokens) {
 
-    DetokenizationOperation operations[] =
-        new DetokenizationOperation[tokens.length];
+    DetokenizationOperation[] operations = new DetokenizationOperation[tokens.length];
 
-    Set<String> matchingTokens = new HashSet<String>();
+    Set<String> matchingTokens = new HashSet<>();
 
     for (int i = 0; i < tokens.length; i++) {
-      DetokenizationDictionary.Operation dictOperation =
-        dict.getOperation(tokens[i]);
+      DetokenizationDictionary.Operation dictOperation = dict.getOperation(tokens[i]);
 
       if (dictOperation == null) {
         operations[i] = Detokenizer.DetokenizationOperation.NO_OPERATION;
@@ -81,9 +79,9 @@ public class DictionaryDetokenizer implements Detokenizer {
     return operations;
   }
 
-  public String detokenize(String tokens[], String splitMarker) {
+  public String detokenize(String[] tokens, String splitMarker) {
 
-    DetokenizationOperation operations[] = detokenize(tokens);
+    DetokenizationOperation[] operations = detokenize(tokens);
 
     if (tokens.length != operations.length)
       throw new IllegalArgumentException("tokens and operations array must have same length: tokens=" +

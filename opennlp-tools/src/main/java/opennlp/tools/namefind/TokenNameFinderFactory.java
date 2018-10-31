@@ -30,12 +30,19 @@ import opennlp.tools.util.SequenceCodec;
 import opennlp.tools.util.ext.ExtensionLoader;
 import opennlp.tools.util.featuregen.AdaptiveFeatureGenerator;
 import opennlp.tools.util.featuregen.AggregatedFeatureGenerator;
-import opennlp.tools.util.featuregen.FeatureGeneratorResourceProvider;
+import opennlp.tools.util.featuregen.BigramNameFeatureGenerator;
+import opennlp.tools.util.featuregen.CachedFeatureGenerator;
 import opennlp.tools.util.featuregen.GeneratorFactory;
+import opennlp.tools.util.featuregen.OutcomePriorFeatureGenerator;
+import opennlp.tools.util.featuregen.PreviousMapFeatureGenerator;
+import opennlp.tools.util.featuregen.SentenceFeatureGenerator;
+import opennlp.tools.util.featuregen.TokenClassFeatureGenerator;
+import opennlp.tools.util.featuregen.TokenFeatureGenerator;
+import opennlp.tools.util.featuregen.WindowFeatureGenerator;
 
 // Idea of this factory is that most resources/impls used by the name finder
 // can be modified through this class!
-// That only works if thats the central class used for training/runtime
+// That only works if that's the central class used for training/runtime
 
 public class TokenNameFinderFactory extends BaseToolFactory {
 
@@ -56,23 +63,24 @@ public class TokenNameFinderFactory extends BaseToolFactory {
     init(featureGeneratorBytes, resources, seqCodec);
   }
 
-  void init(byte[] featureGeneratorBytes, final Map<String, Object> resources, SequenceCodec<String> seqCodec) {
+  void init(byte[] featureGeneratorBytes, final Map<String, Object> resources,
+      SequenceCodec<String> seqCodec) {
     this.featureGeneratorBytes = featureGeneratorBytes;
     this.resources = resources;
     this.seqCodec = seqCodec;
   }
 
   private static byte[] loadDefaultFeatureGeneratorBytes() {
-    
+
     ByteArrayOutputStream bytes = new ByteArrayOutputStream();
     try (InputStream in = TokenNameFinderFactory.class.getResourceAsStream(
         "/opennlp/tools/namefind/ner-default-features.xml")) {
-      
+
       if (in == null) {
         throw new IllegalStateException("Classpath must contain ner-default-features.xml file!");
       }
-      
-      byte buf[] = new byte[1024];
+
+      byte[] buf = new byte[1024];
       int len;
       while ((len = in.read(buf)) > 0) {
         bytes.write(buf, 0, len);
@@ -81,10 +89,10 @@ public class TokenNameFinderFactory extends BaseToolFactory {
     catch (IOException e) {
       throw new IllegalStateException("Failed reading from ner-default-features.xml file on classpath!");
     }
-    
+
     return bytes.toByteArray();
   }
-  
+
   protected SequenceCodec<String> getSequenceCodec() {
     return seqCodec;
   }
@@ -97,8 +105,8 @@ public class TokenNameFinderFactory extends BaseToolFactory {
     return featureGeneratorBytes;
   }
 
-  public static TokenNameFinderFactory create(String subclassName, byte[] featureGeneratorBytes, final Map<String, Object> resources,
-      SequenceCodec<String> seqCodec)
+  public static TokenNameFinderFactory create(String subclassName, byte[] featureGeneratorBytes,
+      final Map<String, Object> resources, SequenceCodec<String> seqCodec)
       throws InvalidFormatException {
     TokenNameFinderFactory theFactory;
     if (subclassName == null) {
@@ -142,7 +150,13 @@ public class TokenNameFinderFactory extends BaseToolFactory {
     AdaptiveFeatureGenerator featureGenerator = createFeatureGenerators();
 
     if (featureGenerator == null) {
-      featureGenerator = NameFinderME.createFeatureGenerator();
+      featureGenerator = new CachedFeatureGenerator(
+          new WindowFeatureGenerator(new TokenFeatureGenerator(), 2, 2),
+          new WindowFeatureGenerator(new TokenClassFeatureGenerator(true), 2, 2),
+          new OutcomePriorFeatureGenerator(),
+          new PreviousMapFeatureGenerator(),
+          new BigramNameFeatureGenerator(),
+          new SentenceFeatureGenerator(true, false));
     }
 
     return new DefaultNameContextGenerator(featureGenerator);
@@ -160,27 +174,24 @@ public class TokenNameFinderFactory extends BaseToolFactory {
   public AdaptiveFeatureGenerator createFeatureGenerators() {
 
     if (featureGeneratorBytes == null && artifactProvider != null) {
-      featureGeneratorBytes = (byte[]) artifactProvider.getArtifact(
+      featureGeneratorBytes = artifactProvider.getArtifact(
           TokenNameFinderModel.GENERATOR_DESCRIPTOR_ENTRY_NAME);
     }
-    
+
     if (featureGeneratorBytes == null) {
       featureGeneratorBytes = loadDefaultFeatureGeneratorBytes();
     }
 
     InputStream descriptorIn = new ByteArrayInputStream(featureGeneratorBytes);
 
-    AdaptiveFeatureGenerator generator = null;
+    AdaptiveFeatureGenerator generator;
     try {
-      generator = GeneratorFactory.create(descriptorIn, new FeatureGeneratorResourceProvider() {
-
-        public Object getResource(String key) {
-          if (artifactProvider != null) {
-            return artifactProvider.getArtifact(key);
-          }
-          else {
-            return resources.get(key);
-          }
+      generator = GeneratorFactory.create(descriptorIn, key -> {
+        if (artifactProvider != null) {
+          return artifactProvider.getArtifact(key);
+        }
+        else {
+          return resources.get(key);
         }
       });
     } catch (InvalidFormatException e) {

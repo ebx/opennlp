@@ -1,20 +1,18 @@
 /*
- * Licensed to the Apache Software Foundation (ASF) under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership.  The ASF licenses this file
- * to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
  *
- *   http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied.  See the License for the
- * specific language governing permissions and limitations
- * under the License.
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package opennlp.tools.ml.naivebayes;
@@ -24,6 +22,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 
 import opennlp.tools.ml.model.AbstractModel;
 import opennlp.tools.ml.model.AbstractModelWriter;
@@ -48,65 +47,81 @@ public abstract class NaiveBayesModelWriter extends AbstractModelWriter {
     PARAMS = (Context[]) data[0];
 
     @SuppressWarnings("unchecked")
-    Map<String, Integer> pmap = (Map<String, Integer>) data[1];
-    OUTCOME_LABELS = (String[]) data[2];
+    Map<String, Context> pmap = (Map<String, Context>) data[1];
 
+    OUTCOME_LABELS = (String[]) data[2];
+    PARAMS = new Context[pmap.size()];
     PRED_LABELS = new String[pmap.size()];
-    for (String pred : pmap.keySet()) {
-      PRED_LABELS[pmap.get(pred)] = pred;
+
+    int i = 0;
+    for (Map.Entry<String, Context> pred : pmap.entrySet()) {
+      PRED_LABELS[i] = pred.getKey();
+      PARAMS[i] = pred.getValue();
+      i++;
     }
   }
 
+
   protected ComparablePredicate[] sortValues() {
-    ComparablePredicate[] sortPreds;
-    ComparablePredicate[] tmpPreds = new ComparablePredicate[PARAMS.length];
-    int[] tmpOutcomes = new int[numOutcomes];
-    double[] tmpParams = new double[numOutcomes];
-    int numPreds = 0;
-    //remove parameters with 0 weight and predicates with no parameters
+
+    ComparablePredicate[] sortPreds = new ComparablePredicate[PARAMS.length];
+
+    int numParams = 0;
     for (int pid = 0; pid < PARAMS.length; pid++) {
-      int numParams = 0;
-      double[] predParams = PARAMS[pid].getParameters();
-      int[] outcomePattern = PARAMS[pid].getOutcomes();
-      for (int pi = 0; pi < predParams.length; pi++) {
-        if (predParams[pi] != 0d) {
-          tmpOutcomes[numParams] = outcomePattern[pi];
-          tmpParams[numParams] = predParams[pi];
-          numParams++;
-        }
-      }
+      int[] predkeys = PARAMS[pid].getOutcomes();
+      // Arrays.sort(predkeys);
+      int numActive = predkeys.length;
+      double[] activeParams = PARAMS[pid].getParameters();
 
-      int[] activeOutcomes = new int[numParams];
-      double[] activeParams = new double[numParams];
-
-      for (int pi = 0; pi < numParams; pi++) {
-        activeOutcomes[pi] = tmpOutcomes[pi];
-        activeParams[pi] = tmpParams[pi];
-      }
-      if (numParams != 0) {
-        tmpPreds[numPreds] = new ComparablePredicate(PRED_LABELS[pid], activeOutcomes, activeParams);
-        numPreds++;
-      }
+      numParams += numActive;
+      /*
+       * double[] activeParams = new double[numActive];
+       *
+       * int id = 0; for (int i=0; i < predkeys.length; i++) { int oid =
+       * predkeys[i]; activeOutcomes[id] = oid; activeParams[id] =
+       * PARAMS[pid].getParams(oid); id++; }
+       */
+      sortPreds[pid] = new ComparablePredicate(PRED_LABELS[pid],
+          predkeys, activeParams);
     }
-    System.err.println("Compressed " + PARAMS.length + " parameters to " + numPreds);
-    sortPreds = new ComparablePredicate[numPreds];
-    System.arraycopy(tmpPreds, 0, sortPreds, 0, numPreds);
+
     Arrays.sort(sortPreds);
     return sortPreds;
   }
 
+  protected List<List<ComparablePredicate>> compressOutcomes(ComparablePredicate[] sorted) {
+    List<List<ComparablePredicate>> outcomePatterns = new ArrayList<>();
+    if (sorted.length > 0) {
+      ComparablePredicate cp = sorted[0];
+      List<ComparablePredicate> newGroup = new ArrayList<>();
+      for (int i = 0; i < sorted.length; i++) {
+        if (cp.compareTo(sorted[i]) == 0) {
+          newGroup.add(sorted[i]);
+        } else {
+          cp = sorted[i];
+          outcomePatterns.add(newGroup);
+          newGroup = new ArrayList<>();
+          newGroup.add(sorted[i]);
+        }
+      }
+      outcomePatterns.add(newGroup);
+    }
+    return outcomePatterns;
+  }
+
+
 
   protected List<List<ComparablePredicate>> computeOutcomePatterns(ComparablePredicate[] sorted) {
     ComparablePredicate cp = sorted[0];
-    List<List<ComparablePredicate>> outcomePatterns = new ArrayList<List<ComparablePredicate>>();
-    List<ComparablePredicate> newGroup = new ArrayList<ComparablePredicate>();
+    List<List<ComparablePredicate>> outcomePatterns = new ArrayList<>();
+    List<ComparablePredicate> newGroup = new ArrayList<>();
     for (ComparablePredicate predicate : sorted) {
       if (cp.compareTo(predicate) == 0) {
         newGroup.add(predicate);
       } else {
         cp = predicate;
         outcomePatterns.add(newGroup);
-        newGroup = new ArrayList<ComparablePredicate>();
+        newGroup = new ArrayList<>();
         newGroup.add(predicate);
       }
     }

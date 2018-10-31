@@ -39,11 +39,10 @@ public class DefaultPOSContextGenerator implements POSContextGenerator {
   private static Pattern hasCap = Pattern.compile("[A-Z]");
   private static Pattern hasNum = Pattern.compile("[0-9]");
 
-  private Cache contextsCache;
+  private Cache<String, String[]> contextsCache;
   private Object wordsKey;
 
   private Dictionary dict;
-  private String[] dictGram;
 
   /**
    * Initializes the current instance.
@@ -62,14 +61,15 @@ public class DefaultPOSContextGenerator implements POSContextGenerator {
    */
   public DefaultPOSContextGenerator(int cacheSize, Dictionary dict) {
     this.dict = dict;
-    dictGram = new String[1];
+
     if (cacheSize > 0) {
-      contextsCache = new Cache(cacheSize);
+      contextsCache = new Cache<>(cacheSize);
     }
   }
+
   protected static String[] getPrefixes(String lex) {
     String[] prefs = new String[PREFIX_LENGTH];
-    for (int li = 0, ll = PREFIX_LENGTH; li < ll; li++) {
+    for (int li = 0; li < PREFIX_LENGTH; li++) {
       prefs[li] = lex.substring(0, Math.min(li + 1, lex.length()));
     }
     return prefs;
@@ -77,28 +77,30 @@ public class DefaultPOSContextGenerator implements POSContextGenerator {
 
   protected static String[] getSuffixes(String lex) {
     String[] suffs = new String[SUFFIX_LENGTH];
-    for (int li = 0, ll = SUFFIX_LENGTH; li < ll; li++) {
+    for (int li = 0; li < SUFFIX_LENGTH; li++) {
       suffs[li] = lex.substring(Math.max(lex.length() - li - 1, 0));
     }
     return suffs;
   }
 
-  public String[] getContext(int index, String[] sequence, String[] priorDecisions, Object[] additionalContext) {
+  public String[] getContext(int index, String[] sequence, String[] priorDecisions,
+      Object[] additionalContext) {
     return getContext(index,sequence,priorDecisions);
   }
 
   /**
-   * Returns the context for making a pos tag decision at the specified token index given the specified tokens and previous tags.
+   * Returns the context for making a pos tag decision at the specified token index
+   * given the specified tokens and previous tags.
    * @param index The index of the token for which the context is provided.
    * @param tokens The tokens in the sentence.
    * @param tags The tags assigned to the previous words in the sentence.
-   * @return The context for making a pos tag decision at the specified token index given the specified tokens and previous tags.
+   * @return The context for making a pos tag decision at the specified token index
+   *     given the specified tokens and previous tags.
    */
   public String[] getContext(int index, Object[] tokens, String[] tags) {
-    String next, nextnext, lex, prev, prevprev;
+    String next, nextnext = null, lex, prev, prevprev = null;
     String tagprev, tagprevprev;
     tagprev = tagprevprev = null;
-    next = nextnext = lex = prev = prevprev = null;
 
     lex = tokens[index].toString();
     if (tokens.length > index + 1) {
@@ -128,10 +130,10 @@ public class DefaultPOSContextGenerator implements POSContextGenerator {
     else {
       prev = SB; // Sentence Beginning
     }
-    String cacheKey = index+tagprev+tagprevprev;
+    String cacheKey = index + tagprev + tagprevprev;
     if (contextsCache != null) {
-      if (wordsKey == tokens){
-        String[] cachedContexts = (String[]) contextsCache.get(cacheKey);
+      if (wordsKey == tokens) {
+        String[] cachedContexts = contextsCache.get(cacheKey);
         if (cachedContexts != null) {
           return cachedContexts;
         }
@@ -141,12 +143,12 @@ public class DefaultPOSContextGenerator implements POSContextGenerator {
         wordsKey = tokens;
       }
     }
-    List<String> e = new ArrayList<String>();
+    List<String> e = new ArrayList<>();
     e.add("default");
     // add the word itself
     e.add("w=" + lex);
-    dictGram[0] = lex;
-    if (dict == null || !dict.contains(new StringList(dictGram))) {
+
+    if (dict == null || !dict.contains(new StringList(lex))) {
       // do some basic suffix analysis
       String[] suffs = getSuffixes(lex);
       for (int i = 0; i < suffs.length; i++) {
@@ -179,7 +181,7 @@ public class DefaultPOSContextGenerator implements POSContextGenerator {
       if (prevprev != null) {
         e.add("pp=" + prevprev);
         if (tagprevprev != null) {
-          e.add("t2=" + tagprevprev+","+tagprev);
+          e.add("t2=" + tagprevprev + "," + tagprev);
         }
       }
     }

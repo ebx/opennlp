@@ -19,6 +19,7 @@ package opennlp.tools.sentdetect;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -42,7 +43,7 @@ public class DefaultSDContextGenerator implements SDContextGenerator {
 
   private Set<String> inducedAbbreviations;
 
-  private char[] eosCharacters;
+  private Set<Character> eosCharacters;
 
   /**
    * Creates a new <code>SDContextGenerator</code> instance with
@@ -51,7 +52,7 @@ public class DefaultSDContextGenerator implements SDContextGenerator {
    * @param eosCharacters
    */
   public DefaultSDContextGenerator(char[] eosCharacters) {
-    this(Collections.<String>emptySet(), eosCharacters);
+    this(Collections.emptySet(), eosCharacters);
   }
 
   /**
@@ -59,16 +60,19 @@ public class DefaultSDContextGenerator implements SDContextGenerator {
    * the set of induced abbreviations.
    *
    * @param inducedAbbreviations a <code>Set</code> of Strings
-   * representing induced abbreviations in the training data.
-   * Example: &quot;Mr.&quot;
+   *     representing induced abbreviations in the training data.
+   *     Example: &quot;Mr.&quot;
    *
    * @param eosCharacters
    */
   public DefaultSDContextGenerator(Set<String> inducedAbbreviations, char[] eosCharacters) {
     this.inducedAbbreviations = inducedAbbreviations;
-    this.eosCharacters = eosCharacters;
+    this.eosCharacters = new HashSet<>();
+    for (char eosChar: eosCharacters) {
+      this.eosCharacters.add(eosChar);
+    }
     buf = new StringBuffer();
-    collectFeats = new ArrayList<String>();
+    collectFeats = new ArrayList<>();
   }
 
   private static String escapeChar(Character c) {
@@ -88,22 +92,22 @@ public class DefaultSDContextGenerator implements SDContextGenerator {
    */
   public String[] getContext(CharSequence sb, int position) {
 
-    /**
+    /*
      * String preceding the eos character in the eos token.
      */
     String prefix;
 
-    /**
+    /*
      * Space delimited token preceding token containing eos character.
      */
     String previous;
 
-    /**
+    /*
      * String following the eos character in the eos token.
      */
     String suffix;
 
-    /**
+    /*
      * Space delimited token following token containing eos character.
      */
     String next;
@@ -121,29 +125,23 @@ public class DefaultSDContextGenerator implements SDContextGenerator {
     int c = position;
     { ///assign prefix, stop if you run into a period though otherwise stop at space
       while (--c > prefixStart) {
-        for (int eci = 0, ecl = eosCharacters.length; eci < ecl; eci++) {
-          if (sb.charAt(c) == eosCharacters[eci]) {
-            prefixStart = c;
-            c++; // this gets us out of while loop.
-            break;
-          }
+        if (eosCharacters.contains(sb.charAt(c))) {
+          prefixStart = c;
+          c++; // this gets us out of while loop.
         }
       }
-      prefix = new StringBuffer(sb.subSequence(prefixStart, position)).toString().trim();
+      prefix = String.valueOf(sb.subSequence(prefixStart, position)).trim();
     }
     int prevStart = previousSpaceIndex(sb, prefixStart);
-    previous = new StringBuffer(sb.subSequence(prevStart, prefixStart)).toString().trim();
+    previous = String.valueOf(sb.subSequence(prevStart, prefixStart)).trim();
 
     int suffixEnd = nextSpaceIndex(sb, position, lastIndex);
     {
       c = position;
       while (++c < suffixEnd) {
-        for (int eci = 0, ecl = eosCharacters.length; eci < ecl; eci++) {
-          if (sb.charAt(c) == eosCharacters[eci]) {
-            suffixEnd = c;
-            c--; // this gets us out of while loop.
-            break;
-          }
+        if (eosCharacters.contains(sb.charAt(c))) {
+          suffixEnd = c;
+          c--; // this gets us out of while loop.
         }
       }
     }
@@ -153,8 +151,8 @@ public class DefaultSDContextGenerator implements SDContextGenerator {
       next = "";
     }
     else {
-      suffix = new StringBuilder(sb.subSequence(position + 1, suffixEnd)).toString().trim();
-      next = new StringBuilder(sb.subSequence(suffixEnd + 1, nextEnd)).toString().trim();
+      suffix = String.valueOf(sb.subSequence(position + 1, suffixEnd)).trim();
+      next = String.valueOf(sb.subSequence(suffixEnd + 1, nextEnd)).trim();
     }
 
     collectFeatures(prefix,suffix,previous,next, sb.charAt(position));
@@ -188,7 +186,8 @@ public class DefaultSDContextGenerator implements SDContextGenerator {
    * @param next Space delimited token following token containing eos character.
    * @param eosChar the EOS character been analyzed
    */
-  protected void collectFeatures(String prefix, String suffix, String previous, String next, Character eosChar) {
+  protected void collectFeatures(String prefix, String suffix, String previous,
+      String next, Character eosChar) {
     buf.append("x=");
     buf.append(prefix);
     collectFeats.add(buf.toString());
@@ -243,7 +242,7 @@ public class DefaultSDContextGenerator implements SDContextGenerator {
     }
   }
 
-  private static final boolean isFirstUpper(String s) {
+  private static boolean isFirstUpper(String s) {
     return Character.isUpperCase(s.charAt(0));
   }
 
@@ -254,7 +253,7 @@ public class DefaultSDContextGenerator implements SDContextGenerator {
    * @param seek The index to begin searching from.
    * @return The index which contains the nearest space.
    */
-  private static final int previousSpaceIndex(CharSequence sb, int seek) {
+  private static int previousSpaceIndex(CharSequence sb, int seek) {
     seek--;
     while (seek > 0 && !StringUtil.isWhitespace(sb.charAt(seek))) {
       seek--;
@@ -275,7 +274,7 @@ public class DefaultSDContextGenerator implements SDContextGenerator {
    * @param lastIndex The highest index of the StringBuffer sb.
    * @return The index which contains the nearest space.
    */
-  private static final int nextSpaceIndex(CharSequence sb, int seek, int lastIndex) {
+  private static int nextSpaceIndex(CharSequence sb, int seek, int lastIndex) {
     seek++;
     char c;
     while (seek < lastIndex) {

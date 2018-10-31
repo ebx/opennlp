@@ -36,17 +36,15 @@ import opennlp.tools.util.featuregen.WindowFeatureGenerator;
  */
 public class DefaultNameContextGenerator implements NameContextGenerator {
 
-  private AdaptiveFeatureGenerator featureGenerators[];
+  protected AdaptiveFeatureGenerator[] featureGenerators;
 
   @Deprecated
   private static AdaptiveFeatureGenerator windowFeatures = new CachedFeatureGenerator(
-      new AdaptiveFeatureGenerator[]{
       new WindowFeatureGenerator(new TokenFeatureGenerator(), 2, 2),
       new WindowFeatureGenerator(new TokenClassFeatureGenerator(true), 2, 2),
       new OutcomePriorFeatureGenerator(),
       new PreviousMapFeatureGenerator(),
-      new BigramNameFeatureGenerator()
-      });
+      new BigramNameFeatureGenerator());
 
   /**
    * Creates a name context generator.
@@ -75,21 +73,21 @@ public class DefaultNameContextGenerator implements NameContextGenerator {
   }
 
   public void addFeatureGenerator(AdaptiveFeatureGenerator generator) {
-      AdaptiveFeatureGenerator generators[] = featureGenerators;
+    AdaptiveFeatureGenerator[] generators = featureGenerators;
 
-      featureGenerators = new AdaptiveFeatureGenerator[featureGenerators.length + 1];
+    featureGenerators = new AdaptiveFeatureGenerator[featureGenerators.length + 1];
 
-      System.arraycopy(generators, 0, featureGenerators, 0, generators.length);
+    System.arraycopy(generators, 0, featureGenerators, 0, generators.length);
 
-      featureGenerators[featureGenerators.length - 1] = generator;
+    featureGenerators[featureGenerators.length - 1] = generator;
   }
 
   public void updateAdaptiveData(String[] tokens, String[] outcomes) {
 
     if (tokens != null && outcomes != null && tokens.length != outcomes.length) {
-        throw new IllegalArgumentException(
-            "The tokens and outcome arrays MUST have the same size!");
-      }
+      throw new IllegalArgumentException(
+          "The tokens and outcome arrays MUST have the same size!");
+    }
 
     for (AdaptiveFeatureGenerator featureGenerator : featureGenerators) {
       featureGenerator.updateAdaptiveData(tokens, outcomes);
@@ -104,15 +102,18 @@ public class DefaultNameContextGenerator implements NameContextGenerator {
 
   /**
    * Return the context for finding names at the specified index.
-   * @param index The index of the token in the specified toks array for which the context should be constructed.
-   * @param tokens The tokens of the sentence.  The <code>toString</code> methods of these objects should return the token text.
-   * @param preds The previous decisions made in the tagging of this sequence.  Only indices less than i will be examined.
+   * @param index The index of the token in the specified toks array for which the
+   *              context should be constructed.
+   * @param tokens The tokens of the sentence.  The <code>toString</code> methods
+   *               of these objects should return the token text.
+   * @param preds The previous decisions made in the tagging of this sequence.
+   *              Only indices less than i will be examined.
    * @param additionalContext Addition features which may be based on a context outside of the sentence.
    *
    * @return the context for finding names at the specified index.
    */
   public String[] getContext(int index, String[] tokens, String[] preds, Object[] additionalContext) {
-    List<String> features = new ArrayList<String>();
+    List<String> features = new ArrayList<>();
 
     for (AdaptiveFeatureGenerator featureGenerator : featureGenerators) {
       featureGenerator.createFeatures(features, tokens, index, preds);
@@ -124,12 +125,12 @@ public class DefaultNameContextGenerator implements NameContextGenerator {
 
     // TODO: These should be moved out here in its own feature generator!
     if (preds != null) {
-      if (index > 1){
-        ppo = preds[index-2];
+      if (index > 1) {
+        ppo = preds[index - 2];
       }
 
       if (index > 0) {
-        po = preds[index-1];
+        po = preds[index - 1];
       }
       features.add("po=" + po);
       features.add("pow=" + po + "," + tokens[index]);

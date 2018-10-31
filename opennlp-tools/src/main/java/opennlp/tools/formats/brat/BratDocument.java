@@ -21,11 +21,12 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
-import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import opennlp.tools.util.ObjectStream;
@@ -43,11 +44,26 @@ public class BratDocument {
     this.id = id;
     this.text = text;
 
-    Map<String, BratAnnotation> annMap = new HashMap<String, BratAnnotation>();
+    Map<String, BratAnnotation> annMap = new HashMap<>();
+    List<AnnotatorNoteAnnotation> noteList = new ArrayList<>();
     for (BratAnnotation annotation : annotations) {
-      annMap.put(annotation.getId(), annotation);
+      if (annotation instanceof AnnotatorNoteAnnotation) {
+        noteList.add((AnnotatorNoteAnnotation)annotation);
+      } else {
+        annMap.put(annotation.getId(), annotation);
+      }
     }
 
+    // attach AnnotatorNote to the appropriate Annotation.
+    // the note should ALWAYS have an appropriate id in the map,
+    // but just to be safe, check for null.
+    for (AnnotatorNoteAnnotation note: noteList) {
+      BratAnnotation annotation = annMap.get(note.getAttachedId());
+      if (annotation != null) {
+        annotation.setNote(note.getNote());
+      }
+    }
+    
     annotationMap = Collections.unmodifiableMap(annMap);
   }
 
@@ -72,28 +88,26 @@ public class BratDocument {
   }
 
   public static BratDocument parseDocument(AnnotationConfiguration config, String id,
-      InputStream txtIn, InputStream annIn)
-      throws IOException {
+      InputStream txtIn, InputStream annIn) throws IOException {
 
-    Reader txtReader = new InputStreamReader(txtIn, Charset.forName("UTF-8"));
+    Reader txtReader = new InputStreamReader(txtIn, StandardCharsets.UTF_8);
 
     StringBuilder text = new StringBuilder();
 
-    char cbuf[] = new char[1024];
+    char[] cbuf = new char[1024];
 
     int len;
     while ((len = txtReader.read(cbuf)) > 0) {
       text.append(cbuf, 0, len);
     }
 
-    Collection<BratAnnotation> annotations = new ArrayList<BratAnnotation>();
-
+    Collection<BratAnnotation> annotations = new ArrayList<>();
     ObjectStream<BratAnnotation> annStream = new BratAnnotationStream(config, id, annIn);
-
     BratAnnotation ann;
     while ((ann = annStream.read()) != null) {
       annotations.add(ann);
     }
+    annStream.close();
 
     return new BratDocument(config, id, text.toString(), annotations);
   }

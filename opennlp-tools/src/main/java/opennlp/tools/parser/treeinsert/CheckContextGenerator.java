@@ -42,25 +42,23 @@ public class CheckContextGenerator extends AbstractContextGenerator {
   }
 
   public String[] getContext(Parse parent, Parse[] constituents, int index, boolean trimFrontier) {
-    List<String> features = new ArrayList<String>(100);
+    List<String> features = new ArrayList<>(100);
     //default
     features.add("default");
     Parse[] children = Parser.collapsePunctuation(parent.getChildren(),punctSet);
     Parse pstart = children[0];
-    Parse pend = children[children.length-1];
+    Parse pend = children[children.length - 1];
     String type = parent.getType();
     checkcons(pstart, "begin", type, features);
     checkcons(pend, "last", type, features);
-    String production = "p="+production(parent,false);
-    String punctProduction = "pp="+production(parent,true);
+    String production = "p=" + production(parent,false);
+    String punctProduction = "pp=" + production(parent,true);
     features.add(production);
     features.add(punctProduction);
 
 
     Parse p1 = null;
     Parse p2 = null;
-    Parse p_1 = null;
-    Parse p_2 = null;
     Collection<Parse> p1s = constituents[index].getNextPunctuationSet();
     Collection<Parse> p2s = null;
     Collection<Parse> p_1s = constituents[index].getPreviousPunctuationSet();
@@ -74,11 +72,10 @@ public class CheckContextGenerator extends AbstractContextGenerator {
       if (trimFrontier) {
         int pi = rf.indexOf(parent);
         if (pi == -1) {
-          throw new RuntimeException("Parent not found in right frontier:"+parent+" rf="+rf);
+          throw new RuntimeException("Parent not found in right frontier:" + parent + " rf=" + rf);
         }
         else {
-          for (int ri=0;ri<=pi;ri++) {
-            //System.err.println(pi+" removing "+((Parse)rf.get(0)).getType()+" "+rf.get(0)+" "+(rf.size()-1)+" remain");
+          for (int ri = 0; ri <= pi; ri++) {
             rf.remove(0);
           }
         }
@@ -86,8 +83,8 @@ public class CheckContextGenerator extends AbstractContextGenerator {
     }
 
     getFrontierNodes(rf,leftNodes);
-    p_1 = leftNodes[0];
-    p_2 = leftNodes[1];
+    Parse p_1 = leftNodes[0];
+    Parse p_2 = leftNodes[1];
     int ps = constituents.length;
     if (p_1 != null) {
       p_2s = p_1.getPreviousPunctuationSet();

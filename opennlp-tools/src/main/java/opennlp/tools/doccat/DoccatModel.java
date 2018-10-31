@@ -21,6 +21,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
+import java.nio.file.Path;
 import java.util.Map;
 
 import opennlp.tools.ml.model.AbstractModel;
@@ -45,34 +46,19 @@ public class DoccatModel extends BaseModel {
     checkArtifactMap();
   }
 
-  /**
-   * @deprecated Use
-   *             {@link #DoccatModel(String, MaxentModel, Map, DoccatFactory)}
-   *             instead and pass in a {@link DoccatFactory}
-   */
-  protected DoccatModel(String languageCode, MaxentModel doccatModel,
-      Map<String, String> manifestInfoEntries) {
-    this(languageCode, doccatModel, manifestInfoEntries, new DoccatFactory());
-  }
-
-  /**
-   * @deprecated Use
-   *             {@link #DoccatModel(String, MaxentModel, Map, DoccatFactory)}
-   *             instead and pass in a {@link DoccatFactory}
-   */
-  public DoccatModel(String languageCode, MaxentModel doccatModel) {
-    this(languageCode, doccatModel, null);
-  }
-
-  public DoccatModel(InputStream in) throws IOException, InvalidFormatException {
+  public DoccatModel(InputStream in) throws IOException {
     super(COMPONENT_NAME, in);
   }
 
-  public DoccatModel(File modelFile) throws IOException, InvalidFormatException {
+  public DoccatModel(File modelFile) throws IOException {
     super(COMPONENT_NAME, modelFile);
   }
 
-  public DoccatModel(URL modelURL) throws IOException, InvalidFormatException {
+  public DoccatModel(Path modelPath) throws IOException {
+    this(modelPath.toFile());
+  }
+
+  public DoccatModel(URL modelURL) throws IOException {
     super(COMPONENT_NAME, modelURL);
   }
 
@@ -92,13 +78,6 @@ public class DoccatModel extends BaseModel {
   @Override
   protected Class<? extends BaseToolFactory> getDefaultFactory() {
     return DoccatFactory.class;
-  }
-
-  /**
-   * @deprecated Use {@link #getMaxentModel()} instead.
-   */
-  public MaxentModel getChunkerModel() {
-    return (MaxentModel) artifactMap.get(DOCCAT_MODEL_ENTRY_NAME);
   }
 
   public MaxentModel getMaxentModel() {

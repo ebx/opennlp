@@ -14,6 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package opennlp.tools.cmdline.tokenizer;
 
 import java.io.IOException;
@@ -36,9 +37,9 @@ final class CommandLineTokenizer {
   }
 
   void process() {
-    ObjectStream<String> untokenizedLineStream = null;
+    ObjectStream<String> untokenizedLineStream;
 
-    ObjectStream<String> tokenizedLineStream = null;
+    ObjectStream<String> tokenizedLineStream;
     PerformanceMonitor perfMon = null;
     try {
       untokenizedLineStream =

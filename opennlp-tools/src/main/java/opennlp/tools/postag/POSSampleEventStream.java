@@ -63,9 +63,9 @@ public class POSSampleEventStream extends AbstractEventStream<POSSample> {
 
   @Override
   protected Iterator<Event> createEvents(POSSample sample) {
-    String sentence[] = sample.getSentence();
-    String tags[] = sample.getTags();
-    Object ac[] = sample.getAddictionalContext();
+    String[] sentence = sample.getSentence();
+    String[] tags = sample.getTags();
+    Object[] ac = sample.getAddictionalContext();
     List<Event> events = generateEvents(sentence, tags, ac, cg);
     return events.iterator();
   }
@@ -74,7 +74,7 @@ public class POSSampleEventStream extends AbstractEventStream<POSSample> {
       Object[] additionalContext, POSContextGenerator cg) {
     List<Event> events = new ArrayList<Event>(sentence.length);
 
-    for (int i=0; i < sentence.length; i++) {
+    for (int i = 0; i < sentence.length; i++) {
 
       // it is safe to pass the tags as previous tags because
       // the context generator does not look for non predicted tags

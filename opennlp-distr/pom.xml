@@ -24,7 +24,7 @@
 	<parent>
 		<groupId>org.apache.opennlp</groupId>
 		<artifactId>opennlp</artifactId>
-		<version>1.6.1-EBX-PRE-RELEASE-WITH-DAEMON-THREADS</version>
+		<version>1.9.1-SNAPSHOT</version>
 		<relativePath>../pom.xml</relativePath>
 	</parent>
 
@@ -32,22 +32,54 @@
 	<packaging>pom</packaging>
 	<name>Apache OpenNLP Distribution</name>
 
+	<properties>
+		<opennlp.version>${pom.version}</opennlp.version>
+	</properties>
+
 	<!--  Versions will automatically be updated by the release plugin -->
 	<dependencies>
 		<dependency>
 			<groupId>org.apache.opennlp</groupId>
 			<artifactId>opennlp-tools</artifactId>
-			<version>1.6.1-EBX-PRE-RELEASE-WITH-DAEMON-THREADS</version>
 		</dependency>
 		<dependency>
 			<groupId>org.apache.opennlp</groupId>
 			<artifactId>opennlp-uima</artifactId>
-			<version>1.6.1-EBX-PRE-RELEASE-WITH-DAEMON-THREADS</version>
 		</dependency>
+		<dependency>
+            <groupId>org.apache.opennlp</groupId>
+            <artifactId>opennlp-morfologik-addon</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.opennlp</groupId>
+            <artifactId>opennlp-brat-annotator</artifactId>
+        </dependency>
 	</dependencies>
 
 	<build>
 		<plugins>
+			<plugin>
+				<groupId>com.ruleoftech</groupId>
+				<artifactId>markdown-page-generator-plugin</artifactId>
+				<version>1.0.0</version>
+				<executions>
+					<execution>
+						<phase>process-sources</phase>
+						<goals>
+							<goal>generate</goal>
+						</goals>
+					</execution>
+				</executions>
+				<configuration>
+					<inputDirectory>${basedir}/../</inputDirectory>
+					<outputDirectory>${basedir}/target</outputDirectory>
+					<headerHtmlFile>${basedir}/README_HEADER.html</headerHtmlFile>
+					<footerHtmlFile>${basedir}/README_FOOTER.html</footerHtmlFile>
+					<pegdownExtensions>TABLES,FENCED_CODE_BLOCKS,AUTOLINKS</pegdownExtensions>
+					<!-- needed for the opennlp.version property -->
+					<applyFiltering>true</applyFiltering>
+				</configuration>
+			</plugin>
 			<plugin>
 				<artifactId>maven-assembly-plugin</artifactId>
 				<executions>
@@ -66,7 +98,7 @@
 							     many file have more than 100 chars.
 							     Right now only javadoc files are too long.
 							 -->
-							 <tarLongFileMode>gnu</tarLongFileMode>
+							 <tarLongFileMode>posix</tarLongFileMode>
 							 
 							 <finalName>apache-opennlp-${project.version}</finalName>
 						</configuration>
@@ -83,18 +115,12 @@
 	            <phase>verify</phase> 
 	            <configuration> 
 	              <target> 
-	                <checksum algorithm="sha1" format="MD5SUM"> 
+	                <checksum algorithm="sha1" format="MD5SUM">
 	                  <fileset dir="${project.build.directory}"> 
 	                    <include name="*.zip" /> 
 	                    <include name="*.gz" /> 
 	                  </fileset> 
-	                </checksum> 
-	                <checksum algorithm="md5" format="MD5SUM"> 
-	                  <fileset dir="${project.build.directory}"> 
-	                    <include name="*.zip" /> 
-	                    <include name="*.gz" /> 
-	                  </fileset> 
-	                </checksum> 
+	                </checksum>
 	              </target> 
 	            </configuration> 
 	          </execution> 
@@ -114,14 +140,14 @@
           <plugin>
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-changes-plugin</artifactId>
-             <version>2.9</version>
+			  <version>2.12.1</version>
             <executions>
               <execution>
               <id>default-cli</id>
               <phase>generate-resources</phase> 
               <goals><goal>jira-report</goal></goals>
                 <configuration>
-                  <fixVersionIds>12326268</fixVersionIds>
+                  <onlyCurrentVersion>true</onlyCurrentVersion>
                   <outputDirectory>${basedir}/target/issuesFixed/</outputDirectory>
                   <maxEntries>1000</maxEntries> <!-- hopefully, bigger than ever needed -->
                 </configuration>

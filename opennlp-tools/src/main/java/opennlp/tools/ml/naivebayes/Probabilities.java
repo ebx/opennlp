@@ -17,7 +17,12 @@
 
 package opennlp.tools.ml.naivebayes;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
 
 /**
  * Class implementing the probability distribution over labels returned by a classifier.
@@ -26,7 +31,7 @@ import java.util.*;
  *
  */
 public abstract class Probabilities<T> {
-  protected HashMap<T, Double> map = new HashMap<T, Double>();
+  protected Map<T, Double> map = new HashMap<>();
 
   protected transient boolean isNormalised = false;
   protected Map<T, Double> normalised;
@@ -56,7 +61,8 @@ public abstract class Probabilities<T> {
   }
 
   /**
-   * Assigns a probability to a label, discarding any previously assigned probability, if the new probability is greater than the old one.
+   * Assigns a probability to a label, discarding any previously assigned probability,
+   * if the new probability is greater than the old one.
    *
    * @param t           the label to which the probability is being assigned
    * @param probability the probability to assign
@@ -141,14 +147,15 @@ public abstract class Probabilities<T> {
       return normalised;
     Map<T, Double> temp = createMapDataStructure();
     double sum = 0;
-    for (T t : map.keySet()) {
-      Double p = map.get(t);
+    for (Entry<T, Double> entry : map.entrySet()) {
+      Double p = entry.getValue();
       if (p != null) {
         sum += p;
       }
     }
-    for (T t : temp.keySet()) {
-      Double p = temp.get(t);
+    for (Entry<T, Double> entry : temp.entrySet()) {
+      T t = entry.getKey();
+      Double p = entry.getValue();
       if (p != null) {
         temp.put(t, p / sum);
       }
@@ -159,7 +166,7 @@ public abstract class Probabilities<T> {
   }
 
   protected Map<T, Double> createMapDataStructure() {
-    return new HashMap<T, Double>();
+    return new HashMap<>();
   }
 
   /**
@@ -170,8 +177,9 @@ public abstract class Probabilities<T> {
   public T getMax() {
     double max = 0;
     T maxT = null;
-    for (T t : map.keySet()) {
-      Double temp = map.get(t);
+    for (Entry<T, Double> entry : map.entrySet()) {
+      final T t = entry.getKey();
+      final Double temp = entry.getValue();
       if (temp >= max) {
         max = temp;
         maxT = t;
@@ -190,9 +198,10 @@ public abstract class Probabilities<T> {
   }
 
   public void discardCountsBelow(double i) {
-    ArrayList<T> labelsToRemove = new ArrayList<T>();
-    for (T label : map.keySet()) {
-      Double sum = map.get(label);
+    List<T> labelsToRemove = new ArrayList<>();
+    for (Entry<T, Double> entry : map.entrySet()) {
+      T label = entry.getKey();
+      Double sum = entry.getValue();
       if (sum == null) sum = 0.0;
       if (sum < i)
         labelsToRemove.add(label);

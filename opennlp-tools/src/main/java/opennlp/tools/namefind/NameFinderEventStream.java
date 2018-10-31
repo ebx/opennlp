@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 import opennlp.tools.ml.model.Event;
 import opennlp.tools.util.ObjectStream;
@@ -37,11 +38,12 @@ public class NameFinderEventStream extends opennlp.tools.util.AbstractEventStrea
 
   private NameContextGenerator contextGenerator;
 
-  private AdditionalContextFeatureGenerator additionalContextFeatureGenerator = new AdditionalContextFeatureGenerator();
-
-  private String type;
+  private AdditionalContextFeatureGenerator additionalContextFeatureGenerator =
+      new AdditionalContextFeatureGenerator();
 
   private SequenceCodec<String> codec;
+
+  private final String defaultType;
 
   /**
    * Creates a new name finder event stream using the specified data stream and context generator.
@@ -49,7 +51,8 @@ public class NameFinderEventStream extends opennlp.tools.util.AbstractEventStrea
    * @param type null or overrides the type parameter in the provided samples
    * @param contextGenerator The context generator used to generate features for the event stream.
    */
-  public NameFinderEventStream(ObjectStream<NameSample> dataStream, String type, NameContextGenerator contextGenerator, SequenceCodec codec) {
+  public NameFinderEventStream(ObjectStream<NameSample> dataStream, String type,
+                               NameContextGenerator contextGenerator, SequenceCodec<String> codec) {
     super(dataStream);
 
     this.codec = codec;
@@ -59,12 +62,10 @@ public class NameFinderEventStream extends opennlp.tools.util.AbstractEventStrea
     }
 
     this.contextGenerator = contextGenerator;
-    this.contextGenerator.addFeatureGenerator(new WindowFeatureGenerator(additionalContextFeatureGenerator, 8, 8));
+    this.contextGenerator.addFeatureGenerator(
+        new WindowFeatureGenerator(additionalContextFeatureGenerator, 8, 8));
 
-    if (type != null)
-      this.type = type;
-    else
-      this.type = "default";
+    this.defaultType = type;
   }
 
   public NameFinderEventStream(ObjectStream<NameSample> dataStream) {
@@ -107,8 +108,9 @@ public class NameFinderEventStream extends opennlp.tools.util.AbstractEventStrea
     return outcomes;
   }
 
-  public static List<Event> generateEvents(String[] sentence, String[] outcomes, NameContextGenerator cg) {
-    List<Event> events = new ArrayList<Event>(outcomes.length);
+  public static List<Event> generateEvents(String[] sentence, String[] outcomes,
+                                           NameContextGenerator cg) {
+    List<Event> events = new ArrayList<>(outcomes.length);
     for (int i = 0; i < outcomes.length; i++) {
       events.add(new Event(outcomes[i], cg.getContext(i, sentence, outcomes,null)));
     }
@@ -125,8 +127,13 @@ public class NameFinderEventStream extends opennlp.tools.util.AbstractEventStrea
       contextGenerator.clearAdaptiveData();
     }
 
-    String outcomes[] = codec.encode(sample.getNames(), sample.getSentence().length);
-//    String outcomes[] = generateOutcomes(sample.getNames(), type, sample.getSentence().length);
+    Span[] names = sample.getNames();
+    if (!Objects.isNull(this.defaultType)) {
+      overrideType(names);
+    }
+
+    String[] outcomes = codec.encode(names, sample.getSentence().length);
+    // String outcomes[] = generateOutcomes(sample.getNames(), type, sample.getSentence().length);
     additionalContextFeatureGenerator.setCurrentContext(sample.getAdditionalContext());
     String[] tokens = new String[sample.getSentence().length];
 
@@ -137,6 +144,13 @@ public class NameFinderEventStream extends opennlp.tools.util.AbstractEventStrea
     return generateEvents(tokens, outcomes, contextGenerator).iterator();
   }
 
+  private void overrideType(Span[] names) {
+    for (int i = 0; i < names.length; i++) {
+      Span n = names[i];
+      names[i] = new Span(n.getStart(), n.getEnd(), this.defaultType,
+              n.getProb());
+    }
+  }
 
   /**
    * Generated previous decision features for each token based on contents of the specified map.
@@ -146,11 +160,10 @@ public class NameFinderEventStream extends opennlp.tools.util.AbstractEventStrea
    */
   public static String[][] additionalContext(String[] tokens, Map<String, String> prevMap) {
     String[][] ac = new String[tokens.length][1];
-    for (int ti=0;ti<tokens.length;ti++) {
+    for (int ti = 0; ti < tokens.length; ti++) {
       String pt = prevMap.get(tokens[ti]);
-      ac[ti][0]="pd="+pt;
+      ac[ti][0] = "pd=" + pt;
     }
     return ac;
-
   }
 }

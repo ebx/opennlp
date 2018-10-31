@@ -18,8 +18,7 @@
 package opennlp.tools.formats.muc;
 
 import java.io.File;
-import java.io.FileFilter;
-import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 
 import opennlp.tools.cmdline.ArgumentParser;
 import opennlp.tools.cmdline.ArgumentParser.ParameterDescription;
@@ -38,13 +37,13 @@ import opennlp.tools.util.StringUtil;
 
 public class Muc6NameSampleStreamFactory extends AbstractSampleStreamFactory<NameSample> {
 
-  interface Parameters extends BasicFormatParams {
-    @ParameterDescription(valueName = "modelFile")
-    File getTokenizerModel();
-  }
-
   protected Muc6NameSampleStreamFactory() {
     super(Parameters.class);
+  }
+
+  public static void registerFactory() {
+    StreamFactoryRegistry.registerFactory(NameSample.class, "muc6",
+        new Muc6NameSampleStreamFactory());
   }
 
   public ObjectStream<NameSample> create(String[] args) {
@@ -55,18 +54,15 @@ public class Muc6NameSampleStreamFactory extends AbstractSampleStreamFactory<Nam
     Tokenizer tokenizer = new TokenizerME(tokenizerModel);
 
     ObjectStream<String> mucDocStream = new FileToStringSampleStream(
-        new DirectorySampleStream(params.getData(), new FileFilter() {
-
-          public boolean accept(File file) {
-            return StringUtil.toLowerCase(file.getName()).endsWith(".sgm");
-          }
-        }, false), Charset.forName("UTF-8"));
+        new DirectorySampleStream(params.getData(),
+            file -> StringUtil.toLowerCase(file.getName()).endsWith(".sgm"), false),
+        StandardCharsets.UTF_8);
 
     return new MucNameSampleStream(tokenizer, mucDocStream);
   }
 
-  public static void registerFactory() {
-    StreamFactoryRegistry.registerFactory(NameSample.class, "muc6",
-        new Muc6NameSampleStreamFactory());
+  interface Parameters extends BasicFormatParams {
+    @ParameterDescription(valueName = "modelFile")
+    File getTokenizerModel();
   }
 }

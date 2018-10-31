@@ -25,7 +25,6 @@ import opennlp.tools.parser.Parse;
 import opennlp.tools.postag.POSSample;
 import opennlp.tools.util.ObjectStream;
 
-
 /**
  * <b>Note:</b> Do not use this class, internal use only!
  */
@@ -37,7 +36,8 @@ public class ParseToPOSSampleStreamFactory extends LanguageSampleStreamFactory<P
 
   public ObjectStream<POSSample> create(String[] args) {
 
-    ParseSampleStreamFactory.Parameters params = ArgumentParser.parse(args, ParseSampleStreamFactory.Parameters.class);
+    ParseSampleStreamFactory.Parameters params =
+        ArgumentParser.parse(args, ParseSampleStreamFactory.Parameters.class);
 
     ObjectStream<Parse> parseSampleStream = StreamFactoryRegistry.getFactory(Parse.class,
         StreamFactoryRegistry.DEFAULT_FORMAT).create(

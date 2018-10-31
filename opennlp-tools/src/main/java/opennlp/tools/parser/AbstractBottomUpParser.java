@@ -22,14 +22,14 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
+import java.util.SortedSet;
+import java.util.TreeSet;
 
 import opennlp.tools.chunker.Chunker;
 import opennlp.tools.dictionary.Dictionary;
 import opennlp.tools.ngram.NGramModel;
 import opennlp.tools.parser.chunking.ParserEventStream;
 import opennlp.tools.postag.POSTagger;
-import opennlp.tools.util.Heap;
-import opennlp.tools.util.ListHeap;
 import opennlp.tools.util.ObjectStream;
 import opennlp.tools.util.Sequence;
 import opennlp.tools.util.Span;
@@ -40,11 +40,11 @@ import opennlp.tools.util.TrainingParameters;
  * Abstract class which contains code to tag and chunk parses for bottom up parsing and
  * leaves implementation of advancing parses and completing parses to extend class.
  * <p>
- * <b>Note:</b> <br> The nodes within
- * the returned parses are shared with other parses and therefore their parent node references will not be consistent
- * with their child node reference.  {@link #setParents setParents} can be used to make the parents consistent
- * with a particular parse, but subsequent calls to <code>setParents</code> can invalidate the results of earlier
- * calls.<br>
+ * <b>Note:</b> <br> The nodes within the returned parses are shared with other parses
+ * and therefore their parent node references will not be consistent with their child
+ * node reference.  {@link #setParents setParents} can be used to make the parents consistent
+ * with a particular parse, but subsequent calls to <code>setParents</code> can invalidate
+ * the results of earlier calls.<br>
  */
 public abstract class AbstractBottomUpParser implements Parser {
 
@@ -77,17 +77,17 @@ public abstract class AbstractBottomUpParser implements Parser {
   /**
    * Completed parses.
    */
-  protected Heap<Parse> completeParses;
+  private SortedSet<Parse> completeParses;
 
   /**
    * Incomplete parses which will be advanced.
    */
-  protected Heap<Parse> odh;
+  private SortedSet<Parse> odh;
 
   /**
    * Incomplete parses which have been advanced.
    */
-  protected Heap<Parse> ndh;
+  private SortedSet<Parse> ndh;
 
   /**
    * The head rules for the parser.
@@ -172,7 +172,8 @@ public abstract class AbstractBottomUpParser implements Parser {
    */
   protected boolean debugOn = false;
 
-  public AbstractBottomUpParser(POSTagger tagger, Chunker chunker, HeadRules headRules, int beamSize, double advancePercentage) {
+  public AbstractBottomUpParser(POSTagger tagger, Chunker chunker, HeadRules headRules,
+      int beamSize, double advancePercentage) {
     this.tagger = tagger;
     this.chunker = chunker;
     this.M = beamSize;
@@ -181,9 +182,9 @@ public abstract class AbstractBottomUpParser implements Parser {
     reportFailedParse = true;
     this.headRules = headRules;
     this.punctSet = headRules.getPunctuationTags();
-    odh = new ListHeap<Parse>(K);
-    ndh = new ListHeap<Parse>(K);
-    completeParses = new ListHeap<Parse>(K);
+    odh = new TreeSet<>();
+    ndh = new TreeSet<>();
+    completeParses = new TreeSet<>();
   }
 
   /**
@@ -210,22 +211,23 @@ public abstract class AbstractBottomUpParser implements Parser {
 
   /**
    * Removes the punctuation from the specified set of chunks, adds it to the parses
-   * adjacent to the punctuation is specified, and returns a new array of parses with the punctuation
-   * removed.
+   * adjacent to the punctuation is specified, and returns a new array of parses with
+   * the punctuation removed.
+   *
    * @param chunks A set of parses.
    * @param punctSet The set of punctuation which is to be removed.
    * @return An array of parses which is a subset of chunks with punctuation removed.
    */
   public static Parse[] collapsePunctuation(Parse[] chunks, Set<String> punctSet) {
-    List<Parse> collapsedParses = new ArrayList<Parse>(chunks.length);
+    List<Parse> collapsedParses = new ArrayList<>(chunks.length);
     int lastNonPunct = -1;
-    int nextNonPunct = -1;
-    for (int ci=0,cn=chunks.length;ci<cn;ci++) {
+    int nextNonPunct;
+    for (int ci = 0, cn = chunks.length; ci < cn; ci++) {
       if (punctSet.contains(chunks[ci].getType())) {
         if (lastNonPunct >= 0) {
           chunks[lastNonPunct].addNextPunctuation(chunks[ci]);
         }
-        for (nextNonPunct=ci+1;nextNonPunct<cn;nextNonPunct++) {
+        for (nextNonPunct = ci + 1; nextNonPunct < cn; nextNonPunct++) {
           if (!punctSet.contains(chunks[nextNonPunct].getType())) {
             break;
           }
@@ -249,10 +251,12 @@ public abstract class AbstractBottomUpParser implements Parser {
 
 
   /**
-   * Advances the specified parse and returns the an array advanced parses whose probability accounts for
-   * more than the specified amount of probability mass.
+   * Advances the specified parse and returns the an array advanced parses whose
+   * probability accounts for more than the specified amount of probability mass.
+   *
    * @param p The parse to advance.
-   * @param probMass The amount of probability mass that should be accounted for by the advanced parses.
+   * @param probMass The amount of probability mass that should be accounted for
+   *                 by the advanced parses.
    */
   protected abstract Parse[] advanceParses(final Parse p, double probMass);
 
@@ -273,15 +277,18 @@ public abstract class AbstractBottomUpParser implements Parser {
     Parse guess = null;
     double minComplete = 2;
     double bestComplete = -100000; //approximating -infinity/0 in ln domain
-    while (odh.size() > 0 && (completeParses.size() < M || (odh.first()).getProb() < minComplete) && derivationStage < maxDerivationLength) {
-      ndh = new ListHeap<Parse>(K);
+    while (odh.size() > 0 && (completeParses.size() < M || (odh.first()).getProb() < minComplete)
+        && derivationStage < maxDerivationLength) {
+      ndh = new TreeSet<>();
 
       int derivationRank = 0;
-      for (Iterator<Parse> pi = odh.iterator(); pi.hasNext() && derivationRank < K; derivationRank++) { // forearch derivation
+      for (Iterator<Parse> pi = odh.iterator(); pi.hasNext()
+          && derivationRank < K; derivationRank++) { // foreach derivation
         Parse tp = pi.next();
         //TODO: Need to look at this for K-best parsing cases
         /*
-         if (tp.getProb() < bestComplete) { //this parse and the ones which follow will never win, stop advancing.
+         //this parse and the ones which follow will never win, stop advancing.
+         if (tp.getProb() < bestComplete) {
          break;
          }
          */
@@ -289,7 +296,7 @@ public abstract class AbstractBottomUpParser implements Parser {
           guess = tp;
         }
         if (debugOn) {
-          System.out.print(derivationStage + " " + derivationRank + " "+tp.getProb());
+          System.out.print(derivationStage + " " + derivationRank + " " + tp.getProb());
           tp.show();
           System.out.println();
         }
@@ -329,7 +336,8 @@ public abstract class AbstractBottomUpParser implements Parser {
         }
         else {
           //if (reportFailedParse) {
-          //  System.err.println("Couldn't advance parse "+derivationStage+" stage "+derivationRank+"!\n");
+          //  System.err.println("Couldn't advance parse " + derivationStage
+          //      + " stage " + derivationRank + "!\n");
           //}
           advanceTop(tp);
           completeParses.add(tp);
@@ -345,13 +353,14 @@ public abstract class AbstractBottomUpParser implements Parser {
       //System.out.println();
       return new Parse[] {guess};
     }
-    else if (numParses == 1){
+    else if (numParses == 1) {
       return new Parse[] {completeParses.first()};
     }
     else {
-      List<Parse> topParses = new ArrayList<Parse>(numParses);
-      while(!completeParses.isEmpty() && topParses.size() < numParses) {
-        Parse tp = completeParses.extract();
+      List<Parse> topParses = new ArrayList<>(numParses);
+      while (!completeParses.isEmpty() && topParses.size() < numParses) {
+        Parse tp = completeParses.last();
+        completeParses.remove(tp);
         topParses.add(tp);
         //parses.remove(tp);
       }
@@ -380,17 +389,17 @@ public abstract class AbstractBottomUpParser implements Parser {
   protected Parse[] advanceChunks(final Parse p, double minChunkScore) {
     // chunk
     Parse[] children = p.getChildren();
-    String words[] = new String[children.length];
-    String ptags[] = new String[words.length];
-    double probs[] = new double[words.length];
-    Parse sp = null;
+    String[] words = new String[children.length];
+    String[] ptags = new String[words.length];
+    double[] probs = new double[words.length];
+
     for (int i = 0, il = children.length; i < il; i++) {
-      sp = children[i];
+      Parse sp = children[i];
       words[i] = sp.getHead().getCoveredText();
       ptags[i] = sp.getType();
     }
     //System.err.println("adjusted mcs = "+(minChunkScore-p.getProb()));
-    Sequence[] cs = chunker.topKSequences(words, ptags,minChunkScore-p.getProb());
+    Sequence[] cs = chunker.topKSequences(words, ptags,minChunkScore - p.getProb());
     Parse[] newParses = new Parse[cs.length];
     for (int si = 0, sl = cs.length; si < sl; si++) {
       newParses[si] = (Parse) p.clone(); //copies top level
@@ -402,11 +411,13 @@ public abstract class AbstractBottomUpParser implements Parser {
       String type = null;
       //System.err.print("sequence "+si+" ");
       for (int j = 0; j <= tags.length; j++) {
-        //if (j != tags.length) {System.err.println(words[j]+" "+ptags[j]+" "+tags[j]+" "+probs.get(j));}
+        // if (j != tags.length) {System.err.println(words[j]+" "
+        // +ptags[j]+" "+tags[j]+" "+probs.get(j));}
         if (j != tags.length) {
           newParses[si].addProb(Math.log(probs[j]));
         }
-        if (j != tags.length && tags[j].startsWith(CONT)) { // if continue just update end chunking tag don't use contTypeMap
+        // if continue just update end chunking tag don't use contTypeMap
+        if (j != tags.length && tags[j].startsWith(CONT)) {
           end = j;
         }
         else { //make previous constituent if it exists
@@ -414,7 +425,8 @@ public abstract class AbstractBottomUpParser implements Parser {
             //System.err.println("inserting tag "+tags[j]);
             Parse p1 = p.getChildren()[start];
             Parse p2 = p.getChildren()[end];
-            //System.err.println("Putting "+type+" at "+start+","+end+" for "+j+" "+newParses[si].getProb());
+            // System.err.println("Putting "+type+" at "+start+","+end+" for "
+            // +j+" "+newParses[si].getProb());
             Parse[] cons = new Parse[end - start + 1];
             cons[0] = p1;
             //cons[0].label="Start-"+type;
@@ -426,7 +438,8 @@ public abstract class AbstractBottomUpParser implements Parser {
                 //cons[ci].label="Cont-"+type;
               }
             }
-            Parse chunk = new Parse(p1.getText(), new Span(p1.getSpan().getStart(), p2.getSpan().getEnd()), type, 1, headRules.getHead(cons, type));
+            Parse chunk = new Parse(p1.getText(), new Span(p1.getSpan().getStart(),
+                p2.getSpan().getEnd()), type, 1, headRules.getHead(cons, type));
             chunk.isChunk(true);
             newParses[si].insert(chunk);
           }
@@ -460,9 +473,6 @@ public abstract class AbstractBottomUpParser implements Parser {
       words[i] = children[i].getCoveredText();
     }
     Sequence[] ts = tagger.topKSequences(words);
-//    if (ts.length == 0) {
-//      System.err.println("no tag sequence");
-//    }
     Parse[] newParses = new Parse[ts.length];
     for (int i = 0; i < ts.length; i++) {
       String[] tags = ts[i].getOutcomes().toArray(new String[words.length]);
@@ -475,7 +485,6 @@ public abstract class AbstractBottomUpParser implements Parser {
         double prob = probs[j];
         newParses[i].insert(new Parse(word.getText(), word.getSpan(), tags[j], prob,j));
         newParses[i].addProb(Math.log(prob));
-        //newParses[i].show();
       }
     }
     return newParses;
@@ -488,7 +497,7 @@ public abstract class AbstractBottomUpParser implements Parser {
    * @param nonPunctParses The parses without punctuation.
    * @param parses The parses wit punctuation.
    * @return An index into the specified parses which corresponds to the same node the specified index
-   * into the parses with punctuation.
+   *     into the parses with punctuation.
    */
   protected int mapParseIndex(int index, Parse[] nonPunctParses, Parse[] parses) {
     int parseIndex = index;
@@ -508,7 +517,8 @@ public abstract class AbstractBottomUpParser implements Parser {
   }
 
   /**
-   * Creates a n-gram dictionary from the specified data stream using the specified head rule and specified cut-off.
+   * Creates a n-gram dictionary from the specified data stream using the specified
+   * head rule and specified cut-off.
    *
    * @param data The data stream of parses.
    * @param rules The head rules for the parses.
@@ -516,35 +526,28 @@ public abstract class AbstractBottomUpParser implements Parser {
    *        n-gram to be saved as part of the dictionary.
    * @return A dictionary object.
    */
-  public static Dictionary buildDictionary(ObjectStream<Parse> data, HeadRules rules, TrainingParameters params)
-      throws IOException {
+  public static Dictionary buildDictionary(ObjectStream<Parse> data, HeadRules rules,
+      TrainingParameters params) throws IOException {
 
-    int cutoff = 5;
-
-    String cutoffString = params.getSettings("dict").
-        get(TrainingParameters.CUTOFF_PARAM);
-
-    if (cutoffString != null) {
-      // TODO: Maybe throw illegal argument exception if not parse able
-      cutoff = Integer.parseInt(cutoffString);
-    }
+    int cutoff = params.getIntParameter("dict", TrainingParameters.CUTOFF_PARAM, 5);
 
     NGramModel mdict = new NGramModel();
     Parse p;
-    while((p = data.read()) != null) {
+    while ((p = data.read()) != null) {
       p.updateHeads(rules);
       Parse[] pwords = p.getTagNodes();
       String[] words = new String[pwords.length];
       //add all uni-grams
-      for (int wi=0;wi<words.length;wi++) {
+      for (int wi = 0;wi < words.length; wi++) {
         words[wi] = pwords[wi].getCoveredText();
       }
 
       mdict.add(new StringList(words), 1, 1);
       //add tri-grams and bi-grams for inital sequence
-      Parse[] chunks = collapsePunctuation(ParserEventStream.getInitialChunks(p),rules.getPunctuationTags());
+      Parse[] chunks = collapsePunctuation(ParserEventStream.getInitialChunks(p),
+          rules.getPunctuationTags());
       String[] cwords = new String[chunks.length];
-      for (int wi=0;wi<cwords.length;wi++) {
+      for (int wi = 0; wi < cwords.length; wi++) {
         cwords[wi] = chunks[wi].getHead().getCoveredText();
       }
       mdict.add(new StringList(cwords), 2, 3);
@@ -552,7 +555,8 @@ public abstract class AbstractBottomUpParser implements Parser {
       //emulate reductions to produce additional n-grams
       int ci = 0;
       while (ci < chunks.length) {
-        //System.err.println("chunks["+ci+"]="+chunks[ci].getHead().getCoveredText()+" chunks.length="+chunks.length + "  " + chunks[ci].getParent());
+        // System.err.println("chunks["+ci+"]="+chunks[ci].getHead().getCoveredText()
+        // +" chunks.length="+chunks.length + "  " + chunks[ci].getParent());
 
         if (chunks[ci].getParent() == null) {
           chunks[ci].show();
@@ -560,7 +564,7 @@ public abstract class AbstractBottomUpParser implements Parser {
         if (lastChild(chunks[ci], chunks[ci].getParent(),rules.getPunctuationTags())) {
           //perform reduce
           int reduceStart = ci;
-          while (reduceStart >=0 && chunks[reduceStart].getParent() == chunks[ci].getParent()) {
+          while (reduceStart >= 0 && chunks[reduceStart].getParent() == chunks[ci].getParent()) {
             reduceStart--;
           }
           reduceStart++;
@@ -569,26 +573,24 @@ public abstract class AbstractBottomUpParser implements Parser {
           if (chunks.length != 0) {
             String[] window = new String[5];
             int wi = 0;
-            if (ci-2 >= 0) window[wi++] = chunks[ci-2].getHead().getCoveredText();
-            if (ci-1 >= 0) window[wi++] = chunks[ci-1].getHead().getCoveredText();
+            if (ci - 2 >= 0) window[wi++] = chunks[ci - 2].getHead().getCoveredText();
+            if (ci - 1 >= 0) window[wi++] = chunks[ci - 1].getHead().getCoveredText();
             window[wi++] = chunks[ci].getHead().getCoveredText();
-            if (ci+1 < chunks.length) window[wi++] = chunks[ci+1].getHead().getCoveredText();
-            if (ci+2 < chunks.length) window[wi++] = chunks[ci+2].getHead().getCoveredText();
+            if (ci + 1 < chunks.length) window[wi++] = chunks[ci + 1].getHead().getCoveredText();
+            if (ci + 2 < chunks.length) window[wi++] = chunks[ci + 2].getHead().getCoveredText();
             if (wi < 5) {
               String[] subWindow = new String[wi];
-              for (int swi=0;swi<wi;swi++) {
-                subWindow[swi]=window[swi];
-              }
+              System.arraycopy(window, 0, subWindow, 0, wi);
               window = subWindow;
             }
-            if (window.length >=3) {
+            if (window.length >= 3) {
               mdict.add(new StringList(window), 2, 3);
             }
             else if (window.length == 2) {
               mdict.add(new StringList(window), 2, 2);
             }
           }
-          ci=reduceStart-1; //ci will be incremented at end of loop
+          ci = reduceStart - 1; //ci will be incremented at end of loop
         }
         ci++;
       }
@@ -599,18 +601,20 @@ public abstract class AbstractBottomUpParser implements Parser {
   }
 
   /**
-   * Creates a n-gram dictionary from the specified data stream using the specified head rule and specified cut-off.
+   * Creates a n-gram dictionary from the specified data stream using the specified
+   * head rule and specified cut-off.
    *
    * @param data The data stream of parses.
    * @param rules The head rules for the parses.
-   * @param cutoff The minimum number of entries required for the n-gram to be saved as part of the dictionary.
+   * @param cutoff The minimum number of entries required for the n-gram to be
+   *               saved as part of the dictionary.
    * @return A dictionary object.
    */
   public static Dictionary buildDictionary(ObjectStream<Parse> data, HeadRules rules, int cutoff)
       throws IOException {
 
     TrainingParameters params = new TrainingParameters();
-    params.put("dict", TrainingParameters.CUTOFF_PARAM, Integer.toString(cutoff));
+    params.put("dict", TrainingParameters.CUTOFF_PARAM, cutoff);
 
     return buildDictionary(data, rules, params);
   }

@@ -1,20 +1,18 @@
 /*
- * Licensed to the Apache Software Foundation (ASF) under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership.  The ASF licenses this file
- * to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
  *
- *   http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied.  See the License for the
- * specific language governing permissions and limitations
- * under the License.
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package opennlp.tools.ml.model;
@@ -33,7 +31,7 @@ public interface MaxentModel {
    *         outcomes, all of which sum to 1.
    *
    **/
-  public double[] eval(String[] context);
+  double[] eval(String[] context);
 
   /**
      * Evaluates a context.
@@ -44,7 +42,7 @@ public interface MaxentModel {
      *         outcomes, all of which sum to 1.
      * @return an array of the probabilities for each of the different outcomes, all of which sum to 1.
      **/
-  public double[] eval(String[] context, double probs[]);
+  double[] eval(String[] context, double[] probs);
 
   /**
    * Evaluates a contexts with the specified context values.
@@ -53,7 +51,7 @@ public interface MaxentModel {
    * @param values The values associated with each context.
    * @return an array of the probabilities for each of the different outcomes, all of which sum to 1.
    */
-  public double[] eval(String[] context, float[] values);
+  double[] eval(String[] context, float[] values);
 
   /**
    * Simple function to return the outcome associated with the index
@@ -64,7 +62,7 @@ public interface MaxentModel {
    *            method.
    * @return the String name of the best outcome
    **/
-  public String getBestOutcome(double[] outcomes);
+  String getBestOutcome(double[] outcomes);
 
   /**
    * Return a string matching all the outcome names with all the
@@ -79,7 +77,7 @@ public interface MaxentModel {
    *            for each one.
    **/
   // TODO: This should be removed, can't be used anyway without format spec
-  public String getAllOutcomes(double[] outcomes);
+  String getAllOutcomes(double[] outcomes);
 
   /**
    * Gets the String name of the outcome associated with the index
@@ -89,7 +87,7 @@ public interface MaxentModel {
    *          desired.
    * @return the String name of the outcome
    **/
-  public String getOutcome(int i);
+  String getOutcome(int i);
 
   /**
    * Gets the index associated with the String name of the given
@@ -98,11 +96,11 @@ public interface MaxentModel {
    * @param outcome the String name of the outcome for which the
    *          index is desired
    * @return the index if the given outcome label exists for this
-   * model, -1 if it does not.
+   *     model, -1 if it does not.
    **/
-  public int getIndex(String outcome);
+  int getIndex(String outcome);
 
-  /**
+  /*
    * Returns the data structures relevant to storing the model.
    **/
   // public Object[] getDataStructures();
@@ -110,6 +108,6 @@ public interface MaxentModel {
   /** Returns the number of outcomes for this model.
    *  @return The number of outcomes.
    **/
-  public int getNumOutcomes();
+  int getNumOutcomes();
 
 }

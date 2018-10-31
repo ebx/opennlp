@@ -14,6 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package opennlp.tools.namefind;
 
 import java.io.ByteArrayInputStream;
@@ -36,6 +37,7 @@ import opennlp.tools.ml.TrainerFactory.TrainerType;
 import opennlp.tools.ml.model.Event;
 import opennlp.tools.ml.model.MaxentModel;
 import opennlp.tools.ml.model.SequenceClassificationModel;
+import opennlp.tools.ml.perceptron.PerceptronTrainer;
 import opennlp.tools.util.ObjectStream;
 import opennlp.tools.util.Sequence;
 import opennlp.tools.util.SequenceCodec;
@@ -44,17 +46,8 @@ import opennlp.tools.util.Span;
 import opennlp.tools.util.TrainingParameters;
 import opennlp.tools.util.featuregen.AdaptiveFeatureGenerator;
 import opennlp.tools.util.featuregen.AdditionalContextFeatureGenerator;
-import opennlp.tools.util.featuregen.BigramNameFeatureGenerator;
-import opennlp.tools.util.featuregen.CachedFeatureGenerator;
-import opennlp.tools.util.featuregen.FeatureGeneratorResourceProvider;
 import opennlp.tools.util.featuregen.GeneratorFactory;
-import opennlp.tools.util.featuregen.OutcomePriorFeatureGenerator;
-import opennlp.tools.util.featuregen.PreviousMapFeatureGenerator;
-import opennlp.tools.util.featuregen.SentenceFeatureGenerator;
-import opennlp.tools.util.featuregen.TokenClassFeatureGenerator;
-import opennlp.tools.util.featuregen.TokenFeatureGenerator;
 import opennlp.tools.util.featuregen.WindowFeatureGenerator;
-import opennlp.tools.util.model.ModelUtil;
 
 /**
  * Class for creating a maximum-entropy-based name finder.
@@ -94,23 +87,6 @@ public class NameFinderME implements TokenNameFinder {
             new WindowFeatureGenerator(additionalContextFeatureGenerator, 8, 8));
   }
 
-  @Deprecated
-  /**
-   * @deprecated the default feature generation is now always included in the models and loaded
-   * if not by the factory. Subclasses using this methods should do the same.
-   */
-  static AdaptiveFeatureGenerator createFeatureGenerator() {
-    return new CachedFeatureGenerator(
-            new AdaptiveFeatureGenerator[]{
-              new WindowFeatureGenerator(new TokenFeatureGenerator(), 2, 2),
-              new WindowFeatureGenerator(new TokenClassFeatureGenerator(true), 2, 2),
-              new OutcomePriorFeatureGenerator(),
-              new PreviousMapFeatureGenerator(),
-              new BigramNameFeatureGenerator(),
-              new SentenceFeatureGenerator(true, false)
-            });
-  }
-
   private static AdaptiveFeatureGenerator createFeatureGenerator(
           byte[] generatorDescriptor, final Map<String, Object> resources)
           throws IOException {
@@ -118,15 +94,12 @@ public class NameFinderME implements TokenNameFinder {
 
     if (generatorDescriptor != null) {
       featureGenerator = GeneratorFactory.create(new ByteArrayInputStream(
-              generatorDescriptor), new FeatureGeneratorResourceProvider() {
-
-                public Object getResource(String key) {
-                  if (resources != null) {
-                    return resources.get(key);
-                  }
-                  return null;
-                }
-              });
+          generatorDescriptor), key -> {
+            if (resources != null) {
+              return resources.get(key);
+            }
+            return null;
+          });
     } else {
       featureGenerator = null;
     }
@@ -142,10 +115,9 @@ public class NameFinderME implements TokenNameFinder {
    * Generates name tags for the given sequence, typically a sentence, returning
    * token spans for any identified names.
    *
-   * @param tokens an array of the tokens or words of the sequence, typically a
-   * sentence.
+   * @param tokens an array of the tokens or words of the sequence, typically a sentence.
    * @param additionalContext features which are based on context outside of the
-   * sentence but which should also be used.
+   *     sentence but which should also be used.
    *
    * @return an array of spans for each of the names identified.
    */
@@ -180,7 +152,7 @@ public class NameFinderME implements TokenNameFinder {
    * number of tokens in the previous call to <code>chunk</code>.
    *
    * @param probs An array used to hold the probabilities of the last decoded
-   * sequence.
+   *     sequence.
    */
   public void probs(double[] probs) {
     bestSequence.getProbs(probs);
@@ -191,7 +163,7 @@ public class NameFinderME implements TokenNameFinder {
    * sequence was determined based on the previous call to <code>chunk</code>.
    *
    * @return An array with the same number of probabilities as tokens were sent
-   * to <code>chunk</code> when it was last called.
+   *     to <code>chunk</code> when it was last called.
    */
   public double[] probs() {
     return bestSequence.getProbs();
@@ -204,12 +176,12 @@ public class NameFinderME implements TokenNameFinder {
    * @return
    */
   private Span[] setProbs(Span[] spans) {
-     double[] probs = probs(spans);
-     if (probs != null) {
+    double[] probs = probs(spans);
+    if (probs != null) {
 
       for (int i = 0; i < probs.length; i++) {
         double prob = probs[i];
-        spans[i]= new Span(spans[i], prob);
+        spans[i] = new Span(spans[i], prob);
       }
     }
     return spans;
@@ -248,26 +220,27 @@ public class NameFinderME implements TokenNameFinder {
   public static TokenNameFinderModel train(String languageCode, String type,
           ObjectStream<NameSample> samples, TrainingParameters trainParams,
           TokenNameFinderFactory factory) throws IOException {
-    String beamSizeString = trainParams.getSettings().get(BeamSearch.BEAM_SIZE_PARAMETER);
 
-    int beamSize = NameFinderME.DEFAULT_BEAM_SIZE;
-    if (beamSizeString != null) {
-      beamSize = Integer.parseInt(beamSizeString);
-    }
+    trainParams.putIfAbsent(TrainingParameters.ALGORITHM_PARAM, PerceptronTrainer.PERCEPTRON_VALUE);
+    trainParams.putIfAbsent(TrainingParameters.CUTOFF_PARAM, 0);
+    trainParams.putIfAbsent(TrainingParameters.ITERATIONS_PARAM, 300);
 
-    Map<String, String> manifestInfoEntries = new HashMap<String, String>();
+    int beamSize = trainParams.getIntParameter(BeamSearch.BEAM_SIZE_PARAMETER,
+            NameFinderME.DEFAULT_BEAM_SIZE);
+
+    Map<String, String> manifestInfoEntries = new HashMap<>();
 
     MaxentModel nameFinderModel = null;
 
     SequenceClassificationModel<String> seqModel = null;
 
-    TrainerType trainerType = TrainerFactory.getTrainerType(trainParams.getSettings());
+    TrainerType trainerType = TrainerFactory.getTrainerType(trainParams);
 
     if (TrainerType.EVENT_MODEL_TRAINER.equals(trainerType)) {
       ObjectStream<Event> eventStream = new NameFinderEventStream(samples, type,
               factory.createContextGenerator(), factory.createSequenceCodec());
 
-      EventTrainer trainer = TrainerFactory.getEventTrainer(trainParams.getSettings(), manifestInfoEntries);
+      EventTrainer trainer = TrainerFactory.getEventTrainer(trainParams, manifestInfoEntries);
       nameFinderModel = trainer.train(eventStream);
     } // TODO: Maybe it is not a good idea, that these two don't use the context generator ?!
     // These also don't use the sequence codec ?!
@@ -275,13 +248,14 @@ public class NameFinderME implements TokenNameFinder {
       NameSampleSequenceStream ss = new NameSampleSequenceStream(samples, factory.createContextGenerator());
 
       EventModelSequenceTrainer trainer = TrainerFactory.getEventModelSequenceTrainer(
-              trainParams.getSettings(), manifestInfoEntries);
+              trainParams, manifestInfoEntries);
       nameFinderModel = trainer.train(ss);
     } else if (TrainerType.SEQUENCE_TRAINER.equals(trainerType)) {
       SequenceTrainer trainer = TrainerFactory.getSequenceModelTrainer(
-              trainParams.getSettings(), manifestInfoEntries);
+              trainParams, manifestInfoEntries);
 
-      NameSampleSequenceStream ss = new NameSampleSequenceStream(samples, factory.createContextGenerator(), false);
+      NameSampleSequenceStream ss =
+          new NameSampleSequenceStream(samples, factory.createContextGenerator(), false);
       seqModel = trainer.train(ss);
     } else {
       throw new IllegalStateException("Unexpected trainer type!");
@@ -297,134 +271,15 @@ public class NameFinderME implements TokenNameFinder {
   }
 
   /**
-   * Trains a name finder model.
-   *
-   * @param languageCode the language of the training data
-   * @param type null or an override type for all types in the training data
-   * @param samples the training data
-   * @param trainParams machine learning train parameters
-   * @param generator null or the feature generator
-   * @param resources the resources for the name finder or null if none
-   *
-   * @return the newly trained model
-   *
-   * @throws IOException
-   * @deprecated use
-   * {@link NameFinderME#train(String, String, ObjectStream, TrainingParameters, TokenNameFinderFactory)}
-   * instead.
-   */
-  @Deprecated
-  static TokenNameFinderModel train(String languageCode, String type, ObjectStream<NameSample> samples,
-          TrainingParameters trainParams, AdaptiveFeatureGenerator generator, final Map<String, Object> resources)
-          throws IOException {
-
-    if (languageCode == null) {
-      throw new IllegalArgumentException("languageCode must not be null!");
-    }
-
-    String beamSizeString = trainParams.getSettings().get(BeamSearch.BEAM_SIZE_PARAMETER);
-
-    int beamSize = NameFinderME.DEFAULT_BEAM_SIZE;
-    if (beamSizeString != null) {
-      beamSize = Integer.parseInt(beamSizeString);
-    }
-
-    Map<String, String> manifestInfoEntries = new HashMap<String, String>();
-
-    AdaptiveFeatureGenerator featureGenerator;
-
-    if (generator != null) {
-      featureGenerator = generator;
-    } else {
-      featureGenerator = createFeatureGenerator();
-    }
-
-    MaxentModel nameFinderModel = null;
-
-    SequenceClassificationModel<String> seqModel = null;
-
-    TrainerType trainerType = TrainerFactory.getTrainerType(trainParams.getSettings());
-
-    if (TrainerType.EVENT_MODEL_TRAINER.equals(trainerType)) {
-      ObjectStream<Event> eventStream = new NameFinderEventStream(samples, type,
-              new DefaultNameContextGenerator(featureGenerator), new BioCodec());
-
-      EventTrainer trainer = TrainerFactory.getEventTrainer(trainParams.getSettings(), manifestInfoEntries);
-      nameFinderModel = trainer.train(eventStream);
-    } else if (TrainerType.EVENT_MODEL_SEQUENCE_TRAINER.equals(trainerType)) {
-      NameSampleSequenceStream ss = new NameSampleSequenceStream(samples, featureGenerator);
-
-      EventModelSequenceTrainer trainer = TrainerFactory.getEventModelSequenceTrainer(
-              trainParams.getSettings(), manifestInfoEntries);
-      nameFinderModel = trainer.train(ss);
-    } else if (TrainerType.SEQUENCE_TRAINER.equals(trainerType)) {
-      SequenceTrainer trainer = TrainerFactory.getSequenceModelTrainer(
-              trainParams.getSettings(), manifestInfoEntries);
-
-      NameSampleSequenceStream ss = new NameSampleSequenceStream(samples, featureGenerator, false);
-      seqModel = trainer.train(ss);
-    } else {
-      throw new IllegalStateException("Unexpected trainer type!");
-    }
-
-     // TODO: Pass the sequence codec down to the model! We will just store the class
-    // name in the model, and then always use the extension loader to create it!
-    // The cmd line interface, will replace shortcuts with actual class names.
-    // depending on which one is not null!
-    if (seqModel != null) {
-      return new TokenNameFinderModel(languageCode, seqModel, null,
-              resources, manifestInfoEntries, new BioCodec(), new TokenNameFinderFactory());
-    } else {
-      return new TokenNameFinderModel(languageCode, nameFinderModel, beamSize, null,
-              resources, manifestInfoEntries, new BioCodec(), new TokenNameFinderFactory());
-    }
-  }
-
-  /**
-   * Trains a name finder model.
-   *
-   * @param languageCode the language of the training data
-   * @param type null or an override type for all types in the training data
-   * @param samples the training data
-   * @param trainParams machine learning train parameters
-   * @param featureGeneratorBytes descriptor to configure the feature generation
-   * or null
-   * @param resources the resources for the name finder or null if none
-   *
-   * @return the newly trained model
-   *
-   * @throws IOException
-   * @deprecated use
-   * {@link NameFinderME#train(String, String, ObjectStream, TrainingParameters, TokenNameFinderFactory)}
-   * instead.
-   */
-  @Deprecated
-  static TokenNameFinderModel train(String languageCode, String type,
-          ObjectStream<NameSample> samples, TrainingParameters trainParams,
-          byte[] featureGeneratorBytes, final Map<String, Object> resources)
-          throws IOException {
-
-    TokenNameFinderModel model = train(languageCode, type, samples, trainParams,
-            createFeatureGenerator(featureGeneratorBytes, resources), resources);
-
-    if (featureGeneratorBytes != null) {
-      model = model.updateFeatureGenerator(featureGeneratorBytes);
-    }
-
-    return model;
-  }
-
-  /**
    * Gets the name type from the outcome
    *
    * @param outcome the outcome
    * @return the name type, or null if not set
    */
-  static final String extractNameType(String outcome) {
+  static String extractNameType(String outcome) {
     Matcher matcher = typedOutcomePattern.matcher(outcome);
     if (matcher.matches()) {
-      String nameType = matcher.group(1);
-      return nameType;
+      return matcher.group(1);
     }
 
     return null;
@@ -443,9 +298,9 @@ public class NameFinderME implements TokenNameFinder {
    *
    * @return non-overlapping spans
    */
-  public static Span[] dropOverlappingSpans(Span spans[]) {
+  public static Span[] dropOverlappingSpans(Span[] spans) {
 
-    List<Span> sortedSpans = new ArrayList<Span>(spans.length);
+    List<Span> sortedSpans = new ArrayList<>(spans.length);
     Collections.addAll(sortedSpans, spans);
     Collections.sort(sortedSpans);
 

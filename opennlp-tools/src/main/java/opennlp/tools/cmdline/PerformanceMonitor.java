@@ -129,15 +129,15 @@ public class PerformanceMonitor {
           averageThroughput = 0;
         }
 
-        out.printf("current: %.1f " + unit + "/s avg: %.1f " + unit + "/s total: %d " + unit + "%n", currentThroughput,
-            averageThroughput, counter);
+        out.printf("current: %.1f " + unit + "/s avg: %.1f " + unit + "/s total: %d "
+            + unit + "%n", currentThroughput, averageThroughput, counter);
 
         lastTimeStamp = System.currentTimeMillis();
         lastCount = counter;
       }
     };
 
-   beeperHandle = scheduler.scheduleAtFixedRate(beeper, 1, 1, TimeUnit.SECONDS);
+    beeperHandle = scheduler.scheduleAtFixedRate(beeper, 1, 1, TimeUnit.SECONDS);
   }
 
   public void stopAndPrintFinalResult() {
@@ -166,7 +166,7 @@ public class PerformanceMonitor {
     out.println();
     out.println();
 
-    out.printf("Average: %.1f " + unit +"/s %n", average);
+    out.printf("Average: %.1f " + unit + "/s %n", average);
     out.println("Total: " + counter + " " + unit);
     out.println("Runtime: " + timePassed / 1000d + "s");
   }

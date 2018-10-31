@@ -15,12 +15,12 @@
  * limitations under the License.
  */
 
-
 package opennlp.tools.dictionary.serializer;
 
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * The {@link Attributes} class stores name value pairs.
@@ -30,7 +30,7 @@ import java.util.Map;
  */
 public class Attributes {
 
-  private Map<String, String> mNameValueMap = new HashMap<String, String>();
+  private Map<String, String> mNameValueMap = new HashMap<>();
 
   /**
    * Retrieves the value for the given key or null if attribute it not set.
@@ -50,13 +50,8 @@ public class Attributes {
    * @param value
    */
   public void setValue(String key, String value) {
-
-    if (key == null) {
-      throw new IllegalArgumentException("key must not be null");
-    }
-    if (value == null) {
-      throw new IllegalArgumentException("value must not be null");
-    }
+    Objects.requireNonNull(key, "key must not be null");
+    Objects.requireNonNull(value, "value must not be null");
 
     mNameValueMap.put(key, value);
   }

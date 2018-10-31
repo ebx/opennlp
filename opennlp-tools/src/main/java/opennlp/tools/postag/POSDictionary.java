@@ -15,34 +15,30 @@
  * limitations under the License.
  */
 
-
 package opennlp.tools.postag;
 
-import java.io.BufferedReader;
-import java.io.FileInputStream;
-import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Objects;
 
 import opennlp.tools.dictionary.serializer.Attributes;
-import opennlp.tools.dictionary.serializer.DictionarySerializer;
+import opennlp.tools.dictionary.serializer.DictionaryEntryPersistor;
 import opennlp.tools.dictionary.serializer.Entry;
-import opennlp.tools.dictionary.serializer.EntryInserter;
 import opennlp.tools.util.InvalidFormatException;
 import opennlp.tools.util.StringList;
 import opennlp.tools.util.StringUtil;
+import opennlp.tools.util.model.SerializableArtifact;
 
 /**
  * Provides a means of determining which tags are valid for a particular word
  * based on a tag dictionary read from a file.
  */
-public class POSDictionary implements Iterable<String>, MutableTagDictionary {
+public class POSDictionary implements Iterable<String>, MutableTagDictionary, SerializableArtifact {
 
   private Map<String, String[]> dictionary;
 
@@ -60,7 +56,7 @@ public class POSDictionary implements Iterable<String>, MutableTagDictionary {
    * @param caseSensitive the {@link POSDictionary} case sensitivity
    */
   public POSDictionary(boolean caseSensitive) {
-    dictionary = new HashMap<String, String[]>();
+    dictionary = new HashMap<>();
     this.caseSensitive = caseSensitive;
   }
 
@@ -70,7 +66,7 @@ public class POSDictionary implements Iterable<String>, MutableTagDictionary {
    * @param word The word.
    *
    * @return A list of valid tags for the specified word or
-   * null if no information is available for that word.
+   *     null if no information is available for that word.
    */
   public String[] getTags(String word) {
     if (caseSensitive) {
@@ -104,7 +100,7 @@ public class POSDictionary implements Iterable<String>, MutableTagDictionary {
     return dictionary.keySet().iterator();
   }
 
-  private static String tagsToString(String tags[]) {
+  private static String tagsToString(String[] tags) {
 
     StringBuilder tagString = new StringBuilder();
 
@@ -157,26 +153,41 @@ public class POSDictionary implements Iterable<String>, MutableTagDictionary {
       }
     };
 
-    DictionarySerializer.serialize(out, entries, caseSensitive);
+    DictionaryEntryPersistor.serialize(out, entries, caseSensitive);
   }
 
   @Override
-  public boolean equals(Object o) {
+  public int hashCode() {
 
-    if (o == this) {
+    int[] keyHashes = new int[dictionary.size()];
+    int[] valueHashes = new int[dictionary.size()];
+
+    int i = 0;
+
+    for (String word : this) {
+      keyHashes[i] = word.hashCode();
+      valueHashes[i] = Arrays.hashCode(getTags(word));
+      i++;
+    }
+
+    Arrays.sort(keyHashes);
+    Arrays.sort(valueHashes);
+
+    return Objects.hash(Arrays.hashCode(keyHashes), Arrays.hashCode(valueHashes));
+  }
+
+  @Override
+  public boolean equals(Object obj) {
+    if (obj == this) {
       return true;
     }
-    else if (o instanceof POSDictionary) {
-      POSDictionary dictionary = (POSDictionary) o;
 
-      if (this.dictionary.size() == dictionary.dictionary.size()) {
+    if (obj instanceof POSDictionary) {
+      POSDictionary posDictionary = (POSDictionary) obj;
 
+      if (this.dictionary.size() == posDictionary.dictionary.size()) {
         for (String word : this) {
-
-          String aTags[] = getTags(word);
-          String bTags[] = dictionary.getTags(word);
-
-          if (!Arrays.equals(aTags, bTags)) {
+          if (!Arrays.equals(getTags(word), posDictionary.getTags(word))) {
             return false;
           }
         }
@@ -210,30 +221,29 @@ public class POSDictionary implements Iterable<String>, MutableTagDictionary {
    * @throws IOException
    * @throws InvalidFormatException
    */
-  public static POSDictionary create(InputStream in) throws IOException, InvalidFormatException {
+  public static POSDictionary create(InputStream in) throws IOException {
 
     final POSDictionary newPosDict = new POSDictionary();
 
-    boolean isCaseSensitive = DictionarySerializer.create(in, new EntryInserter() {
-      public void insert(Entry entry) throws InvalidFormatException {
+    boolean isCaseSensitive = DictionaryEntryPersistor.create(in, entry -> {
 
-        String tagString = entry.getAttributes().getValue("tags");
+      String tagString = entry.getAttributes().getValue("tags");
 
-        String[] tags = tagString.split(" ");
+      String[] tags = tagString.split(" ");
 
-        StringList word = entry.getTokens();
+      StringList word = entry.getTokens();
 
-        if (word.size() != 1)
-          throw new InvalidFormatException("Each entry must have exactly one token! "+word);
+      if (word.size() != 1)
+        throw new InvalidFormatException("Each entry must have exactly one token! " + word);
 
-        newPosDict.dictionary.put(word.getToken(0), tags);
-      }});
+      newPosDict.dictionary.put(word.getToken(0), tags);
+    });
 
     newPosDict.caseSensitive = isCaseSensitive;
 
     // TODO: The dictionary API needs to be improved to do this better!
     if (!isCaseSensitive) {
-      Map<String, String[]> lowerCasedDictionary = new HashMap<String, String[]>();
+      Map<String, String[]> lowerCasedDictionary = new HashMap<>();
 
       for (Map.Entry<String, String[]> entry : newPosDict.dictionary.entrySet()) {
         lowerCasedDictionary.put(StringUtil.toLowerCase(entry.getKey()), entry.getValue());
@@ -255,5 +265,10 @@ public class POSDictionary implements Iterable<String>, MutableTagDictionary {
 
   public boolean isCaseSensitive() {
     return this.caseSensitive;
+  }
+
+  @Override
+  public Class<?> getArtifactSerializerClass() {
+    return POSTaggerFactory.POSDictionarySerializer.class;
   }
 }

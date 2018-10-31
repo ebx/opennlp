@@ -37,6 +37,12 @@ import opennlp.tools.cmdline.doccat.DoccatEvaluatorTool;
 import opennlp.tools.cmdline.doccat.DoccatTool;
 import opennlp.tools.cmdline.doccat.DoccatTrainerTool;
 import opennlp.tools.cmdline.entitylinker.EntityLinkerTool;
+import opennlp.tools.cmdline.langdetect.LanguageDetectorConverterTool;
+import opennlp.tools.cmdline.langdetect.LanguageDetectorCrossValidatorTool;
+import opennlp.tools.cmdline.langdetect.LanguageDetectorEvaluatorTool;
+import opennlp.tools.cmdline.langdetect.LanguageDetectorTool;
+import opennlp.tools.cmdline.langdetect.LanguageDetectorTrainerTool;
+import opennlp.tools.cmdline.languagemodel.NGramLanguageModelTool;
 import opennlp.tools.cmdline.lemmatizer.LemmatizerEvaluatorTool;
 import opennlp.tools.cmdline.lemmatizer.LemmatizerMETool;
 import opennlp.tools.cmdline.lemmatizer.LemmatizerTrainerTool;
@@ -78,9 +84,9 @@ public final class CLI {
   private static Map<String, CmdLineTool> toolLookupMap;
 
   static {
-    toolLookupMap = new LinkedHashMap<String, CmdLineTool>();
+    toolLookupMap = new LinkedHashMap<>();
 
-    List<CmdLineTool> tools = new LinkedList<CmdLineTool>();
+    List<CmdLineTool> tools = new LinkedList<>();
 
     // Document Categorizer
     tools.add(new DoccatTool());
@@ -88,6 +94,13 @@ public final class CLI {
     tools.add(new DoccatEvaluatorTool());
     tools.add(new DoccatCrossValidatorTool());
     tools.add(new DoccatConverterTool());
+
+    // Language Detector
+    tools.add(new LanguageDetectorTool());
+    tools.add(new LanguageDetectorTrainerTool());
+    tools.add(new LanguageDetectorConverterTool());
+    tools.add(new LanguageDetectorCrossValidatorTool());
+    tools.add(new LanguageDetectorEvaluatorTool());
 
     // Dictionary Builder
     tools.add(new DictionaryBuilderTool());
@@ -123,7 +136,7 @@ public final class CLI {
     tools.add(new POSTaggerEvaluatorTool());
     tools.add(new POSTaggerCrossValidatorTool());
     tools.add(new POSTaggerConverterTool());
-    
+
     //Lemmatizer
     tools.add(new LemmatizerMETool());
     tools.add(new LemmatizerTrainerTool());
@@ -148,6 +161,9 @@ public final class CLI {
     // Entity Linker
     tools.add(new EntityLinkerTool());
 
+    // Language Model
+    tools.add(new NGramLanguageModelTool());
+
     for (CmdLineTool tool : tools) {
       toolLookupMap.put(tool.getName(), tool);
     }
@@ -161,7 +177,7 @@ public final class CLI {
   public static Set<String> getToolNames() {
     return toolLookupMap.keySet();
   }
-  
+
   /**
    * @return a read only map with tool names and instances
    */
@@ -205,7 +221,8 @@ public final class CLI {
       System.exit(0);
     }
 
-    String toolArguments[] = new String[args.length -1];
+    final long startTime = System.currentTimeMillis();
+    String[] toolArguments = new String[args.length - 1];
     System.arraycopy(args, 1, toolArguments, 0, toolArguments.length);
 
     String toolName = args[0];
@@ -226,17 +243,17 @@ public final class CLI {
 
       if ((0 == toolArguments.length && tool.hasParams()) ||
           0 < toolArguments.length && "help".equals(toolArguments[0])) {
-          if (tool instanceof TypedCmdLineTool) {
-            System.out.println(((TypedCmdLineTool) tool).getHelp(formatName));
-          } else if (tool instanceof BasicCmdLineTool) {
-            System.out.println(tool.getHelp());
-          }
+        if (tool instanceof TypedCmdLineTool) {
+          System.out.println(((TypedCmdLineTool<?>) tool).getHelp(formatName));
+        } else if (tool instanceof BasicCmdLineTool) {
+          System.out.println(tool.getHelp());
+        }
 
-          System.exit(0);
+        System.exit(0);
       }
 
       if (tool instanceof TypedCmdLineTool) {
-        ((TypedCmdLineTool) tool).run(formatName, toolArguments);
+        ((TypedCmdLineTool<?>) tool).run(formatName, toolArguments);
       } else if (tool instanceof BasicCmdLineTool) {
         if (-1 == idx) {
           ((BasicCmdLineTool) tool).run(toolArguments);
@@ -260,5 +277,8 @@ public final class CLI {
 
       System.exit(e.getCode());
     }
+
+    final long endTime = System.currentTimeMillis();
+    System.err.format("Execution time: %.3f seconds\n", (endTime - startTime) / 1000.0);
   }
 }

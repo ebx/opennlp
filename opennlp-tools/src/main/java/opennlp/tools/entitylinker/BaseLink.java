@@ -1,11 +1,12 @@
 /*
- * Copyright 2013 The Apache Software Foundation.
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,6 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package opennlp.tools.entitylinker;
 
 import java.util.HashMap;
@@ -29,7 +31,7 @@ public abstract class BaseLink {
   private String itemID;
   private String itemName;
   private String itemType;
-  private HashMap<String, Double> scoreMap = new HashMap<String, Double>();
+  private HashMap<String, Double> scoreMap = new HashMap<>();
 
   public BaseLink() {
   }
@@ -40,17 +42,19 @@ public abstract class BaseLink {
     this.itemName = itemName;
     this.itemType = itemType;
   }
-/**
- * Any parent ID for the linked item
- * @return
- */
+
+  /**
+   * Any parent ID for the linked item
+   * @return
+   */
   public String getItemParentID() {
     return itemParentID;
   }
-/**
- * returns the parent ID of the linked item
- * @param itemParentID
- */
+
+  /**
+   * returns the parent ID of the linked item
+   * @param itemParentID
+   */
   public void setItemParentID(String itemParentID) {
     this.itemParentID = itemParentID;
   }
@@ -122,40 +126,31 @@ public abstract class BaseLink {
 
   @Override
   public String toString() {
-    return "\tBaseLink" + "\n\titemParentID=" + itemParentID + ", \n\titemID=" + itemID + ", \n\titemName=" + itemName + ", \n\titemType=" + itemType + ", \n\tscoreMap=" + scoreMap + "\n";
+    return "\tBaseLink" + "\n\titemParentID=" + itemParentID + ", \n\titemID=" + itemID
+        + ", \n\titemName=" + itemName + ", \n\titemType=" + itemType + ", \n\tscoreMap="
+        + scoreMap + "\n";
   }
 
   @Override
   public int hashCode() {
-    int hash = 7;
-    hash = 71 * hash + Objects.hashCode(this.itemParentID);
-    hash = 71 * hash + Objects.hashCode(this.itemID);
-    hash = 71 * hash + Objects.hashCode(this.itemName);
-    hash = 71 * hash + Objects.hashCode(this.itemType);
-    return hash;
+    return Objects.hash(itemParentID, itemID, itemName, itemType);
   }
 
   @Override
   public boolean equals(Object obj) {
-    if (obj == null) {
-      return false;
+    if (obj == this) {
+      return true;
     }
-    if (getClass() != obj.getClass()) {
-      return false;
+
+    if (obj instanceof BaseLink) {
+      BaseLink other = (BaseLink) obj;
+
+      return Objects.equals(itemParentID, other.itemParentID)
+          && Objects.equals(itemID, other.itemID)
+          && Objects.equals(itemName, other.itemName)
+          && Objects.equals(itemType, other.itemType);
     }
-    final BaseLink other = (BaseLink) obj;
-    if (!Objects.equals(this.itemParentID, other.itemParentID)) {
-      return false;
-    }
-    if (!Objects.equals(this.itemID, other.itemID)) {
-      return false;
-    }
-    if (!Objects.equals(this.itemName, other.itemName)) {
-      return false;
-    }
-    if (!Objects.equals(this.itemType, other.itemType)) {
-      return false;
-    }
-    return true;
+
+    return false;
   }
 }

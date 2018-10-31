@@ -33,11 +33,10 @@ public class BioCodec implements SequenceCodec<String> {
 
   private static final Pattern typedOutcomePattern = Pattern.compile("(.+)-\\w+");
 
-  static final String extractNameType(String outcome) {
+  static String extractNameType(String outcome) {
     Matcher matcher = typedOutcomePattern.matcher(outcome);
-    if(matcher.matches()) {
-      String nameType = matcher.group(1);
-      return nameType;
+    if (matcher.matches()) {
+      return matcher.group(1);
     }
 
     return null;
@@ -46,7 +45,7 @@ public class BioCodec implements SequenceCodec<String> {
   public Span[] decode(List<String> c) {
     int start = -1;
     int end = -1;
-    List<Span> spans = new ArrayList<Span>(c.size());
+    List<Span> spans = new ArrayList<>(c.size());
     for (int li = 0; li < c.size(); li++) {
       String chunkTag = c.get(li);
       if (chunkTag.endsWith(BioCodec.START)) {
@@ -77,7 +76,7 @@ public class BioCodec implements SequenceCodec<String> {
     return spans.toArray(new Span[spans.size()]);
   }
 
-  public String[] encode(Span names[], int length) {
+  public String[] encode(Span[] names, int length) {
     String[] outcomes = new String[length];
     for (int i = 0; i < outcomes.length; i++) {
       outcomes[i] = BioCodec.OTHER;
@@ -114,20 +113,18 @@ public class BioCodec implements SequenceCodec<String> {
     // To validate the model we check if we have one outcome named "other", at least
     // one outcome with suffix start. After that we check if all outcomes that ends with
     // "cont" have a pair that ends with "start".
-    List<String> start = new ArrayList<String>();
-    List<String> cont = new ArrayList<String>();
+    List<String> start = new ArrayList<>();
+    List<String> cont = new ArrayList<>();
 
     for (int i = 0; i < outcomes.length; i++) {
       String outcome = outcomes[i];
-      if (outcome.endsWith(NameFinderME.START)) {
+      if (outcome.endsWith(BioCodec.START)) {
         start.add(outcome.substring(0, outcome.length()
-            - NameFinderME.START.length()));
-      } else if (outcome.endsWith(NameFinderME.CONTINUE)) {
+            - BioCodec.START.length()));
+      } else if (outcome.endsWith(BioCodec.CONTINUE)) {
         cont.add(outcome.substring(0, outcome.length()
-            - NameFinderME.CONTINUE.length()));
-      } else if (outcome.equals(NameFinderME.OTHER)) {
-        // don't fail anymore if couldn't find outcome named OTHER
-      } else {
+            - BioCodec.CONTINUE.length()));
+      } else if (!outcome.equals(BioCodec.OTHER)) {
         // got unexpected outcome
         return false;
       }

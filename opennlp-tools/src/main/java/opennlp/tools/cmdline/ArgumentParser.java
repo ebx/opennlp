@@ -49,21 +49,21 @@ import java.util.Set;
  */
 public class ArgumentParser {
 
-  public @Retention(RetentionPolicy.RUNTIME)
-  @interface OptionalParameter {
-    public static final String DEFAULT_CHARSET = "DEFAULT_CHARSET";
-    public String defaultValue() default "";
+  public @Retention(RetentionPolicy.RUNTIME) @interface OptionalParameter {
+    // CHECKSTYLE:OFF
+    String DEFAULT_CHARSET = "DEFAULT_CHARSET";
+    // CHECKSTYLE:ON
+    String defaultValue() default "";
   }
 
-  public @Retention(RetentionPolicy.RUNTIME)
-  @interface ParameterDescription {
-    public String valueName();
-    public String description() default "";
+  public @Retention(RetentionPolicy.RUNTIME) @interface ParameterDescription {
+    String valueName();
+    String description() default "";
   }
 
   private interface ArgumentFactory {
 
-    static final String INVALID_ARG = "Invalid argument: %s %s \n";
+    String INVALID_ARG = "Invalid argument: %s %s \n";
 
     Object parseArgument(Method method, String argName, String argValue);
   }
@@ -112,7 +112,7 @@ public class ArgumentParser {
     public Object parseArgument(Method method, String argName, String charsetName) {
 
       try {
-        if(OptionalParameter.DEFAULT_CHARSET.equals(charsetName)) {
+        if (OptionalParameter.DEFAULT_CHARSET.equals(charsetName)) {
           return Charset.defaultCharset();
         } else if (Charset.isSupported(charsetName)) {
           return Charset.forName(charsetName);
@@ -148,7 +148,7 @@ public class ArgumentParser {
   private static final Map<Class<?>, ArgumentFactory> argumentFactories;
 
   static {
-    Map<Class<?>, ArgumentFactory> factories = new HashMap<Class<?>, ArgumentParser.ArgumentFactory>();
+    Map<Class<?>, ArgumentFactory> factories = new HashMap<>();
     factories.put(Integer.class, new IntegerArgumentFactory());
     factories.put(Boolean.class, new BooleanArgumentFactory());
     factories.put(String.class, new StringArgumentFactory());
@@ -161,15 +161,15 @@ public class ArgumentParser {
   private ArgumentParser() {
   }
 
-  private static <T> void checkProxyInterfaces(Class<T>... proxyInterfaces) {
-    for (Class<T> proxyInterface : proxyInterfaces) {
+  private static void checkProxyInterfaces(Class<?>... proxyInterfaces) {
+    for (Class<?> proxyInterface : proxyInterfaces) {
       if (null != proxyInterface) {
         if (!proxyInterface.isInterface())
           throw new IllegalArgumentException("proxy interface is not an interface!");
 
         // all checks should also be performed for super interfaces
 
-        Method methods[] = proxyInterface.getMethods();
+        Method[] methods = proxyInterface.getMethods();
 
         if (methods.length == 0)
           throw new IllegalArgumentException("proxy interface must at least declare one method!");
@@ -181,18 +181,22 @@ public class ArgumentParser {
             throw new IllegalArgumentException(method.getName() + " method name does not start with 'get'!");
 
           // check that method has zero arguments
-          if (method.getParameterTypes().length != 0)
-            throw new IllegalArgumentException(method.getName() + " method must have zero parameters but has " +
-                    method.getParameterTypes().length + "!");
+          if (method.getParameterTypes().length != 0) {
+            throw new IllegalArgumentException(method.getName()
+                + " method must have zero parameters but has "
+                + method.getParameterTypes().length + "!");
+          }
 
           // check return types of interface
           Class<?> returnType = method.getReturnType();
 
           Set<Class<?>> compatibleReturnTypes = argumentFactories.keySet();
 
-          if(!compatibleReturnTypes.contains(returnType))
-             throw new IllegalArgumentException(method.getName() + " method must have compatible return type! Got " +
-                     returnType + ", expected one of " + compatibleReturnTypes);
+          if (!compatibleReturnTypes.contains(returnType)) {
+            throw new IllegalArgumentException(method.getName()
+                + " method must have compatible return type! Got "
+                + returnType + ", expected one of " + compatibleReturnTypes);
+          }
         }
       }
     }
@@ -200,14 +204,12 @@ public class ArgumentParser {
 
   private static String methodNameToParameter(String methodName) {
     // remove get from method name
-    char parameterNameChars[] = methodName.toCharArray();
+    char[] parameterNameChars = methodName.toCharArray();
 
     // name length is checked to be at least 4 prior
     parameterNameChars[3] = Character.toLowerCase(parameterNameChars[3]);
 
-    String parameterName = "-" + new String(parameterNameChars).substring(3);
-
-    return parameterName;
+    return "-" + new String(parameterNameChars).substring(3);
   }
 
   /**
@@ -222,7 +224,7 @@ public class ArgumentParser {
   public static <T> String createUsage(Class<T> argProxyInterface) {
     return createUsage(new Class[]{argProxyInterface});
   }
-  
+
   /**
    * Auxiliary class that holds information about an argument. This is used by the
    * GenerateManualTool, which creates a Docbook for the CLI automatically.
@@ -232,7 +234,7 @@ public class ArgumentParser {
     private final String value;
     private final String description;
     private final boolean optional;
-    
+
     public Argument(String argument, String value, String description,
         boolean optional) {
       super();
@@ -256,9 +258,9 @@ public class ArgumentParser {
 
     public boolean getOptional() {
       return optional;
-    } 
+    }
   }
-  
+
 
 
   /**
@@ -267,14 +269,14 @@ public class ArgumentParser {
    * @param argProxyInterfaces interfaces with parameter descriptions
    * @return the help message usage string
    */
-  public static <T> List<Argument> createArguments(Class<T>... argProxyInterfaces) {
+  public static List<Argument> createArguments(Class<?>... argProxyInterfaces) {
     checkProxyInterfaces(argProxyInterfaces);
 
-    Set<String> duplicateFilter = new HashSet<String>();
+    Set<String> duplicateFilter = new HashSet<>();
 
-    List<Argument> arguments = new LinkedList<Argument>();
+    List<Argument> arguments = new LinkedList<>();
 
-    for (Class<T> argProxyInterface : argProxyInterfaces) {
+    for (Class<?> argProxyInterface : argProxyInterfaces) {
       if (null != argProxyInterface) {
         for (Method method : argProxyInterface.getMethods()) {
 
@@ -291,16 +293,17 @@ public class ArgumentParser {
             else {
               duplicateFilter.add(paramName);
             }
-            
+
             boolean isOptional = false;
 
             if (optional != null)
               isOptional = true;
-            
-            Argument arg = new Argument(paramName.substring(1), desc.valueName(), desc.description(), isOptional);
+
+            Argument arg = new Argument(paramName.substring(1),
+                desc.valueName(), desc.description(), isOptional);
 
             arguments.add(arg);
-            
+
           }
         }
       }
@@ -318,14 +321,14 @@ public class ArgumentParser {
    * @param argProxyInterfaces interfaces with parameter descriptions
    * @return the help message usage string
    */
-  public static <T> String createUsage(Class<T>... argProxyInterfaces) {
+  public static String createUsage(Class<?>... argProxyInterfaces) {
     checkProxyInterfaces(argProxyInterfaces);
 
-    Set<String> duplicateFilter = new HashSet<String>();
+    Set<String> duplicateFilter = new HashSet<>();
 
     StringBuilder usage = new StringBuilder();
     StringBuilder details = new StringBuilder();
-    for (Class<T> argProxyInterface : argProxyInterfaces) {
+    for (Class<?> argProxyInterface : argProxyInterfaces) {
       if (null != argProxyInterface) {
         for (Method method : argProxyInterface.getMethods()) {
 
@@ -348,7 +351,7 @@ public class ArgumentParser {
 
             usage.append(paramName).append(' ').append(desc.valueName());
             details.append('\t').append(paramName).append(' ').append(desc.valueName()).append('\n');
-            if(desc.description() != null && desc.description().length() > 0) {
+            if (desc.description().length() > 0) {
               details.append("\t\t").append(desc.description()).append('\n');
             }
 
@@ -382,7 +385,7 @@ public class ArgumentParser {
    * @return true, if arguments are valid
    */
   @SuppressWarnings({"unchecked"})
-  public static <T> boolean validateArguments(String args[], Class<T> argProxyInterface) {
+  public static <T> boolean validateArguments(String[] args, Class<T> argProxyInterface) {
     return validateArguments(args, new Class[]{argProxyInterface});
   }
 
@@ -395,7 +398,7 @@ public class ArgumentParser {
    * @param argProxyInterfaces interfaces with parameters description
    * @return true, if arguments are valid
    */
-  public static <T> boolean validateArguments(String args[], Class<T>... argProxyInterfaces) {
+  public static boolean validateArguments(String[] args, Class<?>... argProxyInterfaces) {
     return null == validateArgumentsLoudly(args, argProxyInterfaces);
   }
 
@@ -406,8 +409,7 @@ public class ArgumentParser {
    * @param argProxyInterface interface with parameters description
    * @return null, if arguments are valid or error message otherwise
    */
-  @SuppressWarnings({"unchecked"})
-  public static <T> String validateArgumentsLoudly(String args[], Class<T> argProxyInterface) {
+  public static String validateArgumentsLoudly(String[] args, Class<?> argProxyInterface) {
     return validateArgumentsLoudly(args, new Class[]{argProxyInterface});
   }
 
@@ -418,16 +420,16 @@ public class ArgumentParser {
    * @param argProxyInterfaces interfaces with parameters description
    * @return null, if arguments are valid or error message otherwise
    */
-  public static <T> String validateArgumentsLoudly(String args[], Class<T>... argProxyInterfaces) {
+  public static String validateArgumentsLoudly(String[] args, Class<?>... argProxyInterfaces) {
     // number of parameters must be always be even
     if (args.length % 2 != 0) {
       return "Number of parameters must be always be even";
     }
 
     int argumentCount = 0;
-    List<String> parameters = new ArrayList<String>(Arrays.asList(args));
+    List<String> parameters = new ArrayList<>(Arrays.asList(args));
 
-    for (Class<T> argProxyInterface : argProxyInterfaces) {
+    for (Class<?> argProxyInterface : argProxyInterfaces) {
       for (Method method : argProxyInterface.getMethods()) {
         String paramName = methodNameToParameter(method.getName());
         int paramIndex = CmdLineUtil.getParameterIndex(paramName, args);
@@ -472,17 +474,18 @@ public class ArgumentParser {
    * @return parsed parameters
    *
    * @throws TerminateToolException if an argument value cannot be parsed.
-   * @throws IllegalArgumentException if validateArguments returns false, if the proxy interface is not compatible.
+   * @throws IllegalArgumentException if validateArguments returns false,
+   *     if the proxy interface is not compatible.
    */
   @SuppressWarnings("unchecked")
-  public static <T> T parse(String args[], Class<T> argProxyInterface) {
+  public static <T> T parse(String[] args, Class<T> argProxyInterface) {
 
     checkProxyInterfaces(argProxyInterface);
 
     if (!validateArguments(args, argProxyInterface))
       throw new IllegalArgumentException("Passed args must be valid!");
 
-    Map<String, Object> arguments = new HashMap<String, Object>();
+    Map<String, Object> arguments = new HashMap<>();
 
     for (Method method : argProxyInterface.getMethods()) {
 
@@ -530,8 +533,8 @@ public class ArgumentParser {
    * @param <T> T
    * @return arguments pertaining to argProxyInterface
    */
-  public static <T> String[] filter(String args[], Class<T> argProxyInterface) {
-    ArrayList<String> parameters = new ArrayList<String>(args.length);
+  public static <T> String[] filter(String[] args, Class<T> argProxyInterface) {
+    ArrayList<String> parameters = new ArrayList<>(args.length);
 
     for (Method method : argProxyInterface.getMethods()) {
 

@@ -49,12 +49,12 @@ public class SentenceDetectorME implements SentenceDetector {
   /**
    * Constant indicates a sentence split.
    */
-  public static final String SPLIT ="s";
+  public static final String SPLIT = "s";
 
   /**
    * Constant indicates no sentence split.
    */
-  public static final String NO_SPLIT ="n";
+  public static final String NO_SPLIT = "n";
 
   /**
    * The maximum entropy model to use to evaluate contexts.
@@ -74,7 +74,7 @@ public class SentenceDetectorME implements SentenceDetector {
   /**
    * The list of probabilities associated with each decision.
    */
-  private List<Double> sentProbs = new ArrayList<Double>();
+  private List<Double> sentProbs = new ArrayList<>();
 
   protected boolean useTokenEnd;
 
@@ -113,8 +113,8 @@ public class SentenceDetectorME implements SentenceDetector {
   }
 
   private static Set<String> getAbbreviations(Dictionary abbreviations) {
-    if(abbreviations == null) {
-      return Collections.<String>emptySet();
+    if (abbreviations == null) {
+      return Collections.emptySet();
     }
     return abbreviations.asStringSet();
   }
@@ -128,11 +128,9 @@ public class SentenceDetectorME implements SentenceDetector {
    */
   public String[] sentDetect(String s) {
     Span[] spans = sentPosDetect(s);
-    String sentences[];
+    String[] sentences;
     if (spans.length != 0) {
-
       sentences = new String[spans.length];
-
       for (int si = 0; si < spans.length; si++) {
         sentences[si] = spans[si].getCoveredText(s).toString();
       }
@@ -167,17 +165,16 @@ public class SentenceDetectorME implements SentenceDetector {
     sentProbs.clear();
     StringBuffer sb = new StringBuffer(s);
     List<Integer> enders = scanner.getPositions(s);
-    List<Integer> positions = new ArrayList<Integer>(enders.size());
+    List<Integer> positions = new ArrayList<>(enders.size());
 
     for (int i = 0, end = enders.size(), index = 0; i < end; i++) {
-      Integer candidate = enders.get(i);
-      int cint = candidate;
+      int cint = enders.get(i);
       // skip over the leading parts of non-token final delimiters
       int fws = getFirstWS(s,cint + 1);
       if (i + 1 < end && enders.get(i + 1) < fws) {
         continue;
       }
-      if(positions.size() > 0 && cint < positions.get(positions.size()-1)) continue;
+      if (positions.size() > 0 && cint < positions.get(positions.size() - 1)) continue;
 
       double[] probs = model.eval(cgen.getContext(sb, cint));
       String bestOutcome = model.getBestOutcome(probs);
@@ -205,37 +202,37 @@ public class SentenceDetectorME implements SentenceDetector {
     // string does not contain sentence end positions
     if (starts.length == 0) {
 
-        // remove leading and trailing whitespace
-        int start = 0;
-        int end = s.length();
+      // remove leading and trailing whitespace
+      int start = 0;
+      int end = s.length();
 
-        while (start < s.length() && StringUtil.isWhitespace(s.charAt(start)))
-          start++;
+      while (start < s.length() && StringUtil.isWhitespace(s.charAt(start)))
+        start++;
 
-        while (end > 0 && StringUtil.isWhitespace(s.charAt(end - 1)))
-          end--;
+      while (end > 0 && StringUtil.isWhitespace(s.charAt(end - 1)))
+        end--;
 
-        if ((end - start) > 0) {
-          sentProbs.add(1d);
-          return new Span[] {new Span(start, end)};
-        }
-        else
-          return new Span[0];
+      if (end - start > 0) {
+        sentProbs.add(1d);
+        return new Span[] {new Span(start, end)};
+      }
+      else
+        return new Span[0];
     }
 
     // Convert the sentence end indexes to spans
 
     boolean leftover = starts[starts.length - 1] != s.length();
-    Span[] spans = new Span[leftover? starts.length + 1 : starts.length];
+    Span[] spans = new Span[leftover ? starts.length + 1 : starts.length];
 
-    for (int si=0; si < starts.length; si++) {
+    for (int si = 0; si < starts.length; si++) {
       int start;
 
-      if (si==0) {
+      if (si == 0) {
         start = 0;
       }
       else {
-        start = starts[si-1];
+        start = starts[si - 1];
       }
 
       // A span might contain only white spaces, in this case the length of
@@ -250,18 +247,18 @@ public class SentenceDetectorME implements SentenceDetector {
     }
 
     if (leftover) {
-      Span span = new Span(starts[starts.length-1],s.length()).trim(s);
+      Span span = new Span(starts[starts.length - 1], s.length()).trim(s);
       if (span.length() > 0) {
-        spans[spans.length-1] = span;
+        spans[spans.length - 1] = span;
         sentProbs.add(1d);
       }
     }
-    /**
+    /*
      * set the prob for each span
      */
     for (int i = 0; i < spans.length; i++) {
       double prob = sentProbs.get(i);
-      spans[i]= new Span(spans[i], prob);
+      spans[i] = new Span(spans[i], prob);
 
     }
 
@@ -273,8 +270,7 @@ public class SentenceDetectorME implements SentenceDetector {
    * calls to sentDetect().
    *
    * @return probability for each sentence returned for the most recent
-   * call to sentDetect.  If not applicable an empty array is
-   * returned.
+   *     call to sentDetect.  If not applicable an empty array is returned.
    */
   public double[] getSentenceProbabilities() {
     double[] sentProbArray = new double[sentProbs.size()];
@@ -318,18 +314,17 @@ public class SentenceDetectorME implements SentenceDetector {
       ObjectStream<SentenceSample> samples, SentenceDetectorFactory sdFactory,
       TrainingParameters mlParams) throws IOException {
 
-    Map<String, String> manifestInfoEntries = new HashMap<String, String>();
+    Map<String, String> manifestInfoEntries = new HashMap<>();
 
     // TODO: Fix the EventStream to throw exceptions when training goes wrong
     ObjectStream<Event> eventStream = new SDEventStream(samples,
         sdFactory.getSDContextGenerator(), sdFactory.getEndOfSentenceScanner());
 
-    EventTrainer trainer = TrainerFactory.getEventTrainer(mlParams.getSettings(), manifestInfoEntries);
+    EventTrainer trainer = TrainerFactory.getEventTrainer(mlParams, manifestInfoEntries);
 
     MaxentModel sentModel = trainer.train(eventStream);
 
-    return new SentenceModel(languageCode, sentModel, manifestInfoEntries,
-        sdFactory);
+    return new SentenceModel(languageCode, sentModel, manifestInfoEntries, sdFactory);
   }
 
   /**
@@ -337,8 +332,10 @@ public class SentenceDetectorME implements SentenceDetector {
    *             {@link #train(String, ObjectStream, SentenceDetectorFactory, TrainingParameters)}
    *             and pass in af {@link SentenceDetectorFactory}.
    */
+  @Deprecated
   public static SentenceModel train(String languageCode, ObjectStream<SentenceSample> samples,
       boolean useTokenEnd, Dictionary abbreviations) throws IOException {
-    return train(languageCode, samples, useTokenEnd, abbreviations, ModelUtil.createDefaultTrainingParameters());
+    return train(languageCode, samples, useTokenEnd, abbreviations,
+        ModelUtil.createDefaultTrainingParameters());
   }
 }

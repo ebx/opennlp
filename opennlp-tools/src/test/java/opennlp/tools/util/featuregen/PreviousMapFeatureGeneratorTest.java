@@ -17,11 +17,10 @@
 
 package opennlp.tools.util.featuregen;
 
-import static org.junit.Assert.assertEquals;
-
 import java.util.ArrayList;
 import java.util.List;
 
+import org.junit.Assert;
 import org.junit.Test;
 
 /**
@@ -34,22 +33,22 @@ public class PreviousMapFeatureGeneratorTest {
 
     AdaptiveFeatureGenerator fg = new PreviousMapFeatureGenerator();
 
-    String sentence[] = new String[] {"a", "b", "c"};
+    String[] sentence = new String[] {"a", "b", "c"};
 
-    List<String> features = new ArrayList<String>();
+    List<String> features = new ArrayList<>();
 
     // this should generate the pd=null feature
     fg.createFeatures(features, sentence, 0, null);
-    assertEquals(1, features.size());
-    assertEquals("pd=null", features.get(0));
+    Assert.assertEquals(1, features.size());
+    Assert.assertEquals("pd=null", features.get(0));
 
     features.clear();
 
     // this should generate the pd=1 feature
     fg.updateAdaptiveData(sentence, new String[] {"1", "2", "3"});
     fg.createFeatures(features, sentence, 0, null);
-    assertEquals(1, features.size());
-    assertEquals("pd=1", features.get(0));
+    Assert.assertEquals(1, features.size());
+    Assert.assertEquals("pd=1", features.get(0));
 
     features.clear();
 
@@ -57,7 +56,7 @@ public class PreviousMapFeatureGeneratorTest {
     // the adaptive data was cleared
     fg.clearAdaptiveData();
     fg.createFeatures(features, sentence, 0, null);
-    assertEquals(1, features.size());
-    assertEquals("pd=null", features.get(0));
+    Assert.assertEquals(1, features.size());
+    Assert.assertEquals("pd=null", features.get(0));
   }
 }

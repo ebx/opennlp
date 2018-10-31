@@ -31,7 +31,8 @@ import opennlp.tools.parser.Parse;
 public class CheckContextGenerator extends AbstractContextGenerator {
 
   /**
-   * Creates a new context generator for generating predictive context for deciding when a constituent is complete.
+   * Creates a new context generator for generating predictive context for deciding
+   * when a constituent is complete.
    */
   public CheckContextGenerator() {
     super();
@@ -43,8 +44,9 @@ public class CheckContextGenerator extends AbstractContextGenerator {
   }
 
   /**
-   * Returns predictive context for deciding whether the specified constituents between the specified start and end index
-   * can be combined to form a new constituent of the specified type.
+   * Returns predictive context for deciding whether the specified constituents between the
+   * specified start and end index can be combined to form a new constituent of the specified type.
+   *
    * @param constituents The constituents which have yet to be combined into new constituents.
    * @param type The type of the new constituent proposed.
    * @param start The first constituent of the proposed constituent.
@@ -53,12 +55,12 @@ public class CheckContextGenerator extends AbstractContextGenerator {
    */
   public String[] getContext(Parse[] constituents, String type, int start, int end) {
     int ps = constituents.length;
-    List<String> features = new ArrayList<String>(100);
+    List<String> features = new ArrayList<>(100);
 
     //default
     features.add("default");
     //first constituent label
-    features.add("fl="+constituents[0].getLabel());
+    features.add("fl=" + constituents[0].getLabel());
     Parse pstart = constituents[start];
     Parse pend = constituents[end];
     checkcons(pstart, "begin", type, features);
@@ -74,7 +76,7 @@ public class CheckContextGenerator extends AbstractContextGenerator {
       punctProduction.append(p.getType()).append(",");
       Collection<Parse> nextPunct = p.getNextPunctuationSet();
       if (nextPunct != null) {
-        for (Iterator<Parse> pit=nextPunct.iterator();pit.hasNext();) {
+        for (Iterator<Parse> pit = nextPunct.iterator(); pit.hasNext();) {
           Parse punct = pit.next();
           punctProduction.append(punct.getType()).append(",");
         }

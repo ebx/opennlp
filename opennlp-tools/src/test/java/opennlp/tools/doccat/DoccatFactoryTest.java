@@ -14,24 +14,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package opennlp.tools.doccat;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+package opennlp.tools.doccat;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 
+import org.junit.Assert;
+import org.junit.Test;
+
 import opennlp.tools.formats.ResourceAsStreamFactory;
-import opennlp.tools.tokenize.SimpleTokenizer;
-import opennlp.tools.tokenize.WhitespaceTokenizer;
 import opennlp.tools.util.InputStreamFactory;
 import opennlp.tools.util.ObjectStream;
 import opennlp.tools.util.PlainTextByLineStream;
 import opennlp.tools.util.TrainingParameters;
-
-import org.junit.Test;
 
 /**
  * Tests for the {@link DoccatFactory} class.
@@ -49,7 +46,7 @@ public class DoccatFactoryTest {
 
   private static DoccatModel train() throws IOException {
     return DocumentCategorizerME.train("x-unspecified", createSampleStream(),
-        TrainingParameters.defaultParams());
+        TrainingParameters.defaultParams(), new DoccatFactory());
   }
 
   private static DoccatModel train(DoccatFactory factory) throws IOException {
@@ -61,7 +58,7 @@ public class DoccatFactoryTest {
   public void testDefault() throws IOException {
     DoccatModel model = train();
 
-    assertNotNull(model);
+    Assert.assertNotNull(model);
 
     ByteArrayOutputStream out = new ByteArrayOutputStream();
     model.serialize(out);
@@ -71,13 +68,11 @@ public class DoccatFactoryTest {
 
     DoccatFactory factory = fromSerialized.getFactory();
 
-    assertNotNull(factory);
+    Assert.assertNotNull(factory);
 
-    assertEquals(1, factory.getFeatureGenerators().length);
-    assertEquals(BagOfWordsFeatureGenerator.class,
+    Assert.assertEquals(1, factory.getFeatureGenerators().length);
+    Assert.assertEquals(BagOfWordsFeatureGenerator.class,
         factory.getFeatureGenerators()[0].getClass());
-
-    assertEquals(WhitespaceTokenizer.INSTANCE, factory.getTokenizer());
 
   }
 
@@ -85,12 +80,12 @@ public class DoccatFactoryTest {
   public void testCustom() throws IOException {
     FeatureGenerator[] featureGenerators = { new BagOfWordsFeatureGenerator(),
         new NGramFeatureGenerator(), new NGramFeatureGenerator(2,3) };
-    DoccatFactory factory = new DoccatFactory(SimpleTokenizer.INSTANCE,
-        featureGenerators);
+
+    DoccatFactory factory = new DoccatFactory(featureGenerators);
 
     DoccatModel model = train(factory);
 
-    assertNotNull(model);
+    Assert.assertNotNull(model);
 
     ByteArrayOutputStream out = new ByteArrayOutputStream();
     model.serialize(out);
@@ -100,18 +95,14 @@ public class DoccatFactoryTest {
 
     factory = fromSerialized.getFactory();
 
-    assertNotNull(factory);
+    Assert.assertNotNull(factory);
 
-    assertEquals(3, factory.getFeatureGenerators().length);
-    assertEquals(BagOfWordsFeatureGenerator.class,
+    Assert.assertEquals(3, factory.getFeatureGenerators().length);
+    Assert.assertEquals(BagOfWordsFeatureGenerator.class,
         factory.getFeatureGenerators()[0].getClass());
-    assertEquals(NGramFeatureGenerator.class,
+    Assert.assertEquals(NGramFeatureGenerator.class,
         factory.getFeatureGenerators()[1].getClass());
-    assertEquals(NGramFeatureGenerator.class,factory.getFeatureGenerators()[2].getClass());
-
-    assertEquals(SimpleTokenizer.INSTANCE.getClass(), factory.getTokenizer()
-        .getClass());
-
+    Assert.assertEquals(NGramFeatureGenerator.class,factory.getFeatureGenerators()[2].getClass());
   }
 
 }

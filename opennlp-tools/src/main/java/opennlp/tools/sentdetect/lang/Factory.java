@@ -15,7 +15,6 @@
  * limitations under the License.
  */
 
-
 package opennlp.tools.sentdetect.lang;
 
 import java.util.Collections;
@@ -36,14 +35,11 @@ public class Factory {
 
   public static final char[] thEosCharacters = new char[] { ' ','\n' };
 
-  public EndOfSentenceScanner createEndOfSentenceScanner(String languageCode) {
-    if ("th".equals(languageCode)) {
-      return new DefaultEndOfSentenceScanner(new char[]{' ','\n'});
-    } else if("pt".equals(languageCode)) {
-      return new DefaultEndOfSentenceScanner(ptEosCharacters);
-    }
+  public static final char[] jpnEosCharacters = new char[] {'。', '！', '？'};
 
-    return new DefaultEndOfSentenceScanner(defaultEosCharacters);
+  public EndOfSentenceScanner createEndOfSentenceScanner(String languageCode) {
+
+    return new DefaultEndOfSentenceScanner(getEOSCharacters(languageCode));
   }
 
   public EndOfSentenceScanner createEndOfSentenceScanner(
@@ -53,9 +49,9 @@ public class Factory {
 
   public SDContextGenerator createSentenceContextGenerator(String languageCode, Set<String> abbreviations) {
 
-    if ("th".equals(languageCode)) {
+    if ("th".equals(languageCode) || "tha".equals(languageCode)) {
       return new SentenceContextGenerator();
-    } else if("pt".equals(languageCode)) {
+    } else if ("pt".equals(languageCode) || "por".equals(languageCode)) {
       return new DefaultSDContextGenerator(abbreviations, ptEosCharacters);
     }
 
@@ -68,14 +64,16 @@ public class Factory {
   }
 
   public SDContextGenerator createSentenceContextGenerator(String languageCode) {
-    return createSentenceContextGenerator(languageCode, Collections.<String>emptySet());
+    return createSentenceContextGenerator(languageCode, Collections.emptySet());
   }
 
   public char[] getEOSCharacters(String languageCode) {
-    if ("th".equals(languageCode)) {
+    if ("th".equals(languageCode) || "tha".equals(languageCode)) {
       return thEosCharacters;
-    } else if ("pt".equals(languageCode)) {
+    } else if ("pt".equals(languageCode) || "por".equals(languageCode)) {
       return ptEosCharacters;
+    } else if ("jpn".equals(languageCode)) {
+      return jpnEosCharacters;
     }
 
     return defaultEosCharacters;

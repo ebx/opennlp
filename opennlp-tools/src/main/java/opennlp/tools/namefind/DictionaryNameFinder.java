@@ -15,11 +15,11 @@
  * limitations under the License.
  */
 
-
 package opennlp.tools.namefind;
 
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Objects;
 
 import opennlp.tools.dictionary.Dictionary;
 import opennlp.tools.util.Span;
@@ -44,13 +44,8 @@ public class DictionaryNameFinder implements TokenNameFinder {
    * @param type the name type used for the produced spans
    */
   public DictionaryNameFinder(Dictionary dictionary, String type) {
-    mDictionary = dictionary;
-
-    if (type == null) {
-      throw new IllegalArgumentException("type cannot be null!");
-    }
-
-    this.type = type;
+    mDictionary = Objects.requireNonNull(dictionary, "dictionary must not be null");
+    this.type = Objects.requireNonNull(type, "type must not be null");
   }
 
   /**
@@ -63,11 +58,11 @@ public class DictionaryNameFinder implements TokenNameFinder {
   }
 
   public Span[] find(String[] textTokenized) {
-    List<Span> namesFound = new LinkedList<Span>();
+    List<Span> namesFound = new LinkedList<>();
 
     for (int offsetFrom = 0; offsetFrom < textTokenized.length; offsetFrom++) {
       Span nameFound = null;
-      String tokensSearching[] = new String[] {};
+      String[] tokensSearching;
 
       for (int offsetTo = offsetFrom; offsetTo < textTokenized.length; offsetTo++) {
         int lengthSearching = offsetTo - offsetFrom + 1;
@@ -90,7 +85,7 @@ public class DictionaryNameFinder implements TokenNameFinder {
       if (nameFound != null) {
         namesFound.add(nameFound);
         // skip over the found tokens for the next search
-        offsetFrom += (nameFound.length() - 1);
+        offsetFrom += nameFound.length() - 1;
       }
     }
     return namesFound.toArray(new Span[namesFound.size()]);

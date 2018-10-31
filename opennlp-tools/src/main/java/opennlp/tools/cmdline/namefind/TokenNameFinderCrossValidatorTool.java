@@ -17,7 +17,11 @@
 
 package opennlp.tools.cmdline.namefind;
 
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -28,6 +32,7 @@ import opennlp.tools.cmdline.TerminateToolException;
 import opennlp.tools.cmdline.namefind.TokenNameFinderCrossValidatorTool.CVToolParams;
 import opennlp.tools.cmdline.params.CVParams;
 import opennlp.tools.cmdline.params.DetailedFMeasureEvaluatorParams;
+import opennlp.tools.cmdline.params.FineGrainedEvaluatorParams;
 import opennlp.tools.namefind.BilouCodec;
 import opennlp.tools.namefind.BioCodec;
 import opennlp.tools.namefind.NameSample;
@@ -37,13 +42,14 @@ import opennlp.tools.namefind.TokenNameFinderEvaluationMonitor;
 import opennlp.tools.namefind.TokenNameFinderFactory;
 import opennlp.tools.util.InvalidFormatException;
 import opennlp.tools.util.SequenceCodec;
+import opennlp.tools.util.TrainingParameters;
 import opennlp.tools.util.eval.EvaluationMonitor;
-import opennlp.tools.util.model.ModelUtil;
 
 public final class TokenNameFinderCrossValidatorTool
     extends AbstractCrossValidatorTool<NameSample, CVToolParams> {
 
-  interface CVToolParams extends TrainingParams, CVParams, DetailedFMeasureEvaluatorParams {
+  interface CVToolParams extends TrainingParams, CVParams,
+      DetailedFMeasureEvaluatorParams, FineGrainedEvaluatorParams {
   }
 
   public TokenNameFinderCrossValidatorTool() {
@@ -59,21 +65,27 @@ public final class TokenNameFinderCrossValidatorTool
 
     mlParams = CmdLineUtil.loadTrainingParameters(params.getParams(), true);
     if (mlParams == null) {
-      mlParams = ModelUtil.createDefaultTrainingParameters();
+      mlParams = new TrainingParameters();
     }
 
-    byte featureGeneratorBytes[] =
+    byte[] featureGeneratorBytes =
         TokenNameFinderTrainerTool.openFeatureGeneratorBytes(params.getFeaturegen());
 
-    Map<String, Object> resources =
-        TokenNameFinderTrainerTool.loadResources(params.getResources(), params.getFeaturegen());
+    Map<String, Object> resources;
+
+    try {
+      resources = TokenNameFinderTrainerTool.loadResources(params.getResources(), params.getFeaturegen());
+    }
+    catch (IOException e) {
+      throw new TerminateToolException(-1,"IO error while loading resources", e);
+    }
 
     if (params.getNameTypes() != null) {
-      String nameTypes[] = params.getNameTypes().split(",");
+      String[] nameTypes = params.getNameTypes().split(",");
       sampleStream = new NameSampleTypeFilter(nameTypes, sampleStream);
     }
 
-    List<EvaluationMonitor<NameSample>> listeners = new LinkedList<EvaluationMonitor<NameSample>>();
+    List<EvaluationMonitor<NameSample>> listeners = new LinkedList<>();
     if (params.getMisclassified()) {
       listeners.add(new NameEvaluationErrorListener());
     }
@@ -92,9 +104,29 @@ public final class TokenNameFinderCrossValidatorTool
       sequenceCodecImplName = BilouCodec.class.getName();
     }
 
-    SequenceCodec<String> sequenceCodec = TokenNameFinderFactory.instantiateSequenceCodec(sequenceCodecImplName);
+    SequenceCodec<String> sequenceCodec =
+        TokenNameFinderFactory.instantiateSequenceCodec(sequenceCodecImplName);
 
-    TokenNameFinderFactory nameFinderFactory = null;
+
+    TokenNameFinderFineGrainedReportListener reportListener = null;
+    File reportFile = params.getReportOutputFile();
+    OutputStream reportOutputStream = null;
+
+    if (reportFile != null) {
+      CmdLineUtil.checkOutputFile("Report Output File", reportFile);
+      try {
+        reportOutputStream = new FileOutputStream(reportFile);
+        reportListener = new TokenNameFinderFineGrainedReportListener(sequenceCodec,
+            reportOutputStream);
+        listeners.add(reportListener);
+      } catch (FileNotFoundException e) {
+        throw new TerminateToolException(-1,
+            "IO error while creating Name Finder fine-grained report file: "
+                + e.getMessage());
+      }
+    }
+
+    TokenNameFinderFactory nameFinderFactory;
     try {
       nameFinderFactory = TokenNameFinderFactory.create(params.getFactory(),
           featureGeneratorBytes, resources, sequenceCodec);
@@ -109,8 +141,7 @@ public final class TokenNameFinderCrossValidatorTool
           listeners.toArray(new TokenNameFinderEvaluationMonitor[listeners.size()]));
       validator.evaluate(sampleStream, params.getFolds());
     } catch (IOException e) {
-      throw new TerminateToolException(-1, "IO error while reading training data or indexing data: "
-          + e.getMessage(), e);
+      throw createTerminationIOException(e);
     } finally {
       try {
         sampleStream.close();
@@ -123,7 +154,11 @@ public final class TokenNameFinderCrossValidatorTool
 
     System.out.println();
 
-    if(detailedFListener == null) {
+    if (reportFile != null) {
+      reportListener.writeReport();
+    }
+
+    if (detailedFListener == null) {
       System.out.println(validator.getFMeasure());
     } else {
       System.out.println(detailedFListener.toString());

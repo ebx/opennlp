@@ -20,14 +20,16 @@ package opennlp.tools.cmdline.parser;
 import java.io.IOException;
 
 import opennlp.tools.dictionary.Dictionary;
-import opennlp.tools.ml.model.AbstractModel;
+import opennlp.tools.ml.EventTrainer;
+import opennlp.tools.ml.TrainerFactory;
 import opennlp.tools.ml.model.Event;
+import opennlp.tools.ml.model.MaxentModel;
 import opennlp.tools.parser.Parse;
 import opennlp.tools.parser.ParserEventTypeEnum;
 import opennlp.tools.parser.ParserModel;
-import opennlp.tools.parser.chunking.Parser;
 import opennlp.tools.parser.chunking.ParserEventStream;
 import opennlp.tools.util.ObjectStream;
+import opennlp.tools.util.model.ModelUtil;
 
 // trains a new check model ...
 public final class CheckModelUpdaterTool extends ModelUpdaterTool {
@@ -41,20 +43,22 @@ public final class CheckModelUpdaterTool extends ModelUpdaterTool {
       ObjectStream<Parse> parseSamples, ModelUpdaterParams parameters)
       throws IOException {
 
-      Dictionary mdict = ParserTrainerTool.buildDictionary(parseSamples, originalModel.getHeadRules(), 5);
+    Dictionary mdict = ParserTrainerTool.buildDictionary(parseSamples, originalModel.getHeadRules(), 5);
 
-      parseSamples.reset();
+    parseSamples.reset();
 
-      // TODO: Maybe that should be part of the ChunkingParser ...
-      // Training build
-      System.out.println("Training check model");
-      ObjectStream<Event> bes = new ParserEventStream(parseSamples,
-          originalModel.getHeadRules(), ParserEventTypeEnum.CHECK, mdict);
-      AbstractModel checkModel = Parser.train(bes,
-          100, 5);
+    // TODO: Maybe that should be part of the ChunkingParser ...
+    // Training build
+    System.out.println("Training check model");
+    ObjectStream<Event> bes = new ParserEventStream(parseSamples,
+        originalModel.getHeadRules(), ParserEventTypeEnum.CHECK, mdict);
 
-      parseSamples.close();
+    EventTrainer trainer = TrainerFactory.getEventTrainer(
+        ModelUtil.createDefaultTrainingParameters(), null);
+    MaxentModel checkModel = trainer.train(bes);
 
-      return originalModel.updateCheckModel(checkModel);
+    parseSamples.close();
+
+    return originalModel.updateCheckModel(checkModel);
   }
 }

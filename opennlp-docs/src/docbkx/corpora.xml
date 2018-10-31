@@ -50,7 +50,7 @@ under the License.
 		(211727 tokens) and section 20 as test data (47377 tokens). The annotation of the 
 		data has been derived from the WSJ corpus by a program written by Sabine Buchholz 
 		from Tilburg University, The Netherlands. Both training and test data can be
-		obtained from <ulink url="http://www.cnts.ua.ac.be/conll2000/chunking">http://www.cnts.ua.ac.be/conll2000/chunking</ulink>. 
+		obtained from <ulink url="https://www.clips.uantwerpen.be/conll2000/chunking/">https://www.clips.uantwerpen.be/conll2000/chunking/</ulink>.
 		</para>
 		</section>
 		<section id="tools.corpora.conll.2000.converting">
@@ -270,6 +270,8 @@ path: .\es_ner_person.bin]]>
 		<para>After one of the corpora is available the data must be
 		transformed as explained in the README file to the CONLL format.
 		The transformed data can be read by the OpenNLP CONLL03 converter.
+
+      Note that for CoNLL-2003 corpora, the -lang argument should either be "eng" or "deu", instead of "en" or "de".
 		</para>
 		</section>
 		<section id="tools.corpora.conll.2003.converting">
@@ -278,13 +280,13 @@ path: .\es_ner_person.bin]]>
 		To convert the information to the OpenNLP format:
 		<screen>
 			<![CDATA[
-$ opennlp TokenNameFinderConverter conll03 -lang en -types per -data eng.train > corpus_train.txt]]>
+$ opennlp TokenNameFinderConverter conll03 -lang eng -types per -data eng.train > corpus_train.txt]]>
 		</screen>
 		Optionally, you can convert the training test samples as well.
 		<screen>
 			<![CDATA[
-$ opennlp TokenNameFinderConverter conll03 -lang en -types per -data eng.testa > corpus_testa.txt
-$ opennlp TokenNameFinderConverter conll03 -lang en -types per -data eng.testb > corpus_testb.txt]]>
+$ opennlp TokenNameFinderConverter conll03 -lang eng -types per -data eng.testa > corpus_testa.txt
+$ opennlp TokenNameFinderConverter conll03 -lang eng -types per -data eng.testb > corpus_testb.txt]]>
 		</screen>
 		</para>
 		</section>
@@ -295,7 +297,7 @@ $ opennlp TokenNameFinderConverter conll03 -lang en -types per -data eng.testb >
                 <screen>
                 <![CDATA[
 $ opennlp TokenNameFinderTrainer.conll03 -model en_ner_person.bin -iterations 500 \
-                                 -lang en -types per -data eng.train -encoding utf8]]>
+                                 -lang eng -types per -data eng.train -encoding utf8]]>
                 </screen>
             </para>
 		    <para>
@@ -346,7 +348,7 @@ path: .\en_ner_person.bin]]>
                 <screen>
                 <![CDATA[
 $ opennlp TokenNameFinderEvaluator.conll03 -model en_ner_person.bin \
-                                   -lang en -types per -data eng.testa -encoding utf8]]>
+                                   -lang eng -types per -data eng.testa -encoding utf8]]>
                 </screen>
             </para>
 		    <para>
@@ -437,99 +439,8 @@ F-Measure: 0.7717879983140168]]>
 			</para>
 		</section>
 	</section>
-	<section id="tools.corpora.leipzig">
-	<title>Leipzig Corpora</title>
-	<para>
-	The Leipzig Corpora collection presents corpora in different languages. The corpora is a collection of individual sentences collected
-	from the web and newspapers. The Corpora is available as plain text and as MySQL database tables. The OpenNLP integration can only
-	use the plain text version.
-	</para>
-	<para>
-	The corpora in the different languages can be used to train a document categorizer model which can detect the document language. 
-	The	individual plain text packages can be downloaded here:
-	<ulink url="http://corpora.uni-leipzig.de/download.html">http://corpora.uni-leipzig.de/download.html</ulink>
-	</para>
-	
-	<para>
-	After all packages have been downloaded, unzip them and use the following commands to
-	produce a training file which can be processed by the Document Categorizer:
-	<screen>
-			<![CDATA[
-$ opennlp DoccatConverter leipzig -lang cat -data Leipzig/cat100k/sentences.txt >> lang.train
-$ opennlp DoccatConverter leipzig -lang de -data Leipzig/de100k/sentences.txt >> lang.train
-$ opennlp DoccatConverter leipzig -lang dk -data Leipzig/dk100k/sentences.txt >> lang.train
-$ opennlp DoccatConverter leipzig -lang ee -data Leipzig/ee100k/sentences.txt >> lang.train
-$ opennlp DoccatConverter leipzig -lang en -data Leipzig/en100k/sentences.txt >> lang.train
-$ opennlp DoccatConverter leipzig -lang fi -data Leipzig/fi100k/sentences.txt >> lang.train
-$ opennlp DoccatConverter leipzig -lang fr -data Leipzig/fr100k/sentences.txt >> lang.train
-$ opennlp DoccatConverter leipzig -lang it -data Leipzig/it100k/sentences.txt >> lang.train
-$ opennlp DoccatConverter leipzig -lang jp -data Leipzig/jp100k/sentences.txt >> lang.train
-$ opennlp DoccatConverter leipzig -lang kr -data Leipzig/kr100k/sentences.txt >> lang.train
-$ opennlp DoccatConverter leipzig -lang nl -data Leipzig/nl100k/sentences.txt >> lang.train
-$ opennlp DoccatConverter leipzig -lang no -data Leipzig/no100k/sentences.txt >> lang.train
-$ opennlp DoccatConverter leipzig -lang se -data Leipzig/se100k/sentences.txt >> lang.train
-$ opennlp DoccatConverter leipzig -lang sorb -data Leipzig/sorb100k/sentences.txt >> lang.train
-$ opennlp DoccatConverter leipzig -lang tr -data Leipzig/tr100k/sentences.txt >> lang.train]]>
-	</screen>
-	</para>
-	<para>
-	Depending on your platform local it might be problematic to output characters which are not supported by that encoding,
-	we suggest to run these command on a platform which has a unicode default encoding, e.g. Linux with UTF-8.
-	</para>
-	<para>
-	After the lang.train file is created the actual language detection document categorizer model
-	can be created with the following command.
-	<screen>
-			<![CDATA[
-$ opennlp DoccatTrainer -model lang.model -lang x-unspecified -data lang.train -encoding MacRoman
 
-Indexing events using cutoff of 5
-
-	Computing event counts...  done. 10000 events
-	Indexing...  done.
-Sorting and merging events... done. Reduced 10000 events to 10000.
-Done indexing.
-Incorporating indexed data for training...  
-done.
-	Number of Event Tokens: 10000
-	    Number of Outcomes: 2
-	  Number of Predicates: 42730
-...done.
-Computing model parameters...
-Performing 100 iterations.
-  1:  .. loglikelihood=-6931.471805600547	0.5
-  2:  .. loglikelihood=-2110.9654348555955	1.0
-... cut lots of iterations ...
-
- 99:  .. loglikelihood=-0.449640418555347	1.0
-100:  .. loglikelihood=-0.443746359746235	1.0
-Writing document categorizer model ... done (1.210s)
-
-Wrote document categorizer model to
-path: /Users/joern/dev/opennlp-apache/opennlp/opennlp-tools/lang.model
-]]>
-	</screen>
-	In the sample above the language detection model was trained to distinguish two languages, danish and english.
-	</para>
-	
-	<para>
-	After the model is created it can be used to detect the two languages:
-	
-	<programlisting>
-			<![CDATA[
-$ bin/opennlp Doccat ../lang.
-lang.model  lang.train  
-karkand:opennlp-tools joern$ bin/opennlp Doccat ../lang.model
-Loading Document Categorizer model ... done (0.289s)
-The American Finance Association is pleased to announce the award of ...
-en	The American Finance Association is pleased to announce the award of ..
-.
-Danskerne skal betale for den økonomiske krise ved at blive længere på arbejdsmarkedet .
-dk	Danskerne skal betale for den økonomiske krise ved at blive længere på arbejdsmarkedet .]]>	
-	</programlisting>
-	</para>
-	</section>
-		<section id="tools.corpora.ontonotes">
+	<section id="tools.corpora.ontonotes">
 		<title>OntoNotes Release 4.0</title>
 	<para>
 		"OntoNotes Release 4.0, Linguistic Data Consortium (LDC) catalog number
@@ -607,6 +518,233 @@ Wrote name finder model to
 path: /dev/opennlp/trunk/opennlp-tools/en-ontonotes.bin]]>	
 	</programlisting>
 		</para>
+		</section>
+	</section>
+
+	<section id="tools.corpora.brat">
+		<title>Brat Format Support</title>
+		<para>
+			The brat annotation tool is an online environment for collaborative text annotation and
+			supports labeling documents with named entities. The best performance of a name finder
+			can only be achieved if it was trained on documents similar to the the documents it will
+			process. For that reason it is often necessary to manually label a large number of documents and
+			build a custom corpus. This is where brat comes in handy.
+
+			<imagedata fileref="images/brat.png" width="6.5in" depth="4in" scalefit="1"/>
+
+			OpenNLP can directly be trained and evaluated on labeled data in the brat format.
+			Instructions on how to use, download and install brat can be found on the project website:
+
+			<ulink url="http://brat.nlplab.org">http://brat.nlplab.org</ulink>
+
+			Configuration of brat, including setting up the different entities and relations can be found at:
+
+			<ulink url="http://brat.nlplab.org/configuration.html">http://brat.nlplab.org/configuration.html</ulink>
+
+		</para>
+
+
+		<section id="tools.corpora.brat.webtool">
+			<title>Sentences and Tokens</title>
+			<para>
+				The brat annotation tool only adds named entity spans to the data and doesn't provide information
+				about tokens and sentences. To train the name finder this information is required. By default it
+				is assumed that each line is a sentence and that tokens are whitespace separated. This can be
+				adjusted by providing a custom sentence detector and optional also a tokenizer.
+
+				The opennlp brat command supports the following arguments for providing custom sentence detector
+				and tokenizer.
+
+				<simplelist type='horiz' columns='1'>
+					<member><para>-sentenceDetectorModel - your sentence model</para></member>
+					<member><para>-tokenizerModel - your tokenizer model</para></member>
+					<member><para>-ruleBasedTokenizer - simple | whitespace</para></member>
+				</simplelist>
+
+			</para>
+		</section>
+
+		<section id="tools.corpora.brat.training">
+			<title>Training</title>
+			<para>
+				To train your namefinder model using your brat annotated files you can either use the opennlp command
+				line tool or call opennlp.tools.cmdline.CLI main class from your preferred IDE.
+
+				Calling opennlp TokenNameFinder.brat without arguments gives you a list of all the arguments you can use.
+				Obviously some combinations are not valid. E.g. you should not provide a token model and also define
+				a rule based tokenizer.
+
+				<screen>
+					<![CDATA[
+$ opennlp TokenNameFinderTrainer.brat
+Usage: opennlp TokenNameFinderTrainer.brat [-factory factoryName] [-resources resourcesDir] [-type modelType]
+[-featuregen featuregenFile] [-nameTypes types] [-sequenceCodec codec] [-params paramsFile] -lang language
+-model modelFile [-tokenizerModel modelFile] [-ruleBasedTokenizer name] -annotationConfig annConfFile
+-bratDataDir bratDataDir [-recursive value] [-sentenceDetectorModel modelFile]
+
+Arguments description:
+	-factory factoryName
+		A sub-class of TokenNameFinderFactory
+	-resources resourcesDir
+		The resources directory
+	-type modelType
+		The type of the token name finder model
+	-featuregen featuregenFile
+		The feature generator descriptor file
+	-nameTypes types
+		name types to use for training
+	-sequenceCodec codec
+		sequence codec used to code name spans
+	-params paramsFile
+		training parameters file.
+	-lang language
+		language which is being processed.
+	-model modelFile
+		output model file.
+	-tokenizerModel modelFile
+	-ruleBasedTokenizer name
+	-annotationConfig annConfFile
+	-bratDataDir bratDataDir
+		location of brat data dir
+	-recursive value
+	-sentenceDetectorModel modelFile
+]]>
+				</screen>
+
+				The following command will train a danish organization name finder model.
+
+				<screen>
+					<![CDATA[
+$ opennlp TokenNameFinderTrainer.brat -resources conf/resources \
+-featuregen conf/resources/fg-da-org.xml -nameTypes Organization \
+-params conf/resources/TrainerParams.txt -lang da \
+-model models/da-org.bin -ruleBasedTokenizer simple \
+-annotationConfig data/annotation.conf -bratDataDir data/gold/da/train \
+-recursive true -sentenceDetectorModel models/da-sent.bin
+
+Indexing events using cutoff of 0
+
+Computing event counts...
+done. 620738 events
+Indexing...  done.
+Collecting events... Done indexing.
+Incorporating indexed data for training...
+done.
+	Number of Event Tokens: 620738
+	    Number of Outcomes: 3
+	  Number of Predicates: 1403655
+Computing model parameters...
+Performing 100 iterations.
+  1:  . (614536/620738) 0.9900086671027067
+  2:  . (617590/620738) 0.9949286172265915
+  3:  . (618615/620738) 0.9965798775006525
+  4:  . (619263/620738) 0.9976237961909856
+  5:  . (619509/620738) 0.9980200986567602
+  6:  . (619830/620738) 0.9985372250450271
+  7:  . (619968/620738) 0.9987595410624128
+  8:  . (620110/620738) 0.9989883010223315
+  9:  . (620200/620738) 0.9991332897293222
+ 10:  . (620266/620738) 0.9992396147811153
+ 20:  . (620538/620738) 0.999677802873354
+ 30:  . (620641/620738) 0.9998437343935767
+ 40:  . (620653/620738) 0.9998630662211755
+Stopping: change in training set accuracy less than 1.0E-5
+Stats: (620594/620738) 0.9997680180688149
+...done.
+
+Writing name finder model ... Training data summary:
+#Sentences: 26133
+#Tokens: 620738
+#Organization entities: 13053
+
+Compressed 1403655 parameters to 116378
+4 outcome patterns
+done (11.099s)
+
+Wrote name finder model to
+path: models/da-org.bin
+]]>
+				</screen>
+			</para>
+		</section>
+
+		<section id="tools.corpora.brat.evaluation">
+			<title>Evaluation</title>
+			<para>
+				To evaluate you name finder model opennlp provides an evaluator that works with your brat
+				annotated data. Normally you would partition your data in a training set and a test set e.g. 70%
+				training and 30% test.
+				The training set is of cause only used for training the model and should never be used for
+				evaluation. The test set is only used for evaluation. In order to avoid overfitting, it is preferable if the training set and
+				test set is somewhat balanced so that both sets represents a broad variety of the entities
+				it should be able to identify. Shuffling the data before splitting is most likely sufficient in many cases.
+
+				<screen>
+					<![CDATA[
+$ opennlp TokenNameFinderEvaluator.brat -model models/da-org.bin \
+-ruleBasedTokenizer simple -annotationConfig data/annotation.conf \
+-bratDataDir data/gold/da/test -recursive true \
+-sentenceDetectorModel models/da-sent.bin
+
+Loading Token Name Finder model ... done (12.395s)
+
+Average: 610.7 sent/s
+Total: 6133 sent
+Runtime: 10.043s
+
+Precision: 0.7321974661424203
+Recall: 0.25176505933603727
+F-Measure: 0.3746926000447127
+
+]]>
+				</screen>
+			</para>
+		</section>
+
+		<section id="tools.corpora.brat.cross-validation">
+			<title>Cross Validation</title>
+			<para>
+				You can also use the cross validation to evaluate you model. This can come in handy when you do
+				not have enough data to divide it into a proper training and test set.
+				Running cross validation with the misclassified attribute set to true can also be helpful because it
+				will identify missed annotations as they will pop up as false positives in the text output.
+				<screen>
+					<![CDATA[
+$ opennlp TokenNameFinderCrossValidator.brat -resources conf/resources \
+-featuregen conf/resources/fg-da-org.xml -nameTypes Organization \
+-params conf/resources/TrainerParams.txt -lang da -misclassified true \
+-folds 10 -detailedF true -ruleBasedTokenizer simple -annotationConfig data/annotation.conf \
+-bratDataDir data/gold/da -recursive true -sentenceDetectorModel models/da-sent.bin
+
+Indexing events using cutoff of 0
+
+Computing event counts...
+done. 555858 events
+    Indexing...  done.
+Collecting events... Done indexing.
+Incorporating indexed data for training...
+done.
+	Number of Event Tokens: 555858
+	    Number of Outcomes: 3
+	  Number of Predicates: 1302740
+Computing model parameters...
+Performing 100 iterations.
+  1:  . (550095/555858) 0.9896322442062541
+  2:  . (552971/555858) 0.9948062274897546
+...
+...
+... (training and evaluationg x 10)
+...
+done
+
+Evaluated 26133 samples with 13053 entities; found: 12174 entities; correct: 10361.
+       TOTAL: precision:   85.11%;  recall:   79.38%; F1:   82.14%.
+Organization: precision:   85.11%;  recall:   79.38%; F1:   82.14%. [target: 13053; tp: 10361; fp: 1813]
+
+
+        ]]>
+				</screen>
+			</para>
 		</section>
 	</section>
 </chapter>

@@ -21,16 +21,17 @@ import java.util.List;
 
 import opennlp.tools.util.StringUtil;
 
-public class WordClusterFeatureGenerator extends FeatureGeneratorAdapter {
+public class WordClusterFeatureGenerator implements AdaptiveFeatureGenerator {
 
   private WordClusterDictionary tokenDictionary;
   private String resourceName;
   private boolean lowerCaseDictionary;
 
-  public WordClusterFeatureGenerator(WordClusterDictionary dict, String dictResourceKey, boolean lowerCaseDictionary) {
-      tokenDictionary = dict;
-      resourceName = dictResourceKey;
-      this.lowerCaseDictionary = lowerCaseDictionary;
+  public WordClusterFeatureGenerator(WordClusterDictionary dict,
+      String dictResourceKey, boolean lowerCaseDictionary) {
+    tokenDictionary = dict;
+    resourceName = dictResourceKey;
+    this.lowerCaseDictionary = lowerCaseDictionary;
   }
 
   public void createFeatures(List<String> features, String[] tokens, int index,
