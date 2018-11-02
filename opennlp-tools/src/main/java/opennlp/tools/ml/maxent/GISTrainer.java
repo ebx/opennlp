@@ -26,7 +26,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorCompletionService;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadFactory;
 
 import opennlp.tools.ml.AbstractEventTrainer;
 import opennlp.tools.ml.ArrayMath;
@@ -482,15 +481,12 @@ public class GISTrainer extends AbstractEventTrainer {
   /* Estimate and return the model parameters. */
   private void findParameters(int iterations, double correctionConstant) {
     int threads = modelExpects.length;
-  
-    ExecutorService executor = Executors.newFixedThreadPool(threads, new ThreadFactory() {
-      @Override
-      public Thread newThread(Runnable runnable) {
-        Thread thread = new Thread(runnable);
-        thread.setName("opennlp.tools.ml.maxent.ModelExpactationComputeTask.nextIteration()");
-        thread.setDaemon(true);
-        return thread;
-      }
+
+    ExecutorService executor = Executors.newFixedThreadPool(threads, runnable -> {
+      Thread thread = new Thread(runnable);
+      thread.setName("opennlp.tools.ml.maxent.ModelExpactationComputeTask.nextIteration()");
+      thread.setDaemon(true);
+      return thread;
     });
 
     CompletionService<ModelExpectationComputeTask> completionService =

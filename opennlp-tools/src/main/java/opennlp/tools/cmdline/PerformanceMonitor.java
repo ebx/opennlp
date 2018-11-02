@@ -22,7 +22,6 @@ import java.io.PrintStream;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -37,16 +36,12 @@ import java.util.concurrent.TimeUnit;
  */
 public class PerformanceMonitor {
 
-  private ScheduledExecutorService scheduler =
-    Executors.newScheduledThreadPool(1, new ThreadFactory() {
-      @Override
-      public Thread newThread(Runnable runnable) {
-        Thread thread = new Thread(runnable);
-        thread.setName("opennlp.tools.cmdline.PerformanceMonitor");
-        thread.setDaemon(true);
-        return thread;
-      }
-    });
+  private ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1, runnable -> {
+    Thread thread = new Thread(runnable);
+    thread.setName("opennlp.tools.cmdline.PerformanceMonitor");
+    thread.setDaemon(true);
+    return thread;
+  });
 
   private final String unit;
 
