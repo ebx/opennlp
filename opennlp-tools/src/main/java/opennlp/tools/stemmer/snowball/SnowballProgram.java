@@ -201,6 +201,17 @@ class SnowballProgram {
 	return true;
     }
 
+  protected boolean eq_s_b(CharSequence s)
+  {
+    if (cursor - limit_backward < s.length()) return false;
+    int i;
+    for (i = 0; i != s.length(); i++) {
+      if (current.charAt(cursor - s.length() + i) != s.charAt(i)) return false;
+    }
+    cursor -= s.length();
+    return true;
+  }
+
     protected boolean eq_v(CharSequence s)
     {
 	return eq_s(s.length(), s.toString());
@@ -282,6 +293,10 @@ class SnowballProgram {
 	}
     }
 
+	protected int find_among(Among v[]){
+      return find_among(v, v.length);
+  }
+
     // find_among_b is for backwards processing. Same comments apply
     protected int find_among_b(Among v[], int v_size)
     {
@@ -350,6 +365,10 @@ class SnowballProgram {
 	    if (i < 0) return 0;
 	}
     }
+
+  protected int find_among_b(Among v[]){
+      return find_among_b(v, v.length);
+  }
 
     /* to replace chars between c_bra and c_ket in current by the
      * chars in s.

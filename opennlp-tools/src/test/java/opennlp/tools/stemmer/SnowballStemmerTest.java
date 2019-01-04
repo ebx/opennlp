@@ -80,6 +80,15 @@ public class SnowballStemmerTest {
   }
 
   @Test
+  public void testGreek() {
+    SnowballStemmer stemmer = new SnowballStemmer(ALGORITHM.GREEK);
+    Assert.assertEquals(stemmer.stem("επιστροφή"), "επιστροφ");
+    Assert.assertEquals(stemmer.stem("Αμερικανών"), "αμερικαν");
+    Assert.assertEquals(stemmer.stem("στρατιωτών"), "στρατιωτ");
+
+  }
+
+  @Test
   public void testHungarian() {
     SnowballStemmer stemmer = new SnowballStemmer(ALGORITHM.HUNGARIAN);
     Assert.assertEquals(stemmer.stem("abbahagynám"), "abbahagyna");
