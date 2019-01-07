@@ -34,6 +34,16 @@ package opennlp.tools.stemmer.snowball;
 import java.lang.reflect.Method;
 
 class Among {
+
+	public Among (String s, int substring_i, int result) {
+		this.s = s.toCharArray();
+		this.s_size = s.length();
+		this.substring_i = substring_i;
+		this.result = result;
+		this.method = null;
+		this.methodobject = null;
+	}
+
     public Among (String s, int substring_i, int result,
 		  String methodname, SnowballProgram methodobject) {
         this.s_size = s.length();
