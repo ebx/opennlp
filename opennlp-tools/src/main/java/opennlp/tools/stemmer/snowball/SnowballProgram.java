@@ -201,13 +201,7 @@ class SnowballProgram {
 
 	protected boolean eq_s_b(CharSequence s)
 	{
-		if (cursor - limit_backward < s.length()) return false;
-		int i;
-		for (i = 0; i != s.length(); i++) {
-			if (current.charAt(cursor - s.length() + i) != s.charAt(i)) return false;
-		}
-		cursor -= s.length();
-		return true;
+		return eq_s_b(s.length(), s.toString());
 	}
 
     protected boolean eq_v(CharSequence s)
