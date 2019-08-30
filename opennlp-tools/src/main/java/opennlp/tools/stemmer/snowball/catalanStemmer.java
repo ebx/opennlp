@@ -1,3 +1,4 @@
+// CHECKSTYLE:OFF
 /*
 
 Copyright (c) 2010, Israel Olalla

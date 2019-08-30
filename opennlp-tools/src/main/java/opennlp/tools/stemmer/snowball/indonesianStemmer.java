@@ -1,3 +1,4 @@
+// CHECKSTYLE:OFF
 package opennlp.tools.stemmer.snowball;
 
 /**
