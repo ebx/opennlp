@@ -20,10 +20,13 @@ package opennlp.tools.sentdetect;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.Set;
 
 import opennlp.tools.dictionary.Dictionary;
@@ -55,6 +58,19 @@ public class SentenceDetectorME implements SentenceDetector {
    * Constant indicates no sentence split.
    */
   public static final String NO_SPLIT = "n";
+  
+  /**
+   * Constant indicates no sentence split.
+   */
+  private static final Pattern dateGermanFormatPattern = Pattern.compile("(?<!d)(?:(?:(?:0?[1-9]|"
+      + "[12]\\d)|3[01])\\s?[./:\\-][\\s.]?(?:0?[13578]|1[02]|J(?:an(?:uar)"
+      + "?|uli?)|M(?:ärz?|ai)|Aug(?:ust)?|Dez(?:ember)?|Okt(?:ober)?)\\s?(?:[.][\\s.]?)?"
+      + "(\\s|[1-9]\\d\\d\\d)|(?:(?:0?[1-9]|[12]\\d)|30)\\s?[.][\\s.]?(?:0?[13-9]|1[012]|"
+      + "J(?:an(?:uar)?|u[nl]i?)|M(?:ärz?|ai)|A(?:pr(?:il)?|ug(?:ust)?)|Sep(?:tember)?|(?:Nov|Dez)"
+      + "(?:ember)?|Okt(?:ober)?)\\s?(?:[.][\\s.]?)?(\\s|[1-9]\\d\\d\\d)|(?:0?[1-9]|[12]\\d)"
+      + "\\s?[.][\\s.]?(?:0?2|Fe(?:b(?:ruar)?)?)\\s?(?:[.][\\s.]?)?[1-9]\\d(?:[02468][048]|"
+      + "[13579][26])|(?:0?[1-9]|[12][0-8])\\s?[.][\\s.]?(?:0?2|Fe(?:b(?:ruar)?)?)\\s?"
+      + "(?:[.][\\s.]?)?(\\s|[1-9]\\d\\d\\d))(?!\\d)");
 
   /**
    * The maximum entropy model to use to evaluate contexts.
@@ -227,6 +243,7 @@ public class SentenceDetectorME implements SentenceDetector {
 
     for (int si = 0; si < starts.length; si++) {
       int start;
+      int wideEnd;
 
       if (si == 0) {
         start = 0;
@@ -234,12 +251,38 @@ public class SentenceDetectorME implements SentenceDetector {
       else {
         start = starts[si - 1];
       }
+      // Define the end point of the wider span to check if the dot belongs to
+      // a date in German format
+      if (starts.length > 1 && si < starts.length - 1) {
+        wideEnd = starts[si + 1];
+      }
+      else {
+        wideEnd = s.length();
+      }
 
       // A span might contain only white spaces, in this case the length of
       // the span will be zero after trimming and should be ignored.
       Span span = new Span(start, starts[si]).trim(s);
+      // Wider span that takes into account the sentence portions before and after
+      // the split character
+      Span widerSpan = new Span(start, wideEnd).trim(s);
       if (span.length() > 0) {
-        spans[si] = span;
+        // Check if it includes a date in German format
+        if (isDateGermanFormat(widerSpan.getCoveredText(s).toString())) {
+          // If that is the case, set the span as the wider one to not split
+          // the sentence and set the position of the splitting character to
+          // avoid checking the same portion of text
+          spans[si] = widerSpan;
+          if (si == starts.length - 1) {
+            starts[si] = s.length();
+          }
+          else {
+            starts[si] = starts[si + 1];
+          }
+        }
+        else {
+          spans[si] = span;
+        }
       }
       else {
         sentProbs.remove(si);
@@ -251,6 +294,11 @@ public class SentenceDetectorME implements SentenceDetector {
       if (span.length() > 0) {
         spans[spans.length - 1] = span;
         sentProbs.add(1d);
+      }
+      // Remove the last span if the previous is a wide one containing a
+      // date in German format
+      else {
+        spans = Arrays.copyOf(spans, spans.length - 1);
       }
     }
     /*
@@ -295,6 +343,22 @@ public class SentenceDetectorME implements SentenceDetector {
    */
   protected boolean isAcceptableBreak(String s, int fromIndex, int candidateIndex) {
     return true;
+  }
+  
+  /**
+   * Validates if the string contains dates in German format using "."
+   *
+   * @param s the string in which the break occurred.
+   * @return true if the sentence contains dates in German format using "."
+   */
+  private boolean isDateGermanFormat(String s) {
+    if (s != null) {
+      final Matcher matcher = dateGermanFormatPattern.matcher(s);
+      return matcher.find();
+    }
+    else {
+      return false;
+    }
   }
 
   /**
