@@ -60,7 +60,9 @@ public class SentenceDetectorME implements SentenceDetector {
   public static final String NO_SPLIT = "n";
   
   /**
-   * Constant indicates no sentence split.
+   * Pattern to detect sentences that contain dates in German format using ".". It would detect
+   * any combination of days, months (in numbers, letters, and abbreviations) and years,
+   * separated by dots or dots and spaces
    */
   private static final Pattern dateGermanFormatPattern = Pattern.compile("(?<!d)(?:(?:(?:0?[1-9]|"
       + "[12]\\d)|3[01])\\s?[./:\\-][\\s.]?(?:0?[13578]|1[02]|J(?:an(?:uar)"
@@ -253,10 +255,10 @@ public class SentenceDetectorME implements SentenceDetector {
       }
       // Define the end point of the wider span to check if the dot belongs to
       // a date in German format
-      if (starts.length > 1 && si < starts.length - 1) {
+      try {
         wideEnd = starts[si + 1];
       }
-      else {
+      catch (ArrayIndexOutOfBoundsException ex) {
         wideEnd = s.length();
       }
 
@@ -273,12 +275,7 @@ public class SentenceDetectorME implements SentenceDetector {
           // the sentence and set the position of the splitting character to
           // avoid checking the same portion of text
           spans[si] = widerSpan;
-          if (si == starts.length - 1) {
-            starts[si] = s.length();
-          }
-          else {
-            starts[si] = starts[si + 1];
-          }
+          starts[si] = wideEnd;
         }
         else {
           spans[si] = span;
@@ -286,6 +283,8 @@ public class SentenceDetectorME implements SentenceDetector {
       }
       else {
         sentProbs.remove(si);
+        spans[spans.length - 1] = span;
+        sentProbs.add(1d);
       }
     }
 
