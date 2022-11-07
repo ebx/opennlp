@@ -283,8 +283,13 @@ public class SentenceDetectorME implements SentenceDetector {
       }
       else {
         sentProbs.remove(si);
-        spans[spans.length - 1] = span;
-        sentProbs.add(1d);
+        try {
+          System.arraycopy(spans, si + 1, spans, si, spans.length - si - 1);
+        }
+        catch (ArrayIndexOutOfBoundsException ex) {
+          System.arraycopy(spans, 0, spans, 0, spans.length - 1);
+        }
+        spans = Arrays.copyOf(spans, spans.length - 1);
       }
     }
 
