@@ -255,10 +255,10 @@ public class SentenceDetectorME implements SentenceDetector {
       }
       // Define the end point of the wider span to check if the dot belongs to
       // a date in German format
-      try {
+      if (starts.length > 1 && si < starts.length - 1) {
         wideEnd = starts[si + 1];
       }
-      catch (ArrayIndexOutOfBoundsException ex) {
+      else {
         wideEnd = s.length();
       }
 
