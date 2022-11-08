@@ -125,6 +125,14 @@ public class SentenceDetectorMETest {
     String sampleSentence13 = " This is a test";
     sents = sentDetect.sentDetect(sampleSentence13);
     Assert.assertEquals(sents[0],"This is a test");
+    
+    // Test that the algorithm does not split using the dot in dates
+    // in German format
+    String sampleSentence14 = "Wir haben Dein Konto am 31. Oktober 2022 gesperrt. This is a test";
+    String resultSentence14 = "Wir haben Dein Konto am 31. Oktober 2022 gesperrt.";
+    sents = sentDetect.sentDetect(sampleSentence14);
+    Assert.assertEquals(2, sents.length);
+    Assert.assertEquals(sents[0],resultSentence14);
 
     // Test that sentPosDetect also works
     Span[] pos = sentDetect.sentPosDetect(sampleSentences2);
