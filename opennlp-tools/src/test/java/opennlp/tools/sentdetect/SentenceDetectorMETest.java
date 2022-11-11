@@ -133,6 +133,17 @@ public class SentenceDetectorMETest {
     sents = sentDetect.sentDetect(sampleSentence14);
     Assert.assertEquals(2, sents.length);
     Assert.assertEquals(sents[0],resultSentence14);
+    
+    // Test that the algorithm works when there is no leftover sentence
+  
+    String sampleSentence15 = "Capitalizing on the momentum sparked by the release of his Fall "
+        + "2019 EP, Rence has received much acclaim as Pigeons & Planes named him among \"Best "
+        + "New Artists\". Meanwhile, his breakout single \"Expensive\" "
+        + "recently surpassed 8.2 million global streams. Having wrapped a North American tour "
+        + "with Christian French this Winter, Rence has gone on to received looks and acclaim "
+        + "from the likes of Nylon, i-D, The FADER, Billboard, Paper and more.";
+    sents = sentDetect.sentDetect(sampleSentence15);
+    Assert.assertEquals(3, sents.length);
 
     // Test that sentPosDetect also works
     Span[] pos = sentDetect.sentPosDetect(sampleSentences2);
