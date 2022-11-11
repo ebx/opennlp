@@ -25,9 +25,10 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.Set;
+
 
 import opennlp.tools.dictionary.Dictionary;
 import opennlp.tools.ml.EventTrainer;
@@ -64,15 +65,20 @@ public class SentenceDetectorME implements SentenceDetector {
    * any combination of days, months (in numbers, letters, and abbreviations) and years,
    * separated by dots or dots and spaces
    */
-  private static final Pattern dateGermanFormatPattern = Pattern.compile("(?<!d)(?:(?:(?:0?[1-9]|"
-      + "[12]\\d)|3[01])\\s?[./:\\-][\\s.]?(?:0?[13578]|1[02]|J(?:an(?:uar)"
-      + "?|uli?)|M(?:ärz?|ai)|Aug(?:ust)?|Dez(?:ember)?|Okt(?:ober)?)\\s?(?:[.][\\s.]?)?"
-      + "(\\s|[1-9]\\d\\d\\d)|(?:(?:0?[1-9]|[12]\\d)|30)\\s?[.][\\s.]?(?:0?[13-9]|1[012]|"
-      + "J(?:an(?:uar)?|u[nl]i?)|M(?:ärz?|ai)|A(?:pr(?:il)?|ug(?:ust)?)|Sep(?:tember)?|(?:Nov|Dez)"
-      + "(?:ember)?|Okt(?:ober)?)\\s?(?:[.][\\s.]?)?(\\s|[1-9]\\d\\d\\d)|(?:0?[1-9]|[12]\\d)"
-      + "\\s?[.][\\s.]?(?:0?2|Fe(?:b(?:ruar)?)?)\\s?(?:[.][\\s.]?)?[1-9]\\d(?:[02468][048]|"
-      + "[13579][26])|(?:0?[1-9]|[12][0-8])\\s?[.][\\s.]?(?:0?2|Fe(?:b(?:ruar)?)?)\\s?"
-      + "(?:[.][\\s.]?)?(\\s|[1-9]\\d\\d\\d))(?!\\d)");
+  
+  private static final Pattern dateGermanFormatPattern = Pattern.compile("(?<!d)(?:(?:"
+      + "(?:0?[1-9]|[12]\\d)|3[01])\\s?[.][\\s.]?(?:0?[13578]|1[02]|J(?:an(?:uar)?|uli?)|M"
+      + "(?:ärz?|ai)|Aug(?:ust)?|Dez(?:ember)?|Okt(?:ober)?)\\s?(?:[.][\\s.]?)?[1-9]\\d\\d\\d|(?:"
+      + "(?:0?[1-9]|[12]\\d)|3[01])\\s?[.][\\s.]?(?:0?[13578]|1[02]|J(?:an(?:uar)?|uli?)|M"
+      + "(?:ärz?|ai)|Aug(?:ust)?|Dez(?:ember)?|Okt(?:ober)?)\\s?(?:[.][\\s.]?)?|(?:"
+      + "(?:0?[1-9]|[12]\\d)|30)\\s?[.][\\s.]?(?:0?[13-9]|1[012]|J(?:an(?:uar)?|u[nl]i?)|M"
+      + "(?:ärz?|ai)|A(?:pr(?:il)?|ug(?:ust)?)|Sep(?:tember)?|(?:Nov|Dez)(?:ember)?|Okt(?:ober)?)"
+      + "\\s?(?:[.][\\s.]?)?[1-9]\\d\\d\\d|(?:(?:0?[1-9]|[12]\\d)|30)\\s?[.][\\s.]?"
+      + "(?:0?[13-9]|1[012]|J(?:an(?:uar)?|u[nl]i?)|M(?:ärz?|ai)|A(?:pr(?:il)?|ug(?:ust)?)|Sep"
+      + "(?:tember)?|(?:Nov|Dez)(?:ember)?|Okt(?:ober)?)\\s?(?:[.][\\s.]?)?|(?:0?[1-9]|[12]\\d)"
+      + "\\s?[.][\\s.]?(?:0?2|Fe(?:b(?:ruar)?)?)\\s?(?:[.][\\s.]?)?[1-9]\\d"
+      + "(?:[02468][048]|[13579][26])|(?:0?[1-9]|[12][0-8])\\s?[.][\\s.]?(?:0?2|Fe(?:b(?:ruar)?)"
+      + "?)\\s?(?:[.][\\s.]?)?[1-9]\\d\\d\\d)(?!\\d)");
 
   /**
    * The maximum entropy model to use to evaluate contexts.
@@ -242,7 +248,7 @@ public class SentenceDetectorME implements SentenceDetector {
 
     boolean leftover = starts[starts.length - 1] != s.length();
     Span[] spans = new Span[leftover ? starts.length + 1 : starts.length];
-
+    List<Integer> spansToRemove = new ArrayList<>();
     for (int si = 0; si < starts.length; si++) {
       int start;
       int wideEnd;
@@ -283,8 +289,15 @@ public class SentenceDetectorME implements SentenceDetector {
       }
       else {
         sentProbs.remove(si);
+        spansToRemove.add(si);
+      }
+    }
+    
+    if (spansToRemove.size() > 0) {
+      for (int spanToRemove : spansToRemove) {
         try {
-          System.arraycopy(spans, si + 1, spans, si, spans.length - si - 1);
+          System.arraycopy(spans, spanToRemove + 1, spans, spanToRemove,
+              spans.length - spanToRemove - 1);
         }
         catch (ArrayIndexOutOfBoundsException ex) {
           System.arraycopy(spans, 0, spans, 0, spans.length - 1);
