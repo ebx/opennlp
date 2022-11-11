@@ -293,17 +293,15 @@ public class SentenceDetectorME implements SentenceDetector {
       }
     }
     
-    if (spansToRemove.size() > 0) {
-      for (int spanToRemove : spansToRemove) {
-        try {
-          System.arraycopy(spans, spanToRemove + 1, spans, spanToRemove,
-              spans.length - spanToRemove - 1);
-        }
-        catch (ArrayIndexOutOfBoundsException ex) {
-          System.arraycopy(spans, 0, spans, 0, spans.length - 1);
-        }
-        spans = Arrays.copyOf(spans, spans.length - 1);
+    for (int spanToRemove : spansToRemove) {
+      try {
+        System.arraycopy(spans, spanToRemove + 1, spans, spanToRemove,
+            spans.length - spanToRemove - 1);
       }
+      catch (ArrayIndexOutOfBoundsException ex) {
+        System.arraycopy(spans, 0, spans, 0, spans.length - 1);
+      }
+      spans = Arrays.copyOf(spans, spans.length - 1);
     }
 
     if (leftover) {
