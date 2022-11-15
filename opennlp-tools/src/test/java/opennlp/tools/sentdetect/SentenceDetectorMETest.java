@@ -144,6 +144,14 @@ public class SentenceDetectorMETest {
         + "from the likes of Nylon, i-D, The FADER, Billboard, Paper and more.";
     sents = sentDetect.sentDetect(sampleSentence15);
     Assert.assertEquals(3, sents.length);
+  
+    String sampleSentence16 = "Genuss, Begegnung und Vorfreude auf das Fest beim Freilassinger "
+        + "Christkindlmarkt Der Freilassinger Christkindlmarkt freut sich heuer vom 26. "
+        + "November bis zum 11. Dezember immer an den Wochenenden auf seine Gäste. Kulinarische "
+        + "Köstlichkeiten, funkelnde Lichter, schön geschmückte Christbäume und ein vielfältiges "
+        + "Rahmenprogramm locken in der Vorweihnachtszeit in die Freilassinger Innenstadt.";
+    sents = sentDetect.sentDetect(sampleSentence16);
+    Assert.assertEquals(2, sents.length);
 
     // Test that sentPosDetect also works
     Span[] pos = sentDetect.sentPosDetect(sampleSentences2);
