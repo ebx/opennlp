@@ -68,9 +68,9 @@ public class SentenceDetectorME implements SentenceDetector {
   
   private static final Pattern dateGermanFormatPattern = Pattern.compile("(?<!d)(?:(?:"
       + "(?:0?[1-9]|[12]\\d)|3[01])\\s?[.][\\s.]?(?:0?[13578]|1[02]|J(?:an(?:uar)?|uli?)|M"
-      + "(?:ärz?|ai)|Aug(?:ust)?|Dez(?:ember)?|Okt(?:ober)?)\\s?(?:[.][\\s.]?)?[1-9]\\d\\d\\d|(?:"
-      + "(?:0?[1-9]|[12]\\d)|3[01])\\s?[.][\\s.]?(?:0?[13578]|1[02]|J(?:an(?:uar)?|uli?)|M"
-      + "(?:ärz?|ai)|Aug(?:ust)?|Dez(?:ember)?|Okt(?:ober)?)\\s?(?:[.][\\s.]?)?|(?:"
+      + "(?:ärz?|ai)|Aug(?:ust)?|(?:Nov|Dez)(?:ember)?|Okt(?:ober)?)\\s?(?:[.][\\s.]?)?[1-9]"
+      + "\\d\\d\\d|(?:(?:0?[1-9]|[12]\\d)|3[01])\\s?[.][\\s.]?(?:0?[13578]|1[02]|J(?:an(?:uar)?|"
+      + "uli?)|M(?:ärz?|ai)|Aug(?:ust)?|(?:Nov|Dez)(?:ember)?|Okt(?:ober)?)\\s?(?:[.][\\s.]?)?|(?:"
       + "(?:0?[1-9]|[12]\\d)|30)\\s?[.][\\s.]?(?:0?[13-9]|1[012]|J(?:an(?:uar)?|u[nl]i?)|M"
       + "(?:ärz?|ai)|A(?:pr(?:il)?|ug(?:ust)?)|Sep(?:tember)?|(?:Nov|Dez)(?:ember)?|Okt(?:ober)?)"
       + "\\s?(?:[.][\\s.]?)?[1-9]\\d\\d\\d|(?:(?:0?[1-9]|[12]\\d)|30)\\s?[.][\\s.]?"
@@ -219,9 +219,31 @@ public class SentenceDetectorME implements SentenceDetector {
     }
 
     int[] starts = new int[positions.size()];
+    // Skip the sentence divisors if they are part of a date in German format
     for (int i = 0; i < starts.length; i++) {
-      starts[i] = positions.get(i);
+      String sentenceString = s;
+      try {
+        if (i == 0) {
+          // If it is a string with more than one divisor, the string to study comprises
+          // the two sentences surrounding the divisor. If just one divisor, use the full
+          // string
+          if (starts.length > 2) {
+            sentenceString = s.substring(0, positions.get(i + 1));
+          }
+        } else {
+          sentenceString = s.substring(positions.get(i - 1), positions.get(i + 1));
+        }
+        // If we reached the last position, it will throw IndexOutOfBoundsException
+        // then take the string until the end.
+      } catch (IndexOutOfBoundsException ex) {
+        sentenceString = s.substring(positions.get(i - 1));
+      }
+      if (!isDateGermanFormat(sentenceString))
+        starts[i] = positions.get(i);
     }
+    starts = Arrays.stream(starts)
+        .filter(start -> start != 0)
+        .toArray();
 
     // string does not contain sentence end positions
     if (starts.length == 0) {
@@ -248,10 +270,8 @@ public class SentenceDetectorME implements SentenceDetector {
 
     boolean leftover = starts[starts.length - 1] != s.length();
     Span[] spans = new Span[leftover ? starts.length + 1 : starts.length];
-    List<Integer> spansToRemove = new ArrayList<>();
     for (int si = 0; si < starts.length; si++) {
       int start;
-      int wideEnd;
 
       if (si == 0) {
         start = 0;
@@ -259,49 +279,16 @@ public class SentenceDetectorME implements SentenceDetector {
       else {
         start = starts[si - 1];
       }
-      // Define the end point of the wider span to check if the dot belongs to
-      // a date in German format
-      if (starts.length > 1 && si < starts.length - 1) {
-        wideEnd = starts[si + 1];
-      }
-      else {
-        wideEnd = s.length();
-      }
 
       // A span might contain only white spaces, in this case the length of
       // the span will be zero after trimming and should be ignored.
       Span span = new Span(start, starts[si]).trim(s);
-      // Wider span that takes into account the sentence portions before and after
-      // the split character
-      Span widerSpan = new Span(start, wideEnd).trim(s);
       if (span.length() > 0) {
-        // Check if it includes a date in German format
-        if (isDateGermanFormat(widerSpan.getCoveredText(s).toString())) {
-          // If that is the case, set the span as the wider one to not split
-          // the sentence and set the position of the splitting character to
-          // avoid checking the same portion of text
-          spans[si] = widerSpan;
-          starts[si] = wideEnd;
-        }
-        else {
-          spans[si] = span;
-        }
+        spans[si] = span;
       }
       else {
         sentProbs.remove(si);
-        spansToRemove.add(si);
       }
-    }
-    
-    for (int spanToRemove : spansToRemove) {
-      try {
-        System.arraycopy(spans, spanToRemove + 1, spans, spanToRemove,
-            spans.length - spanToRemove - 1);
-      }
-      catch (ArrayIndexOutOfBoundsException ex) {
-        System.arraycopy(spans, 0, spans, 0, spans.length - 1);
-      }
-      spans = Arrays.copyOf(spans, spans.length - 1);
     }
 
     if (leftover) {
@@ -309,11 +296,6 @@ public class SentenceDetectorME implements SentenceDetector {
       if (span.length() > 0) {
         spans[spans.length - 1] = span;
         sentProbs.add(1d);
-      }
-      // Remove the last span if the previous is a wide one containing a
-      // date in German format
-      else {
-        spans = Arrays.copyOf(spans, spans.length - 1);
       }
     }
     /*
